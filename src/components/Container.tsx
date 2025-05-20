@@ -5,16 +5,23 @@ import {
   AppBar,
   Toolbar,
   Typography,
+  Avatar,
+  IconButton,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+import { useNavigate } from "react-router-dom";
 import logo from "../logo.svg";
+// import MenuIcon from "@mui/icons-material/Menu"; // Optional
 
 interface Props {
   children: React.ReactNode;
 }
 
+const KINDERGARTEN_NAME = "גן גידים ילדים";
+
 const Container: React.FC<Props> = ({ children }) => {
   const theme = useTheme();
+  const navigate = useNavigate();
   return (
     <Box
       dir="rtl"
@@ -24,16 +31,30 @@ const Container: React.FC<Props> = ({ children }) => {
         position="static"
         color="transparent"
         elevation={0}
-        sx={{ background: "none", boxShadow: "none", p: 2 }}
+        sx={{ background: "none", boxShadow: "none", p: 1 }}
       >
-        <Toolbar sx={{ justifyContent: "center" }}>
-          <img src={logo} alt="logo" style={{ height: 48, marginLeft: 16 }} />
-          <Typography variant="h4" color="primary" sx={{ fontWeight: 700 }}>
-            גננת
+        <Toolbar sx={{ justifyContent: "space-between" }}>
+          {/* User Avatar */}
+          <IconButton onClick={() => navigate("/login")} sx={{ p: 0 }}>
+            <Avatar
+              alt="User"
+              src="https://randomuser.me/api/portraits/men/32.jpg"
+              sx={{ width: 40, height: 40, bgcolor: "secondary.main" }}
+            />
+          </IconButton>
+          {/* Kindergarten Name */}
+          <Typography
+            variant="h6"
+            color="primary"
+            sx={{ fontWeight: 700, flexGrow: 1, textAlign: "center" }}
+          >
+            {KINDERGARTEN_NAME}
           </Typography>
+          {/* Optionally, add a menu or notification icon here */}
+          <Box sx={{ width: 40, height: 40 }} /> {/* Spacer for symmetry */}
         </Toolbar>
       </AppBar>
-      <MUIContainer maxWidth="xs" sx={{ mt: 8 }}>
+      <MUIContainer maxWidth="xs" sx={{ mt: 8, mb: 8 }}>
         {children}
       </MUIContainer>
     </Box>

@@ -7,6 +7,9 @@ import Container from "./components/Container";
 import Login from "./pages/Login";
 import logo from "../logo.svg";
 import Register from "./pages/Register";
+import Feed from "./pages/Feed";
+import Settings from "./pages/Settings";
+import BottomNav from "./components/BottomNav";
 
 const Dashboard: React.FC = () => (
   <div style={{ textAlign: "center", marginTop: 40 }}>
@@ -25,8 +28,11 @@ const App: React.FC = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/feed" element={<Feed />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
+          <BottomNav />
         </Container>
       </BrowserRouter>
     </ThemeProvider>

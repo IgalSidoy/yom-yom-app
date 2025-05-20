@@ -64,6 +64,15 @@ const Login: React.FC = () => {
       >
         כניסה
       </Button>
+      <Button
+        variant="outlined"
+        color="primary"
+        fullWidth
+        sx={{ borderRadius: 3, fontWeight: 700, fontSize: 16 }}
+        onClick={() => navigate("/register")}
+      >
+        הרשמה
+      </Button>
     </Box>
   );
 };
