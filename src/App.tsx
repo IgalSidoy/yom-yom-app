@@ -6,17 +6,11 @@ import theme from "./theme";
 import Container from "./components/Container";
 import Login from "./pages/Login";
 import logo from "../logo.svg";
-import Register from "./pages/Register";
+import Onboarding from "./pages/Onboarding";
 import Feed from "./pages/Feed";
 import Settings from "./pages/Settings";
 import BottomNav from "./components/BottomNav";
-
-const Dashboard: React.FC = () => (
-  <div style={{ textAlign: "center", marginTop: 40 }}>
-    <h2>Dashboard (placeholder)</h2>
-    <p>Welcome to the kindergarten app!</p>
-  </div>
-);
+import Dashboard from "./pages/Dashboard";
 
 const App: React.FC = () => {
   return (
@@ -27,10 +21,10 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/register" element={<Register />} />
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/feed" element={<Feed />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
           <BottomNav />
         </Container>

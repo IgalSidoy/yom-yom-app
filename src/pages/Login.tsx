@@ -10,13 +10,8 @@ import {
 import { useNavigate } from "react-router-dom";
 
 const Login: React.FC = () => {
-  const [lang, setLang] = useState("he");
   const [name, setName] = useState("");
   const navigate = useNavigate();
-
-  const handleLang = (_: any, newLang: string) => {
-    if (newLang) setLang(newLang);
-  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,16 +30,6 @@ const Login: React.FC = () => {
         gap: 3,
       }}
     >
-      <ToggleButtonGroup
-        value={lang}
-        exclusive
-        onChange={handleLang}
-        sx={{ mb: 2 }}
-      >
-        <ToggleButton value="he">עברית</ToggleButton>
-        <ToggleButton value="ru">Русский</ToggleButton>
-        <ToggleButton value="en">English</ToggleButton>
-      </ToggleButtonGroup>
       <TextField
         label="אימייל"
         variant="outlined"
@@ -62,14 +47,14 @@ const Login: React.FC = () => {
         fullWidth
         sx={{ borderRadius: 3, fontWeight: 700, fontSize: 20, py: 1.5 }}
       >
-        כניסה
+        התחברות
       </Button>
       <Button
         variant="outlined"
         color="primary"
         fullWidth
         sx={{ borderRadius: 3, fontWeight: 700, fontSize: 16 }}
-        onClick={() => navigate("/register")}
+        onClick={() => navigate("/onboarding")}
       >
         הרשמה
       </Button>

@@ -11,17 +11,20 @@ import {
 import { useTheme } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import logo from "../logo.svg";
+import { useLanguage } from "../contexts/LanguageContext";
 // import MenuIcon from "@mui/icons-material/Menu"; // Optional
 
 interface Props {
   children: React.ReactNode;
 }
 
-const KINDERGARTEN_NAME = "גן גידים ילדים";
+const KINDERGARTEN_NAME = "ניהול גנים יום יום";
 
 const Container: React.FC<Props> = ({ children }) => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { language } = useLanguage();
+
   return (
     <Box
       dir="rtl"
