@@ -8,9 +8,12 @@ import {
   Step,
   StepLabel,
   Fade,
+  CircularProgress,
+  Paper,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import CheckIcon from "@mui/icons-material/Check";
+import { useAuth } from "../contexts/AuthContext";
 
 const steps = [1, 2, 3];
 
@@ -43,20 +46,89 @@ const CustomStepIcon = ({
 
 const Onboarding: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { login } = useAuth();
   const [form, setForm] = useState({
     email: "",
     businessId: "",
     mobile: "",
     businessName: "",
   });
+  const [errors, setErrors] = useState({
+    email: "",
+    mobile: "",
+  });
   const navigate = useNavigate();
 
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
+  };
+
+  const formatMobileNumber = (value: string) => {
+    // Remove all non-digit characters
+    const digits = value.replace(/\D/g, "");
+
+    // Format as Israeli mobile number (050-1234567)
+    if (digits.length <= 3) {
+      return digits;
+    } else if (digits.length <= 6) {
+      return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    } else {
+      return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(
+        6,
+        10
+      )}`;
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    if (name === "mobile") {
+      setForm({ ...form, [name]: formatMobileNumber(value) });
+      // Clear mobile error when user types
+      setErrors((prev) => ({ ...prev, mobile: "" }));
+    } else if (name === "email") {
+      setForm({ ...form, [name]: value });
+      // Clear email error when user types
+      setErrors((prev) => ({ ...prev, email: "" }));
+    } else {
+      setForm({ ...form, [name]: value });
+    }
   };
 
   const handleNext = (e: React.MouseEvent) => {
     e.preventDefault();
+
+    // Validate current step
+    if (activeStep === 1) {
+      const newErrors = { ...errors };
+      let hasError = false;
+
+      // Validate email
+      if (!form.email) {
+        newErrors.email = "שדה חובה";
+        hasError = true;
+      } else if (!validateEmail(form.email)) {
+        newErrors.email = "כתובת אימייל לא תקינה";
+        hasError = true;
+      }
+
+      // Validate mobile
+      const mobileDigits = form.mobile.replace(/\D/g, "");
+      if (!form.mobile) {
+        newErrors.mobile = "שדה חובה";
+        hasError = true;
+      } else if (mobileDigits.length !== 10) {
+        newErrors.mobile = "מספר טלפון לא תקין";
+        hasError = true;
+      }
+
+      setErrors(newErrors);
+      if (hasError) return;
+    }
+
     setActiveStep((prevStep) => prevStep + 1);
   };
 
@@ -67,26 +139,35 @@ const Onboarding: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+
     try {
-      const baseUrl = process.env.REACT_APP_API_BASE_URL;
-      const response = await fetch(`${baseUrl}/api/v1/onboarding/start`, {
-        method: "POST",
-        headers: {
-          accept: "*/*",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: form.email,
-          businessId: form.businessId,
-          mobile: form.mobile,
-          businessName: form.businessName,
-        }),
-      });
-      if (!response.ok) throw new Error("Registration failed");
+      const response = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL}/api/v1/User`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(form),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to submit form");
+      }
+
       const data = await response.json();
+      login(data.token);
       navigate("/dashboard");
-    } catch (err) {
-      alert("Registration failed");
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      setErrors({
+        email: "שגיאה בשליחת הטופס. אנא נסה שוב.",
+        mobile: "שגיאה בשליחת הטופס. אנא נסה שוב.",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -95,18 +176,17 @@ const Onboarding: React.FC = () => {
       case 0:
         return (
           <Fade in={true} timeout={500}>
-            <Box>
+            <Box sx={{ width: "100%" }}>
               <TextField
                 name="businessId"
                 label='ח"פ/ת"ז'
                 value={form.businessId}
                 onChange={handleChange}
                 required
+                fullWidth
                 sx={{
                   bgcolor: "white",
                   borderRadius: 2,
-                  width: "100%",
-                  maxWidth: 350,
                 }}
               />
               <TextField
@@ -115,11 +195,10 @@ const Onboarding: React.FC = () => {
                 value={form.businessName}
                 onChange={handleChange}
                 required
+                fullWidth
                 sx={{
                   bgcolor: "white",
                   borderRadius: 2,
-                  width: "100%",
-                  maxWidth: 350,
                   mt: 2,
                 }}
               />
@@ -129,18 +208,27 @@ const Onboarding: React.FC = () => {
       case 1:
         return (
           <Fade in={true} timeout={500}>
-            <Box>
+            <Box sx={{ width: "100%" }}>
               <TextField
                 name="email"
                 label="אימייל"
                 value={form.email}
                 onChange={handleChange}
                 required
+                type="email"
+                placeholder="example@email.com"
+                error={!!errors.email}
+                helperText={errors.email}
+                fullWidth
                 sx={{
                   bgcolor: "white",
                   borderRadius: 2,
-                  width: "100%",
-                  maxWidth: 350,
+                }}
+                inputProps={{
+                  style: {
+                    textAlign: "left",
+                    direction: "ltr",
+                  },
                 }}
               />
               <TextField
@@ -149,12 +237,21 @@ const Onboarding: React.FC = () => {
                 value={form.mobile}
                 onChange={handleChange}
                 required
+                placeholder="050-1234567"
+                error={!!errors.mobile}
+                helperText={errors.mobile}
+                fullWidth
                 sx={{
                   bgcolor: "white",
                   borderRadius: 2,
-                  width: "100%",
-                  maxWidth: 350,
                   mt: 2,
+                }}
+                inputProps={{
+                  style: {
+                    textAlign: "left",
+                    direction: "ltr",
+                  },
+                  maxLength: 12,
                 }}
               />
             </Box>
@@ -163,7 +260,7 @@ const Onboarding: React.FC = () => {
       case 2:
         return (
           <Fade in={true} timeout={500}>
-            <Box sx={{ textAlign: "center", width: "100%", maxWidth: 350 }}>
+            <Box sx={{ width: "100%", textAlign: "center" }}>
               <Typography variant="h6" sx={{ mb: 2 }}>
                 אישור פרטים
               </Typography>
@@ -181,126 +278,181 @@ const Onboarding: React.FC = () => {
 
   return (
     <Box
-      component="form"
-      onSubmit={handleSubmit}
       sx={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-        alignItems: "center",
-        bgcolor: "#FFF6EB",
         minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
         justifyContent: "center",
-        direction: "rtl",
-        px: 2,
+        bgcolor: "#FFF6EB",
+        p: 2,
       }}
     >
-      <Typography
-        variant="h4"
-        align="center"
-        sx={{ fontWeight: 700, color: "#6B3F1D", mb: 2 }}
-      >
-        הגדרת חשבון
-      </Typography>
-
-      <Stepper
-        activeStep={activeStep}
+      <Paper
+        elevation={3}
         sx={{
           width: "100%",
-          maxWidth: "75%",
-          margin: "0 auto",
-          mb: 1,
-          marginBottom: "10px",
-          "& .MuiStepLabel-label": {
-            display: "none",
-          },
-          "& .MuiStepIcon-root": {
-            display: "none",
-          },
-          "& .MuiStepConnector-line": {
-            display: "none",
-          },
-          "& .MuiStepConnector-root": {
-            display: "none",
-          },
-          "& .MuiStep-root": {
-            padding: 1,
-            flex: 1,
-            "&:first-of-type": {
-              paddingLeft: 0,
-            },
-            "&:last-child": {
-              paddingRight: 0,
-            },
-          },
+          maxWidth: "500px",
+          p: 4,
+          borderRadius: 3,
+          bgcolor: "#FFF9F0",
         }}
       >
-        {steps.map((step) => (
-          <Step key={step}>
-            <StepLabel StepIconComponent={CustomStepIcon} />
-          </Step>
-        ))}
-      </Stepper>
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 3,
+          }}
+        >
+          {isSubmitting ? (
+            <CircularProgress
+              size={60}
+              sx={{
+                color: "#FF9F43",
+              }}
+            />
+          ) : (
+            <>
+              <Typography
+                variant="h4"
+                align="center"
+                sx={{ fontWeight: 700, color: "#6B3F1D", mb: 2 }}
+              >
+                הגדרת חשבון
+              </Typography>
 
-      {getStepContent(activeStep)}
+              <Stepper
+                activeStep={activeStep}
+                sx={{
+                  paddingLeft: "50px",
+                  width: "80%",
+                  margin: "auto",
+                  marginLeft: "auto",
+                  marginRight: "auto",
+                  mb: 2,
+                  marginBottom: "10px",
+                  "& .MuiStepLabel-label": {
+                    display: "none",
+                  },
+                  "& .MuiStepIcon-root": {
+                    display: "none",
+                  },
+                  "& .MuiStepConnector-line": {
+                    display: "none",
+                  },
+                  "& .MuiStepConnector-root": {
+                    display: "none",
+                  },
+                  "& .MuiStep-root": {
+                    padding: 1,
+                    flex: 1,
+                    "&:first-of-type": {
+                      paddingLeft: 0,
+                    },
+                    "&:last-child": {
+                      paddingRight: 0,
+                    },
+                  },
+                }}
+              >
+                {steps.map((step) => (
+                  <Step key={step}>
+                    <StepLabel StepIconComponent={CustomStepIcon} />
+                  </Step>
+                ))}
+              </Stepper>
 
-      <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-        {activeStep > 0 && (
-          <Button
-            onClick={handleBack}
-            type="button"
-            variant="outlined"
-            sx={{
-              color: "#FF9F43",
-              borderColor: "#FF9F43",
-              fontWeight: 700,
-              borderRadius: 3,
-              width: 150,
-              py: 1.5,
-            }}
-          >
-            חזור
-          </Button>
-        )}
-        {activeStep < steps.length - 1 ? (
-          <Button
-            onClick={handleNext}
-            type="button"
-            variant="contained"
-            sx={{
-              bgcolor: "#FF9F43",
-              color: "white",
-              fontWeight: 700,
-              fontSize: 20,
-              borderRadius: 3,
-              width: 150,
-              py: 1.5,
-              boxShadow: "none",
-              "&:hover": { bgcolor: "#FF8C1A" },
-            }}
-          >
-            המשך
-          </Button>
-        ) : (
-          <Button
-            type="submit"
-            variant="contained"
-            sx={{
-              bgcolor: "#FF9F43",
-              color: "white",
-              fontWeight: 700,
-              fontSize: 20,
-              borderRadius: 3,
-              width: 150,
-              py: 1.5,
-              boxShadow: "none",
-              "&:hover": { bgcolor: "#FF8C1A" },
-            }}
-          >
-            סיום
-          </Button>
-        )}
-      </Box>
+              {getStepContent(activeStep)}
+
+              <Box sx={{ display: "flex", gap: 2, mt: 2, width: "100%" }}>
+                {activeStep < steps.length - 1 ? (
+                  <Button
+                    onClick={handleNext}
+                    type="button"
+                    variant="contained"
+                    sx={{
+                      bgcolor: "#FF9F43",
+                      color: "white",
+                      fontWeight: 700,
+                      fontSize: 20,
+                      borderRadius: 3,
+                      flex: 1,
+                      py: 1.5,
+                      boxShadow: "none",
+                      "&:hover": { bgcolor: "#FF8C1A" },
+                    }}
+                  >
+                    המשך
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    sx={{
+                      bgcolor: "#FF9F43",
+                      color: "white",
+                      fontWeight: 700,
+                      fontSize: 20,
+                      borderRadius: 3,
+                      flex: 1,
+                      py: 1.5,
+                      boxShadow: "none",
+                      "&:hover": { bgcolor: "#FF8C1A" },
+                    }}
+                  >
+                    סיום
+                  </Button>
+                )}
+                {activeStep > 0 && (
+                  <Button
+                    onClick={handleBack}
+                    type="button"
+                    variant="outlined"
+                    sx={{
+                      color: "#FF9F43",
+                      borderColor: "#FF9F43",
+                      fontWeight: 700,
+                      borderRadius: 3,
+                      flex: 1,
+                      py: 1.5,
+                      "&:hover": {
+                        borderColor: "#FF8C1A",
+                        bgcolor: "rgba(255, 159, 67, 0.04)",
+                      },
+                    }}
+                  >
+                    חזור
+                  </Button>
+                )}
+              </Box>
+              <Typography
+                variant="body2"
+                sx={{
+                  mt: 2,
+                  color: "#666",
+                  textAlign: "center",
+                  "& a": {
+                    color: "#FF9F43",
+                    textDecoration: "none",
+                    fontWeight: 500,
+                    "&:hover": {
+                      textDecoration: "underline",
+                    },
+                  },
+                }}
+              >
+                כבר יש לך חשבון?{" "}
+                <Link to="/login" style={{ color: "#FF9F43" }}>
+                  התחבר כאן
+                </Link>
+              </Typography>
+            </>
+          )}
+        </Box>
+      </Paper>
     </Box>
   );
 };
