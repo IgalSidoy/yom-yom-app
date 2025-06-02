@@ -67,4 +67,86 @@ api.interceptors.response.use(
   }
 );
 
+// User API functions
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  mobile: string;
+  accountId: string;
+  organizationId: string;
+  role: string;
+}
+
+export interface UserResponse {
+  user: User;
+}
+
+export const userApi = {
+  getUser: async () => {
+    const response = await api.get("/api/v1/user");
+    return response;
+  },
+};
+
+// Organization API functions
+export interface Organization {
+  id: string;
+  businessId: string;
+  name: string;
+  email: string;
+  phone: string;
+  created: string;
+  updated: string;
+}
+
+export interface OrganizationResponse {
+  organization: Organization;
+}
+
+export const organizationApi = {
+  getOrganization: async (organizationId: string) => {
+    const response = await api.get(`/api/v1/organization/${organizationId}`);
+    return response;
+  },
+  updateOrganization: async (organization: Organization) => {
+    const response = await api.put(`/api/v1/organization/${organization.id}`, {
+      businessId: organization.businessId,
+      name: organization.name,
+      email: organization.email,
+      phone: organization.phone,
+    });
+    return response;
+  },
+};
+
+// Account API functions
+export interface Account {
+  id: string;
+  branchName: string;
+  branchCode: number;
+  organizationId: string;
+  created: string;
+  updated: string;
+}
+
+export interface AccountResponse {
+  account: Account;
+}
+
+export const accountApi = {
+  getAccount: async (accountId: string) => {
+    const response = await api.get(`/api/v1/account/${accountId}`);
+    return response;
+  },
+  updateAccount: async (account: Account) => {
+    const response = await api.put(`/api/v1/account/${account.id}`, {
+      branchName: account.branchName,
+      branchCode: account.branchCode,
+    });
+    return response;
+  },
+};
+
 export default api;

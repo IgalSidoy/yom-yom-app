@@ -143,7 +143,7 @@ const Onboarding: React.FC = () => {
 
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL}/api/v1/User`,
+        `${process.env.REACT_APP_API_BASE_URL}/api/v1/user`,
         {
           method: "POST",
           headers: {

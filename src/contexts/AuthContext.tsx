@@ -33,7 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const checkAuthStatus = async () => {
     try {
-      const response = await api.get("/api/v1/User");
+      const response = await api.get("/api/v1/user");
       const userData = response.data;
       setUser(userData);
       setIsAuthenticated(true);
