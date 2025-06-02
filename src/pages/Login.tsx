@@ -121,11 +121,9 @@ const Login: React.FC = () => {
         throw new Error("Invalid OTP");
       }
 
-      const data: { token: string; refreshToken: string } =
-        await response.json();
-
+      const data = await response.json();
       // The refresh token will be automatically handled by the browser as a secure cookie
-      await login(data.token);
+      await login(data.token, data.userId, data.accountId, data.organizationId);
       navigate("/dashboard");
     } catch (err) {
       setError("קוד לא תקין. אנא נסה שוב.");

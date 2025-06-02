@@ -11,10 +11,17 @@ interface User {
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: User | null;
-  login: (token: string) => Promise<void>;
-  logout: () => Promise<void>;
   loading: boolean;
+  login: (
+    token: string,
+    userId: string,
+    accountId: string,
+    organizationId: string
+  ) => void;
+  logout: () => void;
+  userId: string | null;
+  accountId: string | null;
+  organizationId: string | null;
 }
 
 interface TokenResponse {
@@ -27,52 +34,65 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const checkAuthStatus = async () => {
-    try {
-      const response = await api.get("/api/v1/user");
-      const userData = response.data;
-      setUser(userData);
-      setIsAuthenticated(true);
-    } catch (error) {
-      setUser(null);
-      setIsAuthenticated(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(null);
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   useEffect(() => {
-    checkAuthStatus();
+    const token = localStorage.getItem("accessToken");
+    const storedUserId = localStorage.getItem("userId");
+    const storedAccountId = localStorage.getItem("accountId");
+    const storedOrganizationId = localStorage.getItem("organizationId");
+
+    if (token) {
+      setIsAuthenticated(true);
+      setUserId(storedUserId);
+      setAccountId(storedAccountId);
+      setOrganizationId(storedOrganizationId);
+    }
+    setLoading(false);
   }, []);
 
-  const login = async (token: string) => {
+  const login = (
+    token: string,
+    userId: string,
+    accountId: string,
+    organizationId: string
+  ) => {
     localStorage.setItem("accessToken", token);
-    await checkAuthStatus();
+    localStorage.setItem("userId", userId);
+    localStorage.setItem("accountId", accountId);
+    localStorage.setItem("organizationId", organizationId);
+    setIsAuthenticated(true);
+    setUserId(userId);
+    setAccountId(accountId);
+    setOrganizationId(organizationId);
   };
 
-  const logout = async () => {
-    try {
-      await api.post("/api/v1/auth/logout");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    } finally {
-      localStorage.removeItem("accessToken");
-      setUser(null);
-      setIsAuthenticated(false);
-    }
+  const logout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("accountId");
+    localStorage.removeItem("organizationId");
+    setIsAuthenticated(false);
+    setUserId(null);
+    setAccountId(null);
+    setOrganizationId(null);
   };
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <AuthContext.Provider
-      value={{ isAuthenticated, user, login, logout, loading: isLoading }}
+      value={{
+        isAuthenticated,
+        loading,
+        login,
+        logout,
+        userId,
+        accountId,
+        organizationId,
+      }}
     >
       {children}
     </AuthContext.Provider>

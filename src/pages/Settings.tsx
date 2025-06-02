@@ -259,9 +259,8 @@ const Settings = () => {
                   sx={{ direction: "rtl" }}
                 />
                 <TextField
-                  fullWidth
+                  name="email"
                   label="אימייל"
-                  type="email"
                   value={organization.email}
                   onChange={(e) =>
                     setOrganization({
@@ -270,7 +269,13 @@ const Settings = () => {
                     })
                   }
                   disabled={isLoading}
-                  sx={{ direction: "rtl" }}
+                  sx={{
+                    borderRadius: 2,
+                    "& .MuiInputBase-input": {
+                      direction: "ltr",
+                      textAlign: "left",
+                    },
+                  }}
                 />
                 <TextField
                   fullWidth

@@ -143,7 +143,7 @@ const Onboarding: React.FC = () => {
 
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL}/api/v1/user`,
+        `${process.env.REACT_APP_API_BASE_URL}/api/v1/onboarding/start`,
         {
           method: "POST",
           headers: {
@@ -158,7 +158,7 @@ const Onboarding: React.FC = () => {
       }
 
       const data = await response.json();
-      login(data.token);
+      login(data.token, data.userId, data.accountId, data.organizationId);
       navigate("/dashboard");
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -260,14 +260,79 @@ const Onboarding: React.FC = () => {
       case 2:
         return (
           <Fade in={true} timeout={500}>
-            <Box sx={{ width: "100%", textAlign: "center" }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
+            <Box sx={{ width: "100%", textAlign: "right" }}>
+              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                 אישור פרטים
               </Typography>
-              <Typography>ח"פ/ת"ז: {form.businessId}</Typography>
-              <Typography>שם העסק: {form.businessName}</Typography>
-              <Typography>אימייל: {form.email}</Typography>
-              <Typography>טלפון: {form.mobile}</Typography>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  mb: 3,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 2,
+                  bgcolor: "background.paper",
+                }}
+              >
+                <Box sx={{ display: "grid", gap: 2 }}>
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", mb: 0.5 }}
+                    >
+                      ח"פ/ת"ז
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {form.businessId}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", mb: 0.5 }}
+                    >
+                      שם העסק
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {form.businessName}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", mb: 0.5 }}
+                    >
+                      אימייל
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {form.email}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", mb: 0.5 }}
+                    >
+                      טלפון
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {form.mobile}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mb: 3, textAlign: "center" }}
+              >
+                אנא וודא שכל הפרטים נכונים לפני סיום ההרשמה
+              </Typography>
             </Box>
           </Fade>
         );
