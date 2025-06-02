@@ -57,7 +57,16 @@ const Container: React.FC<Props> = ({ children }) => {
           <Box sx={{ width: 40, height: 40 }} /> {/* Spacer for symmetry */}
         </Toolbar>
       </AppBar>
-      <MUIContainer maxWidth="xs" sx={{ mt: 8, mb: 8 }}>
+      <MUIContainer
+        maxWidth="xs"
+        sx={{
+          mt: 8,
+          mb: { xs: 10, sm: 8 }, // Increase bottom margin on mobile
+          pb: { xs: 2, sm: 0 }, // Add padding bottom on mobile
+          minHeight: "calc(100vh - 64px)", // Subtract AppBar height
+          position: "relative",
+        }}
+      >
         {children}
       </MUIContainer>
     </Box>

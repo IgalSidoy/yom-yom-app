@@ -46,21 +46,49 @@ const BottomNav: React.FC = () => {
         bottom: 0,
         left: 0,
         right: 0,
-        borderRadius: 0,
+        borderRadius: "16px 16px 0 0",
         bgcolor: "background.paper",
-        boxShadow: "0 -2px 8px #0001",
+        boxShadow: "0 -4px 20px rgba(0, 0, 0, 0.08)",
         zIndex: 1000,
+        height: { xs: "calc(72px + env(safe-area-inset-bottom))", sm: "72px" },
+        borderTop: "1px solid",
+        borderColor: "divider",
       }}
-      elevation={3}
+      elevation={0}
     >
       <BottomNavigation
         showLabels
         value={currentIndex === -1 ? 0 : currentIndex}
         onChange={(_, newValue) => navigate(navItems[newValue].path)}
         sx={{
-          bgcolor: "background.paper",
+          bgcolor: "transparent",
+          height: "100%",
           "& .Mui-selected": {
-            color: "primary.main",
+            color: "#FF9F43",
+            "& .MuiBottomNavigationAction-label": {
+              fontWeight: 600,
+              color: "#FF9F43",
+            },
+          },
+          "& .MuiBottomNavigationAction-root": {
+            minWidth: "auto",
+            padding: "8px 12px",
+            color: "#9E9E9E",
+            "& .MuiBottomNavigationAction-label": {
+              fontSize: "0.75rem",
+              fontWeight: 500,
+              transition: "all 0.2s",
+              color: "#9E9E9E",
+              "&.Mui-selected": {
+                fontSize: "0.75rem",
+                color: "#FF9F43",
+              },
+            },
+            "& .MuiSvgIcon-root": {
+              fontSize: "1.5rem",
+              transition: "all 0.2s",
+              color: "inherit",
+            },
           },
         }}
       >
@@ -70,9 +98,11 @@ const BottomNav: React.FC = () => {
             label={navLabels[language][item.label]}
             icon={item.icon}
             sx={{
-              color: "text.primary",
               "&.Mui-selected": {
-                color: "primary.main",
+                "& .MuiSvgIcon-root": {
+                  transform: "scale(1.1)",
+                  color: "#FF9F43",
+                },
               },
             }}
           />
