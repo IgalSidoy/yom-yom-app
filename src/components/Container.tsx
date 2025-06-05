@@ -1,69 +1,28 @@
 import React from "react";
-import {
-  Box,
-  Container as MUIContainer,
-  AppBar,
-  Toolbar,
-  Typography,
-  Avatar,
-  IconButton,
-} from "@mui/material";
+import { Box, Container as MUIContainer } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { useNavigate } from "react-router-dom";
-import logo from "../logo.svg";
-import { useLanguage } from "../contexts/LanguageContext";
-// import MenuIcon from "@mui/icons-material/Menu"; // Optional
+import Navbar from "./Navbar";
 
 interface Props {
   children: React.ReactNode;
 }
 
-const KINDERGARTEN_NAME = "ניהול גנים יום יום";
-
 const Container: React.FC<Props> = ({ children }) => {
   const theme = useTheme();
-  const navigate = useNavigate();
-  const { language } = useLanguage();
 
   return (
     <Box
       dir="rtl"
       sx={{ minHeight: "100vh", background: theme.palette.background.default }}
     >
-      <AppBar
-        position="static"
-        color="transparent"
-        elevation={0}
-        sx={{ background: "none", boxShadow: "none", p: 1 }}
-      >
-        <Toolbar sx={{ justifyContent: "space-between" }}>
-          {/* User Avatar */}
-          <IconButton onClick={() => navigate("/login")} sx={{ p: 0 }}>
-            <Avatar
-              alt="User"
-              src="https://randomuser.me/api/portraits/men/32.jpg"
-              sx={{ width: 40, height: 40, bgcolor: "secondary.main" }}
-            />
-          </IconButton>
-          {/* Kindergarten Name */}
-          <Typography
-            variant="h6"
-            color="primary"
-            sx={{ fontWeight: 700, flexGrow: 1, textAlign: "center" }}
-          >
-            {KINDERGARTEN_NAME}
-          </Typography>
-          {/* Optionally, add a menu or notification icon here */}
-          <Box sx={{ width: 40, height: 40 }} /> {/* Spacer for symmetry */}
-        </Toolbar>
-      </AppBar>
+      <Navbar />
       <MUIContainer
         maxWidth="xs"
         sx={{
-          mt: 8,
-          mb: { xs: 10, sm: 8 }, // Increase bottom margin on mobile
-          pb: { xs: 2, sm: 0 }, // Add padding bottom on mobile
-          minHeight: "calc(100vh - 64px)", // Subtract AppBar height
+          mt: 2,
+          mb: { xs: 10, sm: 8 },
+          pb: { xs: 2, sm: 0 },
+          minHeight: "calc(100vh - 64px)",
           position: "relative",
         }}
       >

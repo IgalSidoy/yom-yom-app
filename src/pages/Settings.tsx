@@ -11,7 +11,11 @@ import {
   Button,
   CircularProgress,
   Grid,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useLanguage } from "../contexts/LanguageContext";
 import {
   organizationApi,
@@ -27,6 +31,9 @@ const Settings = () => {
   const { language, setLanguage } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [expandedAccordion, setExpandedAccordion] = useState<string | false>(
+    false
+  );
   const [notification, setNotification] = useState({
     open: false,
     message: "",
@@ -179,6 +186,11 @@ const Settings = () => {
       .replace(",", ":");
   };
 
+  const handleAccordionChange =
+    (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
+      setExpandedAccordion(isExpanded ? panel : false);
+    };
+
   return (
     <Box sx={{ mt: 4, textAlign: "center", px: 2 }}>
       <Notification
@@ -192,280 +204,322 @@ const Settings = () => {
         הגדרות
       </Typography>
 
-      <Paper elevation={3} sx={{ p: 3, mb: 4, maxWidth: 600, mx: "auto" }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          הגדרת שפה
-        </Typography>
-        <FormControl fullWidth sx={{ maxWidth: 300, mx: "auto" }}>
-          <InputLabel id="language-select-label">Language</InputLabel>
-          <Select
-            labelId="language-select-label"
-            id="language-select"
-            value={language}
-            label="Language"
-            onChange={(e) =>
-              setLanguage(e.target.value as "heb" | "rus" | "eng")
-            }
+      <Box sx={{ maxWidth: 600, mx: "auto" }}>
+        <Accordion
+          expanded={expandedAccordion === "language"}
+          onChange={handleAccordionChange("language")}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="language-content"
+            id="language-header"
           >
-            <MenuItem value="heb">Hebrew</MenuItem>
-            <MenuItem value="rus">Russian</MenuItem>
-            <MenuItem value="eng">English</MenuItem>
-          </Select>
-        </FormControl>
-      </Paper>
-
-      <Paper elevation={3} sx={{ p: 3, mb: 4, maxWidth: 600, mx: "auto" }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          פרטי הגן
-        </Typography>
-        {isLoading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <Box sx={{ textAlign: "right" }}>
-            <Box sx={{ mb: 4 }}>
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: {
-                    xs: "1fr", // One column on mobile
-                    sm: "repeat(2, 1fr)", // Two columns on tablet and up
-                  },
-                  gap: 2,
-                }}
+            <Typography variant="h6">הגדרת שפה</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <FormControl fullWidth sx={{ maxWidth: 300, mx: "auto" }}>
+              <InputLabel id="language-select-label">Language</InputLabel>
+              <Select
+                labelId="language-select-label"
+                id="language-select"
+                value={language}
+                label="Language"
+                onChange={(e) =>
+                  setLanguage(e.target.value as "heb" | "rus" | "eng")
+                }
               >
-                <TextField
-                  fullWidth
-                  label="מספר עוסק"
-                  value={organization.businessId}
-                  onChange={(e) =>
-                    setOrganization({
-                      ...organization,
-                      businessId: e.target.value,
-                    })
-                  }
-                  disabled={isLoading}
-                  sx={{ direction: "rtl" }}
-                />
-                <TextField
-                  fullWidth
-                  label="שם הארגון"
-                  value={organization.name}
-                  onChange={(e) =>
-                    setOrganization({ ...organization, name: e.target.value })
-                  }
-                  disabled={isLoading}
-                  sx={{ direction: "rtl" }}
-                />
-                <TextField
-                  name="email"
-                  label="אימייל"
-                  value={organization.email}
-                  onChange={(e) =>
-                    setOrganization({
-                      ...organization,
-                      email: e.target.value,
-                    })
-                  }
-                  disabled={isLoading}
-                  sx={{
-                    borderRadius: 2,
-                    "& .MuiInputBase-input": {
-                      direction: "ltr",
-                      textAlign: "left",
-                    },
-                  }}
-                />
-                <TextField
-                  fullWidth
-                  label="נייד"
-                  value={organization.phone}
-                  onChange={handleMobileChange}
-                  disabled={isLoading}
-                  sx={{ direction: "rtl" }}
-                />
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: 1,
-                    bgcolor: "background.paper",
-                  }}
-                >
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: "block", mb: 0.5 }}
-                  >
-                    נוצר בתאריך
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {formatDate(organization.created)}
-                  </Typography>
-                </Paper>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: 1,
-                    bgcolor: "background.paper",
-                  }}
-                >
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: "block", mb: 0.5 }}
-                  >
-                    עודכן בתאריך
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {formatDate(organization.updated)}
-                  </Typography>
-                </Paper>
-              </Box>
-              <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
-                <Button
-                  variant="contained"
-                  onClick={handleSave}
-                  disabled={isLoading}
-                  startIcon={isLoading ? <CircularProgress size={20} /> : null}
-                >
-                  שמירת שינויים
-                </Button>
-              </Box>
-            </Box>
-          </Box>
-        )}
-      </Paper>
+                <MenuItem value="heb">Hebrew</MenuItem>
+                <MenuItem value="rus">Russian</MenuItem>
+                <MenuItem value="eng">English</MenuItem>
+              </Select>
+            </FormControl>
+          </AccordionDetails>
+        </Accordion>
 
-      <Paper elevation={3} sx={{ p: 3, maxWidth: 600, mx: "auto" }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          פרטי הסניף
-        </Typography>
-        {isLoading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <Box sx={{ textAlign: "right" }}>
-            <Box sx={{ mb: 4 }}>
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: {
-                    xs: "1fr", // One column on mobile
-                    sm: "repeat(2, 1fr)", // Two columns on tablet and up
-                  },
-                  gap: 2,
-                }}
-              >
-                <TextField
-                  fullWidth
-                  label="שם הסניף"
-                  value={account.branchName}
-                  onChange={(e) =>
-                    setAccount({
-                      ...account,
-                      branchName: e.target.value,
-                    })
-                  }
-                  disabled={isLoading}
-                  sx={{ direction: "rtl" }}
-                />
-                <TextField
-                  fullWidth
-                  label="קוד סניף"
-                  type="number"
-                  value={account.branchCode === -1 ? "" : account.branchCode}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "") {
-                      setAccount({
-                        ...account,
-                        branchCode: -1,
-                      });
-                    } else {
-                      const numValue = parseInt(value);
-                      if (numValue >= 0 && numValue <= 999) {
+        <Accordion
+          expanded={expandedAccordion === "organization"}
+          onChange={handleAccordionChange("organization")}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="organization-content"
+            id="organization-header"
+          >
+            <Typography variant="h6">פרטי הגן</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            {isLoading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <Box sx={{ textAlign: "right" }}>
+                <Box sx={{ mb: 4 }}>
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: {
+                        xs: "1fr",
+                        sm: "repeat(2, 1fr)",
+                      },
+                      gap: 2,
+                    }}
+                  >
+                    <TextField
+                      fullWidth
+                      label="מספר עוסק"
+                      value={organization.businessId}
+                      onChange={(e) =>
+                        setOrganization({
+                          ...organization,
+                          businessId: e.target.value,
+                        })
+                      }
+                      disabled={isLoading}
+                      sx={{ direction: "rtl" }}
+                    />
+                    <TextField
+                      fullWidth
+                      label="שם הארגון"
+                      value={organization.name}
+                      onChange={(e) =>
+                        setOrganization({
+                          ...organization,
+                          name: e.target.value,
+                        })
+                      }
+                      disabled={isLoading}
+                      sx={{ direction: "rtl" }}
+                    />
+                    <TextField
+                      name="email"
+                      label="אימייל"
+                      value={organization.email}
+                      onChange={(e) =>
+                        setOrganization({
+                          ...organization,
+                          email: e.target.value,
+                        })
+                      }
+                      disabled={isLoading}
+                      sx={{
+                        borderRadius: 2,
+                        "& .MuiInputBase-input": {
+                          direction: "ltr",
+                          textAlign: "left",
+                        },
+                      }}
+                    />
+                    <TextField
+                      fullWidth
+                      label="נייד"
+                      value={organization.phone}
+                      onChange={handleMobileChange}
+                      disabled={isLoading}
+                      sx={{ direction: "rtl" }}
+                    />
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: 1,
+                        bgcolor: "background.paper",
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: "block", mb: 0.5 }}
+                      >
+                        נוצר בתאריך
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {formatDate(organization.created)}
+                      </Typography>
+                    </Paper>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: 1,
+                        bgcolor: "background.paper",
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: "block", mb: 0.5 }}
+                      >
+                        עודכן בתאריך
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {formatDate(organization.updated)}
+                      </Typography>
+                    </Paper>
+                  </Box>
+                  <Box
+                    sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}
+                  >
+                    <Button
+                      variant="contained"
+                      onClick={handleSave}
+                      disabled={isLoading}
+                      startIcon={
+                        isLoading ? <CircularProgress size={20} /> : null
+                      }
+                    >
+                      שמירת שינויים
+                    </Button>
+                  </Box>
+                </Box>
+              </Box>
+            )}
+          </AccordionDetails>
+        </Accordion>
+
+        <Accordion
+          expanded={expandedAccordion === "branch"}
+          onChange={handleAccordionChange("branch")}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="branch-content"
+            id="branch-header"
+          >
+            <Typography variant="h6">פרטי הסניף</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            {isLoading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <Box sx={{ textAlign: "right" }}>
+                <Box sx={{ mb: 4 }}>
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: {
+                        xs: "1fr",
+                        sm: "repeat(2, 1fr)",
+                      },
+                      gap: 2,
+                    }}
+                  >
+                    <TextField
+                      fullWidth
+                      label="שם הסניף"
+                      value={account.branchName}
+                      onChange={(e) =>
                         setAccount({
                           ...account,
-                          branchCode: numValue,
-                        });
+                          branchName: e.target.value,
+                        })
                       }
-                    }
-                  }}
-                  inputProps={{
-                    min: 0,
-                    max: 999,
-                    inputMode: "numeric",
-                    pattern: "[0-9]*",
-                  }}
-                  disabled={isLoading}
-                  sx={{ direction: "rtl" }}
-                  helperText="אופציונלי, מספר חיובי עד 999"
-                />
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: 1,
-                    bgcolor: "background.paper",
-                  }}
-                >
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: "block", mb: 0.5 }}
+                      disabled={isLoading}
+                      sx={{ direction: "rtl" }}
+                    />
+                    <TextField
+                      fullWidth
+                      label="קוד סניף"
+                      type="number"
+                      value={
+                        account.branchCode === -1 ? "" : account.branchCode
+                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "") {
+                          setAccount({
+                            ...account,
+                            branchCode: -1,
+                          });
+                        } else {
+                          const numValue = parseInt(value);
+                          if (numValue >= 0 && numValue <= 999) {
+                            setAccount({
+                              ...account,
+                              branchCode: numValue,
+                            });
+                          }
+                        }
+                      }}
+                      inputProps={{
+                        min: 0,
+                        max: 999,
+                        inputMode: "numeric",
+                        pattern: "[0-9]*",
+                      }}
+                      disabled={isLoading}
+                      sx={{ direction: "rtl" }}
+                      helperText="אופציונלי, מספר חיובי עד 999"
+                    />
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: 1,
+                        bgcolor: "background.paper",
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: "block", mb: 0.5 }}
+                      >
+                        נוצר בתאריך
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {formatDate(account.created)}
+                      </Typography>
+                    </Paper>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: 1,
+                        bgcolor: "background.paper",
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: "block", mb: 0.5 }}
+                      >
+                        עודכן בתאריך
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {formatDate(account.updated)}
+                      </Typography>
+                    </Paper>
+                  </Box>
+                  <Box
+                    sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}
                   >
-                    נוצר בתאריך
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {formatDate(account.created)}
-                  </Typography>
-                </Paper>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: 1,
-                    bgcolor: "background.paper",
-                  }}
-                >
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: "block", mb: 0.5 }}
-                  >
-                    עודכן בתאריך
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {formatDate(account.updated)}
-                  </Typography>
-                </Paper>
+                    <Button
+                      variant="contained"
+                      onClick={handleSaveAccount}
+                      disabled={isLoading}
+                      startIcon={
+                        isLoading ? <CircularProgress size={20} /> : null
+                      }
+                    >
+                      שמירת שינויים
+                    </Button>
+                  </Box>
+                </Box>
               </Box>
-              <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
-                <Button
-                  variant="contained"
-                  onClick={handleSaveAccount}
-                  disabled={isLoading}
-                  startIcon={isLoading ? <CircularProgress size={20} /> : null}
-                >
-                  שמירת שינויים
-                </Button>
-              </Box>
-            </Box>
-          </Box>
-        )}
-      </Paper>
+            )}
+          </AccordionDetails>
+        </Accordion>
+      </Box>
     </Box>
   );
 };
