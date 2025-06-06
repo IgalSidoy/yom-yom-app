@@ -28,6 +28,8 @@ import {
   Switch,
   Chip,
   Fab,
+  Slide,
+  SwipeableDrawer,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -98,6 +100,8 @@ const Settings = () => {
   const [selectedAccountForGroups, setSelectedAccountForGroups] =
     useState<string>("");
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
+  const [deleteGroupDialogOpen, setDeleteGroupDialogOpen] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
 
   const formatMobileNumber = (value: string) => {
     // Remove all non-digit characters
@@ -438,10 +442,10 @@ const Settings = () => {
       } else {
         await groupApi.createGroup({
           ...currentGroup,
-          accountId: selectedAccount?.id,
+          accountId: selectedAccountForGroups,
         } as Omit<Group, "id" | "created" | "updated">);
       }
-      await fetchGroups(selectedAccount?.id || "");
+      await fetchGroups(selectedAccountForGroups);
       handleCloseGroupDialog();
       showNotification("הקבוצה נשמרה בהצלחה", "success");
     } catch (error) {
@@ -451,17 +455,32 @@ const Settings = () => {
     }
   };
 
-  const handleDeleteGroup = async (groupId: string) => {
-    try {
-      setIsSaving(true);
-      await groupApi.deleteGroup(groupId);
-      await fetchGroups(selectedAccount?.id || "");
-      showNotification("הקבוצה נמחקה בהצלחה", "success");
-    } catch (error) {
-      showNotification("שגיאה במחיקת הקבוצה", "error");
-    } finally {
-      setIsSaving(false);
+  const handleDeleteGroupClick = (group: Group) => {
+    setGroupToDelete(group);
+    setDeleteGroupDialogOpen(true);
+  };
+
+  const handleDeleteGroupConfirm = async () => {
+    if (groupToDelete) {
+      try {
+        setIsSaving(true);
+        await groupApi.deleteGroup(groupToDelete.id);
+        await fetchGroups(selectedAccount?.id || "");
+        showNotification("הקבוצה נמחקה בהצלחה", "success");
+        handleCloseGroupDialog();
+      } catch (error) {
+        showNotification("שגיאה במחיקת הקבוצה", "error");
+      } finally {
+        setIsSaving(false);
+        setDeleteGroupDialogOpen(false);
+        setGroupToDelete(null);
+      }
     }
+  };
+
+  const handleDeleteGroupCancel = () => {
+    setDeleteGroupDialogOpen(false);
+    setGroupToDelete(null);
   };
 
   return (
@@ -973,6 +992,7 @@ const Settings = () => {
           sx: {
             width: { xs: "100%", sm: 400 },
             p: 3,
+            bgcolor: "background.paper",
           },
         }}
       >
@@ -1211,6 +1231,7 @@ const Settings = () => {
           sx: {
             width: { xs: "100%", sm: 400 },
             p: 3,
+            bgcolor: "background.paper",
           },
         }}
       >
@@ -1388,10 +1409,7 @@ const Settings = () => {
             {currentGroup.id && (
               <Button
                 fullWidth
-                onClick={() => {
-                  handleDeleteGroup(currentGroup.id!);
-                  handleCloseGroupDialog();
-                }}
+                onClick={() => handleDeleteGroupClick(currentGroup as Group)}
                 variant="outlined"
                 color="error"
                 sx={{
@@ -1457,6 +1475,34 @@ const Settings = () => {
           </Button>
           <Button
             onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+            disabled={isSaving}
+            startIcon={isSaving ? <CircularProgress size={20} /> : null}
+          >
+            מחיקה
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={deleteGroupDialogOpen}
+        onClose={handleDeleteGroupCancel}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>מחיקת קבוצה</DialogTitle>
+        <DialogContent>
+          <Typography>
+            האם אתה בטוח שברצונך למחוק את הקבוצה {groupToDelete?.name || "זו"}?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteGroupCancel} color="inherit">
+            ביטול
+          </Button>
+          <Button
+            onClick={handleDeleteGroupConfirm}
             color="error"
             variant="contained"
             disabled={isSaving}
