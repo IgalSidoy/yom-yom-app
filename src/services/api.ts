@@ -3,6 +3,7 @@ import axios, {
   AxiosResponse,
   AxiosError,
 } from "axios";
+import { areObjectsDifferent } from "../utils/hash";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
@@ -31,6 +32,7 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
+      url?: string;
     };
 
     // If the error is 401 and we haven't tried to refresh the token yet
@@ -63,6 +65,16 @@ api.interceptors.response.use(
       }
     }
 
+    // Handle 404 for user endpoint
+    if (
+      error.response?.status === 404 &&
+      originalRequest.url?.includes("/api/v1/user")
+    ) {
+      localStorage.removeItem("accessToken");
+      window.location.href = "/login";
+      return Promise.reject(error);
+    }
+
     return Promise.reject(error);
   }
 );
@@ -86,7 +98,7 @@ export interface UserResponse {
 export const userApi = {
   getUser: async () => {
     const response = await api.get("/api/v1/user");
-    return response;
+    return response as { data: UserResponse };
   },
 };
 
@@ -108,16 +120,35 @@ export interface OrganizationResponse {
 export const organizationApi = {
   getOrganization: async (organizationId: string) => {
     const response = await api.get(`/api/v1/organization/${organizationId}`);
-    return response;
+    return response as { data: OrganizationResponse };
   },
-  updateOrganization: async (organization: Organization) => {
-    const response = await api.put(`/api/v1/organization/${organization.id}`, {
-      businessId: organization.businessId,
-      name: organization.name,
-      email: organization.email,
-      phone: organization.phone,
-    });
-    return response;
+  updateOrganization: async (
+    organization: Organization,
+    currentOrganization: Organization
+  ) => {
+    // Compare the fields that can be modified by the user
+    const hasChanges =
+      currentOrganization.businessId !== organization.businessId ||
+      currentOrganization.name !== organization.name ||
+      currentOrganization.email !== organization.email ||
+      currentOrganization.phone !== organization.phone;
+
+    // Only update if there are actual changes
+    if (hasChanges) {
+      const response = await api.put(
+        `/api/v1/organization/${organization.id}`,
+        {
+          businessId: organization.businessId,
+          name: organization.name,
+          email: organization.email,
+          phone: organization.phone,
+        }
+      );
+      return response as { data: OrganizationResponse };
+    }
+
+    // If no changes, return the current organization state
+    return { data: { organization: currentOrganization } };
   },
 };
 
@@ -127,6 +158,7 @@ export interface Account {
   branchName: string;
   branchCode: number;
   organizationId: string;
+  isPrimary: boolean;
   created: string;
   updated: string;
 }
@@ -135,16 +167,99 @@ export interface AccountResponse {
   account: Account;
 }
 
+export interface AccountsResponse {
+  accounts: Account[];
+  total: number;
+}
+
 export const accountApi = {
+  getAccounts: async () => {
+    const response = await api.get("/api/v1/account/all");
+    return response as { data: AccountsResponse };
+  },
+
   getAccount: async (accountId: string) => {
     const response = await api.get(`/api/v1/account/${accountId}`);
-    return response;
+    return response as { data: AccountResponse };
   },
-  updateAccount: async (account: Account) => {
-    const response = await api.put(`/api/v1/account/${account.id}`, {
+
+  createAccount: async (
+    account: Omit<Account, "id" | "created" | "updated">
+  ) => {
+    const response = await api.post("/api/v1/account", {
       branchName: account.branchName,
       branchCode: account.branchCode,
+      organizationId: account.organizationId,
+      isPrimary: account.isPrimary,
     });
+    return response as { data: AccountResponse };
+  },
+
+  updateAccount: async (account: Account, currentAccount: Account) => {
+    // Compare the fields that can be modified by the user
+    const hasChanges =
+      currentAccount.branchName !== account.branchName ||
+      currentAccount.branchCode !== account.branchCode;
+
+    // Only update if there are actual changes
+    if (hasChanges) {
+      const response = await api.put(`/api/v1/account/${account.id}`, {
+        branchName: account.branchName,
+        branchCode: account.branchCode,
+      });
+      return response as { data: AccountResponse };
+    }
+
+    // If no changes, return the current account state
+    return { data: { account: currentAccount } };
+  },
+
+  deleteAccount: async (accountId: string) => {
+    const response = await api.delete(`/api/v1/account/${accountId}`);
+    return response;
+  },
+};
+
+export interface Group {
+  id: string;
+  name: string;
+  description: string;
+  accountId: string;
+  created: string;
+  updated: string;
+}
+
+export interface GroupResponse {
+  group: Group;
+}
+
+export interface GroupsResponse {
+  groups: Group[];
+}
+
+export const groupApi = {
+  getGroups: async (accountId: string) => {
+    const response = await api.get(`/api/v1/group?accountId=${accountId}`);
+    return response as { data: GroupsResponse };
+  },
+
+  getGroupById: async (groupId: string) => {
+    const response = await api.get(`/api/v1/group/${groupId}`);
+    return response as { data: GroupResponse };
+  },
+
+  createGroup: async (group: Omit<Group, "id" | "created" | "updated">) => {
+    const response = await api.post("/api/v1/group", group);
+    return response as { data: GroupResponse };
+  },
+
+  updateGroup: async (group: Group) => {
+    const response = await api.put(`/api/v1/group/${group.id}`, group);
+    return response as { data: GroupResponse };
+  },
+
+  deleteGroup: async (groupId: string) => {
+    const response = await api.delete(`/api/v1/group/${groupId}`);
     return response;
   },
 };
