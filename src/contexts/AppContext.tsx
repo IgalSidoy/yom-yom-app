@@ -1,17 +1,20 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState } from "react";
 import { User } from "../services/api";
 
 interface AppContextType {
   user: User | null;
   setUser: (user: User | null) => void;
+  userId: string;
   setUserId: (id: string) => void;
+  accountId: string;
   setAccountId: (id: string) => void;
+  organizationId: string;
   setOrganizationId: (id: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: ReactNode }> = ({
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -24,8 +27,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
       value={{
         user,
         setUser,
+        userId,
         setUserId,
+        accountId,
         setAccountId,
+        organizationId,
         setOrganizationId,
       }}
     >
