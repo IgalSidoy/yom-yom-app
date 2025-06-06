@@ -197,15 +197,12 @@ export const accountApi = {
 
   updateAccount: async (account: Account, currentAccount: Account) => {
     // Compare the fields that can be modified by the user
-    const hasChanges =
-      currentAccount.branchName !== account.branchName ||
-      currentAccount.branchCode !== account.branchCode;
+    const hasChanges = currentAccount.branchName !== account.branchName;
 
     // Only update if there are actual changes
     if (hasChanges) {
       const response = await api.put(`/api/v1/account/${account.id}`, {
         branchName: account.branchName,
-        branchCode: account.branchCode,
       });
       return response as { data: AccountResponse };
     }
@@ -239,7 +236,7 @@ export interface GroupsResponse {
 
 export const groupApi = {
   getGroups: async (accountId: string) => {
-    const response = await api.get(`/api/v1/group?accountId=${accountId}`);
+    const response = await api.get(`/api/v1/group/${accountId}/all`);
     return response as { data: GroupsResponse };
   },
 

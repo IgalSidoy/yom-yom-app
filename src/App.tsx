@@ -17,6 +17,7 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import BottomNav from "./components/BottomNav";
+import { LanguageProvider } from "./contexts/LanguageContext";
 
 const AppContent: React.FC = () => {
   const location = useLocation();
@@ -52,16 +53,18 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <AppProvider>
-      <AuthProvider>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <Router>
-            <AppContent />
-          </Router>
-        </ThemeProvider>
-      </AuthProvider>
-    </AppProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <LanguageProvider>
+        <AppProvider>
+          <AuthProvider>
+            <Router>
+              <AppContent />
+            </Router>
+          </AuthProvider>
+        </AppProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 };
 

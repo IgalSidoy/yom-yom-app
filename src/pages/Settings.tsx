@@ -27,6 +27,7 @@ import {
   FormControlLabel,
   Switch,
   Chip,
+  Fab,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -82,7 +83,6 @@ const Settings = () => {
   const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false);
   const [currentAccount, setCurrentAccount] = useState<Partial<Account>>({
     branchName: "",
-    branchCode: -1,
     created: "",
     updated: "",
   });
@@ -95,6 +95,9 @@ const Settings = () => {
   const [isOrganizationModified, setIsOrganizationModified] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
+  const [selectedAccountForGroups, setSelectedAccountForGroups] =
+    useState<string>("");
+  const [isLoadingGroups, setIsLoadingGroups] = useState(false);
 
   const formatMobileNumber = (value: string) => {
     // Remove all non-digit characters
@@ -195,10 +198,27 @@ const Settings = () => {
 
   const fetchGroups = async (accountId: string) => {
     try {
+      setIsLoadingGroups(true);
       const response = await groupApi.getGroups(accountId);
-      setGroups(response.data.groups);
+      console.log("Groups API Response:", response); // Debug log
+      if (response.data && Array.isArray(response.data)) {
+        setGroups(response.data);
+      } else if (
+        response.data &&
+        response.data.groups &&
+        Array.isArray(response.data.groups)
+      ) {
+        setGroups(response.data.groups);
+      } else {
+        console.log("No groups found in response:", response); // Debug log
+        setGroups([]);
+      }
     } catch (error) {
+      console.error("Error fetching groups:", error); // Debug log
       showNotification("שגיאה בטעינת הקבוצות", "error");
+      setGroups([]);
+    } finally {
+      setIsLoadingGroups(false);
     }
   };
 
@@ -209,10 +229,14 @@ const Settings = () => {
   }, [organization.id]);
 
   useEffect(() => {
-    if (selectedAccount) {
-      fetchGroups(selectedAccount.id);
+    if (selectedAccountForGroups) {
+      fetchGroups(selectedAccountForGroups);
+      // Automatically expand the groups accordion when an account is selected
+      setExpandedAccordion("groups");
+    } else {
+      setGroups([]);
     }
-  }, [selectedAccount]);
+  }, [selectedAccountForGroups]);
 
   const handleSave = async () => {
     try {
@@ -312,6 +336,7 @@ const Settings = () => {
         await accountApi.deleteAccount(accountToDelete.id);
         await fetchAccounts();
         showNotification("הסניף נמחק בהצלחה", "success");
+        handleCloseAccountDialog();
       } catch (error) {
         showNotification("שגיאה במחיקת הסניף", "error");
       } finally {
@@ -369,7 +394,6 @@ const Settings = () => {
     } else {
       setCurrentAccount({
         branchName: "",
-        branchCode: -1,
         created: "",
         updated: "",
       });
@@ -381,7 +405,6 @@ const Settings = () => {
     setIsAccountDialogOpen(false);
     setCurrentAccount({
       branchName: "",
-      branchCode: -1,
       created: "",
       updated: "",
     });
@@ -640,17 +663,6 @@ const Settings = () => {
               </Box>
             ) : (
               <Box sx={{ textAlign: "right" }}>
-                <Box
-                  sx={{ mb: 2, display: "flex", justifyContent: "flex-end" }}
-                >
-                  <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleOpenAccountDialog()}
-                  >
-                    הוספת סניף
-                  </Button>
-                </Box>
                 <List>
                   {accounts.map((account) => (
                     <ListItem
@@ -732,26 +744,33 @@ const Settings = () => {
                         >
                           <EditIcon />
                         </IconButton>
-                        {!account.isPrimary && (
-                          <IconButton
-                            edge="end"
-                            aria-label="delete"
-                            onClick={() => handleDeleteClick(account)}
-                            sx={{
-                              color: "#d32f2f",
-                              "&:hover": {
-                                bgcolor: "rgba(211, 47, 47, 0.08)",
-                                color: "#b71c1c",
-                              },
-                            }}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        )}
                       </ListItemSecondaryAction>
                     </ListItem>
                   ))}
                 </List>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    mt: 2,
+                  }}
+                >
+                  <Fab
+                    color="primary"
+                    aria-label="add account"
+                    onClick={() => handleOpenAccountDialog()}
+                    sx={{
+                      boxShadow: 3,
+                      "&:hover": {
+                        boxShadow: 6,
+                        transform: "scale(1.05)",
+                      },
+                      transition: "all 0.2s ease-in-out",
+                    }}
+                  >
+                    <AddIcon />
+                  </Fab>
+                </Box>
               </Box>
             )}
           </AccordionDetails>
@@ -775,52 +794,171 @@ const Settings = () => {
               </Box>
             ) : (
               <Box sx={{ textAlign: "right" }}>
-                <Box
-                  sx={{ mb: 2, display: "flex", justifyContent: "flex-end" }}
-                >
-                  <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleOpenGroupDialog()}
-                  >
-                    הוספת קבוצה
-                  </Button>
-                </Box>
-                <List>
-                  {groups.map((group) => (
-                    <ListItem
-                      key={group.id}
+                <Box sx={{ mb: 3 }}>
+                  <FormControl fullWidth>
+                    <InputLabel id="account-select-label">בחר סניף</InputLabel>
+                    <Select
+                      labelId="account-select-label"
+                      id="account-select"
+                      value={selectedAccountForGroups}
+                      label="בחר סניף"
+                      onChange={(e) =>
+                        setSelectedAccountForGroups(e.target.value)
+                      }
                       sx={{
-                        border: "1px solid",
-                        borderColor: "divider",
-                        borderRadius: 1,
-                        mb: 1,
+                        borderRadius: 2,
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "divider",
+                        },
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "primary.main",
+                        },
                       }}
                     >
-                      <ListItemText
-                        primary={group.name}
-                        secondary={group.description}
-                      />
-                      <ListItemSecondaryAction>
-                        <IconButton
-                          edge="end"
-                          aria-label="edit"
-                          onClick={() => handleOpenGroupDialog(group)}
-                          sx={{ mr: 1 }}
+                      {accounts.map((account) => (
+                        <MenuItem key={account.id} value={account.id}>
+                          {account.branchName || "שם הסניף חסר"}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+
+                {selectedAccountForGroups ? (
+                  <>
+                    {isLoadingGroups ? (
+                      <Box
+                        sx={{ display: "flex", justifyContent: "center", p: 3 }}
+                      >
+                        <CircularProgress />
+                      </Box>
+                    ) : (
+                      <>
+                        {groups.length > 0 && (
+                          <List>
+                            {groups.map((group) => (
+                              <ListItem
+                                key={group.id}
+                                sx={{
+                                  border: "1px solid",
+                                  borderColor: "divider",
+                                  borderRadius: 2,
+                                  mb: 2,
+                                  bgcolor: "background.paper",
+                                  transition: "all 0.2s ease-in-out",
+                                  "&:hover": {
+                                    boxShadow: 1,
+                                    transform: "translateY(-2px)",
+                                  },
+                                }}
+                              >
+                                <ListItemText
+                                  primary={
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 1,
+                                      }}
+                                    >
+                                      <Typography
+                                        variant="subtitle1"
+                                        sx={{
+                                          fontWeight: 500,
+                                          color: group.name
+                                            ? "text.primary"
+                                            : "text.secondary",
+                                          fontStyle: group.name
+                                            ? "normal"
+                                            : "italic",
+                                        }}
+                                      >
+                                        {group.name || "שם הקבוצה חסר"}
+                                      </Typography>
+                                    </Box>
+                                  }
+                                  secondary={
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                      sx={{ mt: 0.5 }}
+                                    >
+                                      {group.description || "אין תיאור"}
+                                    </Typography>
+                                  }
+                                />
+                                <ListItemSecondaryAction>
+                                  <IconButton
+                                    edge="end"
+                                    aria-label="edit"
+                                    onClick={() => handleOpenGroupDialog(group)}
+                                    sx={{
+                                      mr: 1,
+                                      color: "primary.main",
+                                      "&:hover": {
+                                        bgcolor: "primary.lighter",
+                                      },
+                                    }}
+                                  >
+                                    <EditIcon />
+                                  </IconButton>
+                                </ListItemSecondaryAction>
+                              </ListItem>
+                            ))}
+                          </List>
+                        )}
+                        {groups.length === 0 && (
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              minHeight: 200,
+                              color: "text.secondary",
+                            }}
+                          >
+                            <Typography>אין קבוצות בסניף זה</Typography>
+                          </Box>
+                        )}
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            mt: 2,
+                          }}
                         >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton
-                          edge="end"
-                          aria-label="delete"
-                          onClick={() => handleDeleteGroup(group.id)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                  ))}
-                </List>
+                          <Fab
+                            color="primary"
+                            aria-label="add group"
+                            onClick={() => handleOpenGroupDialog()}
+                            sx={{
+                              boxShadow: 3,
+                              "&:hover": {
+                                boxShadow: 6,
+                                transform: "scale(1.05)",
+                              },
+                              transition: "all 0.2s ease-in-out",
+                            }}
+                          >
+                            <AddIcon />
+                          </Fab>
+                        </Box>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      minHeight: 200,
+                      color: "text.secondary",
+                    }}
+                  >
+                    <Typography>בחר סניף כדי לצפות בקבוצות</Typography>
+                  </Box>
+                )}
               </Box>
             )}
           </AccordionDetails>
@@ -839,12 +977,33 @@ const Settings = () => {
         }}
       >
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-          <Typography variant="h6" sx={{ mb: 3 }}>
-            {currentAccount.id ? "עריכת סניף" : "הוספת סניף חדש"}
-          </Typography>
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              {currentAccount.id ? "עריכת סניף" : "הוספת סניף חדש"}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {currentAccount.id
+                ? "עדכון פרטי הסניף הקיים"
+                : "הזן את פרטי הסניף החדש"}
+            </Typography>
+          </Box>
 
           <Box sx={{ flex: 1 }}>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 3,
+                "& .MuiTextField-root": {
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "primary.main",
+                    },
+                  },
+                },
+              }}
+            >
               <TextField
                 fullWidth
                 label="שם הסניף"
@@ -855,65 +1014,135 @@ const Settings = () => {
                     branchName: e.target.value,
                   })
                 }
-              />
-              <TextField
-                fullWidth
-                label="קוד סניף"
-                type="number"
-                value={
-                  currentAccount.branchCode === -1
-                    ? ""
-                    : currentAccount.branchCode
-                }
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === "") {
-                    setCurrentAccount({
-                      ...currentAccount,
-                      branchCode: -1,
-                    });
-                  } else {
-                    const numValue = parseInt(value);
-                    if (numValue >= 0 && numValue <= 999) {
-                      setCurrentAccount({
-                        ...currentAccount,
-                        branchCode: numValue,
-                      });
-                    }
-                  }
+                placeholder="הזן את שם הסניף"
+                required
+                sx={{
+                  "& .MuiInputLabel-root": {
+                    fontSize: "0.95rem",
+                  },
                 }}
-                inputProps={{
-                  min: 0,
-                  max: 999,
-                  inputMode: "numeric",
-                  pattern: "[0-9]*",
-                }}
-                helperText="אופציונלי, מספר חיובי עד 999"
               />
+
               {currentAccount.id && (
                 <Box
                   sx={{
                     mt: 2,
-                    pt: 2,
+                    pt: 3,
                     borderTop: 1,
                     borderColor: "divider",
                     display: "flex",
                     flexDirection: "column",
-                    gap: 1,
+                    gap: 2,
                   }}
                 >
-                  <Typography variant="caption" color="text.secondary">
-                    נוצר בתאריך:{" "}
-                    {currentAccount.created && currentAccount.created !== ""
-                      ? formatDate(currentAccount.created)
-                      : "לא זמין"}
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      mb: 1,
+                      color: "text.primary",
+                      fontWeight: 600,
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    פרטי מערכת
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    עודכן בתאריך:{" "}
-                    {currentAccount.updated && currentAccount.updated !== ""
-                      ? formatDate(currentAccount.updated)
-                      : "לא זמין"}
-                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 2,
+                      bgcolor: "background.default",
+                      p: 2,
+                      borderRadius: 2,
+                      border: "1px solid",
+                      borderColor: "divider",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        קוד סניף
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "text.primary",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {currentAccount.branchCode}
+                      </Typography>
+                    </Box>
+
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        נוצר בתאריך
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "text.primary",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {currentAccount.created && currentAccount.created !== ""
+                          ? formatDate(currentAccount.created)
+                          : "לא זמין"}
+                      </Typography>
+                    </Box>
+
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        עודכן בתאריך
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "text.primary",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {currentAccount.updated && currentAccount.updated !== ""
+                          ? formatDate(currentAccount.updated)
+                          : "לא זמין"}
+                      </Typography>
+                    </Box>
+                  </Box>
                 </Box>
               )}
             </Box>
@@ -924,15 +1153,35 @@ const Settings = () => {
               display: "flex",
               gap: 2,
               mt: "auto",
-              pt: 2,
+              pt: 3,
               borderTop: 1,
               borderColor: "divider",
             }}
           >
+            {currentAccount.id && !currentAccount.isPrimary && (
+              <Button
+                fullWidth
+                onClick={() => handleDeleteClick(currentAccount as Account)}
+                variant="outlined"
+                color="error"
+                sx={{
+                  borderRadius: 2,
+                  textTransform: "none",
+                  py: 1.2,
+                }}
+              >
+                מחיקה
+              </Button>
+            )}
             <Button
               fullWidth
               onClick={handleCloseAccountDialog}
               variant="outlined"
+              sx={{
+                borderRadius: 2,
+                textTransform: "none",
+                py: 1.2,
+              }}
             >
               ביטול
             </Button>
@@ -940,56 +1189,249 @@ const Settings = () => {
               fullWidth
               onClick={handleSaveAccount}
               variant="contained"
-              disabled={isSaving}
+              disabled={isSaving || !currentAccount.branchName}
               startIcon={isSaving ? <CircularProgress size={20} /> : null}
+              sx={{
+                borderRadius: 2,
+                textTransform: "none",
+                py: 1.2,
+              }}
             >
-              שמירה
+              {isSaving ? "שומר..." : "שמירה"}
             </Button>
           </Box>
         </Box>
       </Drawer>
 
-      <Dialog open={isGroupDialogOpen} onClose={handleCloseGroupDialog}>
-        <DialogTitle>
-          {currentGroup.id ? "עריכת קבוצה" : "הוספת קבוצה חדשה"}
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
-            <TextField
-              fullWidth
-              label="שם הקבוצה"
-              value={currentGroup.name}
-              onChange={(e) =>
-                setCurrentGroup({ ...currentGroup, name: e.target.value })
-              }
-            />
-            <TextField
-              fullWidth
-              label="תיאור"
-              value={currentGroup.description}
-              onChange={(e) =>
-                setCurrentGroup({
-                  ...currentGroup,
-                  description: e.target.value,
-                })
-              }
-              multiline
-              rows={3}
-            />
+      <Drawer
+        anchor="right"
+        open={isGroupDialogOpen}
+        onClose={handleCloseGroupDialog}
+        PaperProps={{
+          sx: {
+            width: { xs: "100%", sm: 400 },
+            p: 3,
+          },
+        }}
+      >
+        <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              {currentGroup.id ? "עריכת קבוצה" : "הוספת קבוצה חדשה"}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {currentGroup.id
+                ? "עדכון פרטי הקבוצה הקיימת"
+                : "הזן את פרטי הקבוצה החדשה"}
+            </Typography>
           </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseGroupDialog}>ביטול</Button>
-          <Button
-            onClick={handleSaveGroup}
-            variant="contained"
-            disabled={isSaving}
-            startIcon={isSaving ? <CircularProgress size={20} /> : null}
+
+          <Box sx={{ flex: 1 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 3,
+                "& .MuiTextField-root": {
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "primary.main",
+                    },
+                  },
+                },
+              }}
+            >
+              <TextField
+                fullWidth
+                label="שם הקבוצה"
+                value={currentGroup.name}
+                onChange={(e) =>
+                  setCurrentGroup({ ...currentGroup, name: e.target.value })
+                }
+                placeholder="הזן את שם הקבוצה"
+                required
+                sx={{
+                  "& .MuiInputLabel-root": {
+                    fontSize: "0.95rem",
+                  },
+                }}
+              />
+              <TextField
+                fullWidth
+                label="תיאור"
+                value={currentGroup.description}
+                onChange={(e) =>
+                  setCurrentGroup({
+                    ...currentGroup,
+                    description: e.target.value,
+                  })
+                }
+                multiline
+                rows={3}
+                placeholder="הזן תיאור לקבוצה"
+                sx={{
+                  "& .MuiInputLabel-root": {
+                    fontSize: "0.95rem",
+                  },
+                }}
+              />
+
+              {currentGroup.id && (
+                <Box
+                  sx={{
+                    mt: 2,
+                    pt: 3,
+                    borderTop: 1,
+                    borderColor: "divider",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2,
+                  }}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      mb: 1,
+                      color: "text.primary",
+                      fontWeight: 600,
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    פרטי מערכת
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 2,
+                      bgcolor: "background.default",
+                      p: 2,
+                      borderRadius: 2,
+                      border: "1px solid",
+                      borderColor: "divider",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        נוצר בתאריך
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "text.primary",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {currentGroup.created && currentGroup.created !== ""
+                          ? formatDate(currentGroup.created)
+                          : "לא זמין"}
+                      </Typography>
+                    </Box>
+
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        עודכן בתאריך
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "text.primary",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {currentGroup.updated && currentGroup.updated !== ""
+                          ? formatDate(currentGroup.updated)
+                          : "לא זמין"}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          </Box>
+
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              mt: "auto",
+              pt: 3,
+              borderTop: 1,
+              borderColor: "divider",
+            }}
           >
-            שמירה
-          </Button>
-        </DialogActions>
-      </Dialog>
+            {currentGroup.id && (
+              <Button
+                fullWidth
+                onClick={() => {
+                  handleDeleteGroup(currentGroup.id!);
+                  handleCloseGroupDialog();
+                }}
+                variant="outlined"
+                color="error"
+                sx={{
+                  borderRadius: 2,
+                  textTransform: "none",
+                  py: 1.2,
+                }}
+              >
+                מחיקה
+              </Button>
+            )}
+            <Button
+              fullWidth
+              onClick={handleCloseGroupDialog}
+              variant="outlined"
+              sx={{
+                borderRadius: 2,
+                textTransform: "none",
+                py: 1.2,
+              }}
+            >
+              ביטול
+            </Button>
+            <Button
+              fullWidth
+              onClick={handleSaveGroup}
+              variant="contained"
+              disabled={isSaving || !currentGroup.name}
+              startIcon={isSaving ? <CircularProgress size={20} /> : null}
+              sx={{
+                borderRadius: 2,
+                textTransform: "none",
+                py: 1.2,
+              }}
+            >
+              {isSaving ? "שומר..." : "שמירה"}
+            </Button>
+          </Box>
+        </Box>
+      </Drawer>
 
       <Dialog
         open={deleteDialogOpen}

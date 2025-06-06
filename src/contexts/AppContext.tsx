@@ -4,6 +4,9 @@ import { User } from "../services/api";
 interface AppContextType {
   user: User | null;
   setUser: (user: User | null) => void;
+  setUserId: (id: string) => void;
+  setAccountId: (id: string) => void;
+  setOrganizationId: (id: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -12,9 +15,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [userId, setUserId] = useState<string>("");
+  const [accountId, setAccountId] = useState<string>("");
+  const [organizationId, setOrganizationId] = useState<string>("");
 
   return (
-    <AppContext.Provider value={{ user, setUser }}>
+    <AppContext.Provider
+      value={{
+        user,
+        setUser,
+        setUserId,
+        setAccountId,
+        setOrganizationId,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );

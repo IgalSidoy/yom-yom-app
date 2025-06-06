@@ -11,7 +11,7 @@ import {
   Fade,
 } from "@mui/material";
 import { useAuth } from "../contexts/AuthContext";
-import { useApp } from "../context/AppContext";
+import { useApp } from "../contexts/AppContext";
 import { userApi } from "../services/api";
 
 const Login: React.FC = () => {
