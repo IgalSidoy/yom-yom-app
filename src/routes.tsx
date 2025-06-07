@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
+import Feed from "./pages/Feed";
 import BottomNav from "./components/BottomNav";
 
 const AppRoutes: React.FC = () => {
@@ -32,6 +33,15 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/feed"
+          element={
+            <ProtectedRoute>
+              <Feed />
+            </ProtectedRoute>
+          }
+        />
+
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
       {showBottomNav && <BottomNav />}
