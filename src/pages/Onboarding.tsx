@@ -158,7 +158,12 @@ const Onboarding: React.FC = () => {
       }
 
       const data = await response.json();
-      login(data.token, data.userId, data.accountId, data.organizationId);
+      login({
+        token: data.token,
+        userId: data.userId,
+        accountId: data.accountId,
+        organizationId: data.organizationId,
+      });
       navigate("/dashboard");
     } catch (error) {
       console.error("Error submitting form:", error);

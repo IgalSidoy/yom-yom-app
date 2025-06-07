@@ -13,22 +13,8 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  IconButton,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Drawer,
-  Fab,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
-import AddIcon from "@mui/icons-material/Add";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useApp } from "../contexts/AppContext";
 import {

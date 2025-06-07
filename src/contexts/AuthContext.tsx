@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
 interface User {
@@ -9,24 +10,19 @@ interface User {
   businessId: string;
 }
 
-interface AuthContextType {
-  isAuthenticated: boolean;
-  loading: boolean;
-  login: (
-    token: string,
-    userId: string,
-    accountId: string,
-    organizationId: string
-  ) => void;
-  logout: () => void;
-  userId: string | null;
-  accountId: string | null;
-  organizationId: string | null;
+interface LoginData {
+  token: string;
+  userId: string;
+  accountId: string;
+  organizationId: string;
 }
 
-interface TokenResponse {
-  token: string;
-  refreshToken: string;
+interface AuthContextType {
+  isAuthenticated: boolean;
+  token: string | null;
+  setToken: (token: string | null) => void;
+  login: (data: LoginData) => void;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,64 +30,31 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [accountId, setAccountId] = useState<string | null>(null);
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    const storedUserId = localStorage.getItem("userId");
-    const storedAccountId = localStorage.getItem("accountId");
-    const storedOrganizationId = localStorage.getItem("organizationId");
+  const handleSetToken = (newToken: string | null) => {
+    setToken(newToken);
+  };
 
-    if (token) {
-      setIsAuthenticated(true);
-      setUserId(storedUserId);
-      setAccountId(storedAccountId);
-      setOrganizationId(storedOrganizationId);
-    }
-    setLoading(false);
-  }, []);
-
-  const login = (
-    token: string,
-    userId: string,
-    accountId: string,
-    organizationId: string
-  ) => {
-    localStorage.setItem("accessToken", token);
-    localStorage.setItem("userId", userId);
-    localStorage.setItem("accountId", accountId);
-    localStorage.setItem("organizationId", organizationId);
-    setIsAuthenticated(true);
-    setUserId(userId);
-    setAccountId(accountId);
-    setOrganizationId(organizationId);
+  const login = (data: LoginData) => {
+    handleSetToken(data.token);
+    navigate("/");
   };
 
   const logout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("accountId");
-    localStorage.removeItem("organizationId");
-    setIsAuthenticated(false);
-    setUserId(null);
-    setAccountId(null);
-    setOrganizationId(null);
+    handleSetToken(null);
+    navigate("/login");
   };
 
   return (
     <AuthContext.Provider
       value={{
-        isAuthenticated,
-        loading,
+        isAuthenticated: !!token,
+        token,
+        setToken: handleSetToken,
         login,
         logout,
-        userId,
-        accountId,
-        organizationId,
       }}
     >
       {children}

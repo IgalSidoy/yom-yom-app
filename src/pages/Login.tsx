@@ -7,15 +7,13 @@ import {
   TextField,
   Button,
   Box,
-  Alert,
   Fade,
 } from "@mui/material";
 import { useAuth } from "../contexts/AuthContext";
 import { useApp } from "../contexts/AppContext";
-import { userApi } from "../services/api";
 
 const Login: React.FC = () => {
-  const [mobile, setMobile] = useState("");
+  const [mobile, setMobile] = useState("0546605194");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [showOtp, setShowOtp] = useState(false);
   const [error, setError] = useState("");
@@ -23,7 +21,8 @@ const Login: React.FC = () => {
   const [canResend, setCanResend] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
-  const { setUserId, setAccountId, setOrganizationId } = useApp();
+  const { setUserId, setAccountId, setOrganizationId, setAccessToken } =
+    useApp();
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -75,7 +74,7 @@ const Login: React.FC = () => {
       const response = await fetch(`${baseUrl}/api/v1/auth/opt`, {
         method: "POST",
         headers: {
-          accept: "text/plain",
+          Accept: "application/json",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ mobile }),
@@ -83,6 +82,14 @@ const Login: React.FC = () => {
 
       if (!response.ok) {
         throw new Error("Failed to send OTP");
+      }
+
+      const data = await response.json();
+
+      // Set the OTP from the response
+      if (data.otp) {
+        const otpArray = data.otp.split("");
+        setOtp(otpArray);
       }
 
       setShowOtp(true);
@@ -120,7 +127,7 @@ const Login: React.FC = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          accept: "text/plain",
+          Accept: "application/json",
         },
         credentials: "include",
         body: JSON.stringify({
@@ -134,15 +141,20 @@ const Login: React.FC = () => {
       }
 
       const data = await response.json();
-      await login(data.token, data.userId, data.accountId, data.organizationId);
 
-      // Get user data and store IDs in context
-      const userResponse = await userApi.getUser();
-      const { user } = userResponse.data;
+      // Store refresh token in a secure cookie
+      document.cookie = `refreshToken=${data.refreshToken}; path=/; secure; samesite=strict`;
 
-      setUserId(user.id);
-      setAccountId(user.accountId);
-      setOrganizationId(user.organizationId);
+      // Update AppContext with access token
+      setAccessToken(data.token);
+
+      // Call login to update auth context
+      await login({
+        token: data.token,
+        userId: data.userId,
+        accountId: data.accountId,
+        organizationId: data.organizationId,
+      });
 
       navigate("/dashboard");
     } catch (err) {
@@ -157,8 +169,9 @@ const Login: React.FC = () => {
       const response = await fetch(`${baseUrl}/api/v1/auth/opt`, {
         method: "POST",
         headers: {
-          accept: "text/plain",
+          Accept: "application/json",
           "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
         },
         body: JSON.stringify({ mobile }),
       });
