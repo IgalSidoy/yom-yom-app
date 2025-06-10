@@ -94,7 +94,7 @@ const processQueue = (error: any, token: string | null = null) => {
 };
 
 // Function to get a new access token using refresh token
-const getNewAccessToken = async () => {
+export const getNewAccessToken = async () => {
   try {
     logger.info("Getting new access token using refresh token");
 
@@ -123,7 +123,14 @@ const getNewAccessToken = async () => {
       }
     );
 
-    const { token } = response.data;
+    const { token, refreshToken: newRefreshToken } = response.data;
+
+    // Update the refresh token cookie if a new one is provided
+    if (newRefreshToken) {
+      // Set the refresh token cookie with secure and httpOnly flags
+      document.cookie = `refreshToken=${newRefreshToken}; path=/; secure; samesite=strict`;
+    }
+
     updateAccessToken(token);
     return token;
   } catch (error) {
