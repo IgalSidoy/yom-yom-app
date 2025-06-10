@@ -155,17 +155,8 @@ api.interceptors.request.use(
       return config;
     }
 
-    // If no token in context, try to get new one
-    try {
-      const newToken = await getNewAccessToken();
-      if (newToken) {
-        config.headers = config.headers || {};
-        config.headers.Authorization = `Bearer ${newToken}`;
-      }
-    } catch (error) {
-      logger.error("Failed to get access token in request interceptor", error);
-    }
-
+    // If no token in context, don't try to refresh
+    // Let the AuthProvider handle the refresh
     return config;
   },
   (error: AxiosError) => {
@@ -176,12 +167,26 @@ api.interceptors.request.use(
 
 // Add response interceptor to the api instance
 api.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => {
+    logger.info("Response interceptor - success", {
+      url:
+        (response.config as InternalAxiosRequestConfig & { url?: string })
+          .url || "unknown",
+      status: response.status,
+    });
+    return response;
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
       url?: string;
     };
+
+    logger.info("Response interceptor - error", {
+      url: originalRequest.url || "unknown",
+      status: error.response?.status,
+      isRefreshRequest: originalRequest.url?.includes("/auth/refresh"),
+    });
 
     // Skip if not a 401 error or if it's a refresh token request
     if (
@@ -189,6 +194,11 @@ api.interceptors.response.use(
       originalRequest._retry ||
       originalRequest.url?.includes("/auth/refresh")
     ) {
+      logger.info("Response interceptor - skipping refresh", {
+        reason: originalRequest.url?.includes("/auth/refresh")
+          ? "refresh request"
+          : "not 401 or already retried",
+      });
       return Promise.reject(error);
     }
 
@@ -244,13 +254,7 @@ api.interceptors.response.use(
       updateAccessToken(null);
       processQueue(refreshError, null);
 
-      // Clear any existing error messages
-      console.clear();
-
-      // Redirect to login page
-      window.location.href = "/login";
-
-      // Reject the promise to stop any further processing
+      // Don't redirect here, let the AuthProvider handle it
       return Promise.reject(new Error("Session expired. Please login again."));
     } finally {
       isRefreshing = false;

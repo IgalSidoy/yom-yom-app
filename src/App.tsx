@@ -14,11 +14,11 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <LanguageProvider>
-          <AuthProvider>
-            <AppProvider>
+          <AppProvider>
+            <AuthProvider>
               <AppRoutes />
-            </AppProvider>
-          </AuthProvider>
+            </AuthProvider>
+          </AppProvider>
         </LanguageProvider>
       </ThemeProvider>
     </BrowserRouter>
