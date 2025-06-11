@@ -1,5 +1,15 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import api from "../services/api";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+  useRef,
+} from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import api, { getNewAccessToken, updateAccessToken } from "../services/api";
+import { AxiosError } from "axios";
+import { useApp } from "./AppContext";
 
 interface User {
   id: string;
@@ -9,100 +19,142 @@ interface User {
   businessId: string;
 }
 
-interface AuthContextType {
-  isAuthenticated: boolean;
-  loading: boolean;
-  login: (
-    token: string,
-    userId: string,
-    accountId: string,
-    organizationId: string
-  ) => void;
-  logout: () => void;
-  userId: string | null;
-  accountId: string | null;
-  organizationId: string | null;
+interface LoginData {
+  token: string;
+  userId: string;
+  accountId: string;
+  organizationId: string;
 }
 
-interface TokenResponse {
-  token: string;
-  refreshToken: string;
+interface AuthContextType {
+  accessToken: string | null;
+  setAccessToken: (token: string | null) => void;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  login: (data: LoginData) => void;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [accountId, setAccountId] = useState<string | null>(null);
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
+interface AuthProviderProps {
+  children: ReactNode;
+}
 
+const TOKEN_KEY = "auth_token";
+
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [accessToken, setAccessToken] = useState<string | null>(() => {
+    // Initialize from localStorage
+    return localStorage.getItem(TOKEN_KEY);
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isInitialMount = useRef(true);
+  const initialPath = useRef(location.pathname);
+  const { setAccessToken: setAppAccessToken } = useApp();
+
+  // Persist token changes to localStorage and sync with AppContext
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    const storedUserId = localStorage.getItem("userId");
-    const storedAccountId = localStorage.getItem("accountId");
-    const storedOrganizationId = localStorage.getItem("organizationId");
-
-    if (token) {
-      setIsAuthenticated(true);
-      setUserId(storedUserId);
-      setAccountId(storedAccountId);
-      setOrganizationId(storedOrganizationId);
+    if (accessToken) {
+      localStorage.setItem(TOKEN_KEY, accessToken);
+      setAppAccessToken(accessToken);
+      updateAccessToken(accessToken);
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+      setAppAccessToken(null);
+      updateAccessToken(null);
     }
-    setLoading(false);
-  }, []);
+  }, [accessToken, setAppAccessToken]);
 
-  const login = (
-    token: string,
-    userId: string,
-    accountId: string,
-    organizationId: string
-  ) => {
-    localStorage.setItem("accessToken", token);
-    localStorage.setItem("userId", userId);
-    localStorage.setItem("accountId", accountId);
-    localStorage.setItem("organizationId", organizationId);
-    setIsAuthenticated(true);
-    setUserId(userId);
-    setAccountId(accountId);
-    setOrganizationId(organizationId);
+  // Token refresh and validation logic
+  useEffect(() => {
+    // Skip refresh check if this is not the initial mount
+    if (!isInitialMount.current) {
+      return;
+    }
+    isInitialMount.current = false;
+
+    const checkAuth = async () => {
+      try {
+        console.log("Starting auth check...");
+        // Use the getNewAccessToken function which handles the refresh token from cookies
+        const token = await getNewAccessToken();
+        console.log("Got new token:", token ? "Token received" : "No token");
+
+        if (!token) {
+          console.log("No token received, throwing error");
+          throw new Error("No token received from refresh");
+        }
+
+        console.log(
+          "Setting access token and staying on route:",
+          location.pathname
+        );
+        setAccessToken(token);
+
+        // If refresh was successful, stay on the initial route
+        // No need to navigate since we're already on the correct route
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        const axiosError = error as AxiosError;
+        console.log("Error status:", axiosError.response?.status);
+
+        setAccessToken(null);
+
+        // Only redirect if it's a 401 response (which means refresh token is invalid)
+        if (axiosError.response?.status === 401) {
+          console.log("401 received, redirecting to login");
+          navigate("/login", { replace: true });
+        } else {
+          console.log("Non-401 error, staying on route:", location.pathname);
+        }
+      } finally {
+        console.log("Auth check complete, setting isLoading to false");
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [navigate, location]);
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    console.log("Still loading, showing nothing");
+    return null; // or return a loading spinner component
+  }
+
+  console.log(
+    "Rendering with token:",
+    accessToken ? "Token exists" : "No token"
+  );
+  const login = (data: LoginData) => {
+    setAccessToken(data.token);
+    navigate("/");
   };
 
   const logout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("accountId");
-    localStorage.removeItem("organizationId");
-    setIsAuthenticated(false);
-    setUserId(null);
-    setAccountId(null);
-    setOrganizationId(null);
+    setAccessToken(null);
+    navigate("/login");
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        isAuthenticated,
-        loading,
-        login,
-        logout,
-        userId,
-        accountId,
-        organizationId,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
-};
+  const value = {
+    accessToken,
+    setAccessToken,
+    isLoading,
+    isAuthenticated: !!accessToken,
+    login,
+    logout,
+  };
 
-export const useAuth = () => {
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
-};
+}

@@ -3,79 +3,285 @@ import axios, {
   AxiosResponse,
   AxiosError,
 } from "axios";
-import { areObjectsDifferent } from "../utils/hash";
+import { logger } from "../utils/logger";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
+// Create axios instance
 const api = axios.create({
   baseURL,
   withCredentials: true,
+  headers: {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  },
 });
 
-// Request interceptor
+// Create a separate axios instance for refresh token requests
+const refreshApi = axios.create({
+  baseURL,
+  withCredentials: true,
+  headers: {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  },
+});
+
+// Flag to prevent multiple refresh attempts
+let isRefreshing = false;
+// Store pending requests
+let failedQueue: any[] = [];
+
+// Store the current access token in memory
+let currentAccessToken: string | null = null;
+
+// Function to set authorization header
+const setAuthorizationHeader = (token: string | null) => {
+  if (token) {
+    api.defaults.headers.common.Authorization = `Bearer ${token}`;
+    refreshApi.defaults.headers.common.Authorization = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common.Authorization;
+    delete refreshApi.defaults.headers.common.Authorization;
+  }
+};
+
+// Function to get access token from AppContext
+const getAccessTokenFromContext = (): Promise<string | null> => {
+  return new Promise((resolve) => {
+    const handleResponse = (event: CustomEvent) => {
+      window.removeEventListener(
+        "accessTokenResponse",
+        handleResponse as EventListener
+      );
+      resolve(event.detail as string | null);
+    };
+
+    window.addEventListener(
+      "accessTokenResponse",
+      handleResponse as EventListener
+    );
+
+    const event = new CustomEvent("getAccessToken");
+    window.dispatchEvent(event);
+  });
+};
+
+// Function to update the current access token
+export const updateAccessToken = (token: string | null) => {
+  currentAccessToken = token;
+  setAuthorizationHeader(token);
+
+  // Update AppContext's accessToken state
+  const event = new CustomEvent("updateAccessToken", { detail: token });
+  window.dispatchEvent(event);
+};
+
+// Function to process the queue of failed requests
+const processQueue = (error: any, token: string | null = null) => {
+  logger.info("Processing queue", {
+    error,
+    token,
+    queueLength: failedQueue.length,
+  });
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+// Function to get a new access token using refresh token
+export const getNewAccessToken = async () => {
+  try {
+    logger.info("Getting new access token using refresh token");
+
+    // Get refresh token from cookies
+    const cookies = document.cookie.split(";");
+    const refreshTokenCookie = cookies.find((cookie) =>
+      cookie.trim().startsWith("refreshToken=")
+    );
+    const refreshToken = refreshTokenCookie
+      ? refreshTokenCookie.split("=")[1]
+      : null;
+
+    if (!refreshToken) {
+      throw new Error("No refresh token found");
+    }
+
+    const response = await api.post(
+      "/api/v1/auth/refresh",
+      {},
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${refreshToken}`,
+        },
+      }
+    );
+
+    const { token, refreshToken: newRefreshToken } = response.data;
+
+    // Update the refresh token cookie if a new one is provided
+    if (newRefreshToken) {
+      // Set the refresh token cookie with secure and httpOnly flags
+      document.cookie = `refreshToken=${newRefreshToken}; path=/; secure; samesite=strict`;
+    }
+
+    return token;
+  } catch (error) {
+    logger.error("Failed to get new access token", error);
+    throw error;
+  }
+};
+
+// Add request interceptor to attach token
 api.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem("accessToken");
-    if (token && config.headers) {
+  async (config: InternalAxiosRequestConfig & { url?: string }) => {
+    // Skip for refresh token requests
+    if (config.url?.includes("/auth/refresh")) {
+      return config;
+    }
+
+    // Get token from context
+    const token = await new Promise<string | null>((resolve) => {
+      const handleResponse = (event: CustomEvent) => {
+        window.removeEventListener(
+          "accessTokenResponse",
+          handleResponse as EventListener
+        );
+        resolve(event.detail as string | null);
+      };
+
+      window.addEventListener(
+        "accessTokenResponse",
+        handleResponse as EventListener
+      );
+
+      const event = new CustomEvent("getAccessToken");
+      window.dispatchEvent(event);
+    });
+
+    if (token) {
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
   },
   (error: AxiosError) => {
+    logger.error("Request interceptor error", error);
     return Promise.reject(error);
   }
 );
 
-// Response interceptor
+// Add response interceptor to handle 401s and refresh
 api.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => {
+    logger.info("Response interceptor - success", {
+      url:
+        (response.config as InternalAxiosRequestConfig & { url?: string })
+          .url || "unknown",
+      status: response.status,
+    });
+    return response;
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
       url?: string;
     };
 
-    // If the error is 401 and we haven't tried to refresh the token yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+    logger.info("Response interceptor - error", {
+      url: originalRequest.url || "unknown",
+      status: error.response?.status,
+      isRefreshRequest: originalRequest.url?.includes("/auth/refresh"),
+    });
 
-      try {
-        // The refresh token is automatically sent as a cookie
-        const response = await axios.post(
-          `${baseURL}/api/v1/auth/refresh`,
-          {},
-          {
-            withCredentials: true,
-          }
-        );
-
-        const { token } = response.data;
-        localStorage.setItem("accessToken", token);
-
-        // Retry the original request with the new token
-        if (originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-        }
-        return api(originalRequest);
-      } catch (refreshError) {
-        // If refresh token fails, redirect to login
-        localStorage.removeItem("accessToken");
-        window.location.href = "/login";
-        return Promise.reject(refreshError);
-      }
-    }
-
-    // Handle 404 for user endpoint
+    // Skip if not a 401 error or if it's a refresh token request
     if (
-      error.response?.status === 404 &&
-      originalRequest.url?.includes("/api/v1/user")
+      error.response?.status !== 401 ||
+      originalRequest._retry ||
+      originalRequest.url?.includes("/auth/refresh")
     ) {
-      localStorage.removeItem("accessToken");
-      window.location.href = "/login";
+      logger.info("Response interceptor - skipping refresh", {
+        reason: originalRequest.url?.includes("/auth/refresh")
+          ? "refresh request"
+          : "not 401 or already retried",
+      });
       return Promise.reject(error);
     }
 
-    return Promise.reject(error);
+    logger.info("Response interceptor - 401 detected", {
+      url: originalRequest.url || "unknown",
+      isRefreshing,
+    });
+
+    // If already refreshing, add request to queue
+    if (isRefreshing) {
+      logger.info("Already refreshing, adding to queue", {
+        url: originalRequest.url || "unknown",
+      });
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      })
+        .then((token) => {
+          logger.info("Retrying queued request", {
+            url: originalRequest.url || "unknown",
+          });
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+          }
+          return api(originalRequest);
+        })
+        .catch((err) => {
+          logger.error("Queued request failed", err);
+          return Promise.reject(err);
+        });
+    }
+
+    originalRequest._retry = true;
+    isRefreshing = true;
+
+    try {
+      const token = await getNewAccessToken();
+
+      // Update token in context
+      const event = new CustomEvent("updateAccessToken", { detail: token });
+      window.dispatchEvent(event);
+
+      // Process queued requests
+      processQueue(null, token);
+
+      logger.info("Retrying original request", {
+        url: originalRequest.url || "unknown",
+      });
+      // Retry the original request
+      return api(originalRequest);
+    } catch (refreshError) {
+      logger.error("Token refresh failed", {
+        error: refreshError,
+        status: (refreshError as AxiosError).response?.status,
+        headers: (refreshError as AxiosError).response?.headers,
+      });
+
+      // Clear token from context
+      const event = new CustomEvent("updateAccessToken", { detail: null });
+      window.dispatchEvent(event);
+
+      processQueue(refreshError, null);
+
+      // Redirect to login page
+      window.location.href = "/login";
+
+      return Promise.reject(new Error("Session expired. Please login again."));
+    } finally {
+      isRefreshing = false;
+    }
   }
 );
 
@@ -97,7 +303,13 @@ export interface UserResponse {
 
 export const userApi = {
   getUser: async () => {
-    const response = await api.get("/api/v1/user");
+    const response = await api.get("/api/v1/user", {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
     return response as { data: UserResponse };
   },
 };
@@ -232,6 +444,7 @@ export interface GroupResponse {
 
 export interface GroupsResponse {
   groups: Group[];
+  total: number;
 }
 
 export const groupApi = {
