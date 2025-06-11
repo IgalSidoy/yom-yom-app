@@ -77,6 +77,7 @@ export const updateAccessToken = (token: string | null) => {
   window.dispatchEvent(event);
 };
 
+// Function to process the queue of failed requests
 const processQueue = (error: any, token: string | null = null) => {
   logger.info("Processing queue", {
     error,
@@ -111,7 +112,7 @@ export const getNewAccessToken = async () => {
       throw new Error("No refresh token found");
     }
 
-    const response = await refreshApi.post(
+    const response = await api.post(
       "/api/v1/auth/refresh",
       {},
       {
@@ -131,7 +132,6 @@ export const getNewAccessToken = async () => {
       document.cookie = `refreshToken=${newRefreshToken}; path=/; secure; samesite=strict`;
     }
 
-    updateAccessToken(token);
     return token;
   } catch (error) {
     logger.error("Failed to get new access token", error);
@@ -139,7 +139,7 @@ export const getNewAccessToken = async () => {
   }
 };
 
-// Add request interceptor to the api instance
+// Add request interceptor to attach token
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig & { url?: string }) => {
     // Skip for refresh token requests
@@ -147,16 +147,30 @@ api.interceptors.request.use(
       return config;
     }
 
-    // Try to get token from context first
-    const token = await getAccessTokenFromContext();
+    // Get token from context
+    const token = await new Promise<string | null>((resolve) => {
+      const handleResponse = (event: CustomEvent) => {
+        window.removeEventListener(
+          "accessTokenResponse",
+          handleResponse as EventListener
+        );
+        resolve(event.detail as string | null);
+      };
+
+      window.addEventListener(
+        "accessTokenResponse",
+        handleResponse as EventListener
+      );
+
+      const event = new CustomEvent("getAccessToken");
+      window.dispatchEvent(event);
+    });
+
     if (token) {
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
-      return config;
     }
 
-    // If no token in context, don't try to refresh
-    // Let the AuthProvider handle the refresh
     return config;
   },
   (error: AxiosError) => {
@@ -165,7 +179,7 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor to the api instance
+// Add response interceptor to handle 401s and refresh
 api.interceptors.response.use(
   (response: AxiosResponse) => {
     logger.info("Response interceptor - success", {
@@ -236,6 +250,10 @@ api.interceptors.response.use(
     try {
       const token = await getNewAccessToken();
 
+      // Update token in context
+      const event = new CustomEvent("updateAccessToken", { detail: token });
+      window.dispatchEvent(event);
+
       // Process queued requests
       processQueue(null, token);
 
@@ -251,10 +269,15 @@ api.interceptors.response.use(
         headers: (refreshError as AxiosError).response?.headers,
       });
 
-      updateAccessToken(null);
+      // Clear token from context
+      const event = new CustomEvent("updateAccessToken", { detail: null });
+      window.dispatchEvent(event);
+
       processQueue(refreshError, null);
 
-      // Don't redirect here, let the AuthProvider handle it
+      // Redirect to login page
+      window.location.href = "/login";
+
       return Promise.reject(new Error("Session expired. Please login again."));
     } finally {
       isRefreshing = false;
