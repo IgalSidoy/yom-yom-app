@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter as Router } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import theme from "./theme";
@@ -8,21 +8,21 @@ import { AppProvider } from "./contexts/AppContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import AppRoutes from "./routes";
 
-function App() {
+const App: React.FC = () => {
   return (
-    <BrowserRouter>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <LanguageProvider>
-          <AppProvider>
+    <AppProvider>
+      <Router>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <LanguageProvider>
             <AuthProvider>
               <AppRoutes />
             </AuthProvider>
-          </AppProvider>
-        </LanguageProvider>
-      </ThemeProvider>
-    </BrowserRouter>
+          </LanguageProvider>
+        </ThemeProvider>
+      </Router>
+    </AppProvider>
   );
-}
+};
 
 export default App;

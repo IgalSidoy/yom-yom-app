@@ -2,6 +2,7 @@ import axios, {
   InternalAxiosRequestConfig,
   AxiosResponse,
   AxiosError,
+  AxiosRequestConfig,
 } from "axios";
 import { logger } from "../utils/logger";
 
@@ -274,17 +275,58 @@ export interface User {
   accountId: string;
   organizationId: string;
   role: string;
+  created: string;
+  updated: string;
 }
 
 export interface UserResponse {
   user: User;
 }
 
+export interface UsersResponse {
+  users: User[];
+  total: number;
+}
+
 export const userApi = {
   getUser: async () => {
-    const response = await api.get("/api/v1/user", {
+    const response = await api.get("/api/v1/user");
+    return response;
+  },
+  getUsers: async () => {
+    const response = await api.get("/api/v1/user/all", {
       headers: {
         Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    return response as { data: UsersResponse };
+  },
+  createUser: async (user: Omit<User, "id">) => {
+    const response = await api.post("/api/v1/user", user, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    return response as { data: UserResponse };
+  },
+  updateUser: async (user: User) => {
+    const response = await api.put(`/api/v1/user/${user.id}`, user, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    return response as { data: UserResponse };
+  },
+  deleteUser: async (userId: string) => {
+    const response = await api.delete(`/api/v1/User/${userId}`, {
+      headers: {
+        Accept: "*/*",
         "Content-Type": "application/json",
       },
       withCredentials: true,
