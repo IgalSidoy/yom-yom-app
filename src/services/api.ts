@@ -99,38 +99,19 @@ export const getNewAccessToken = async () => {
   try {
     logger.info("Getting new access token using refresh token");
 
-    // Get refresh token from cookies
-    const cookies = document.cookie.split(";");
-    const refreshTokenCookie = cookies.find((cookie) =>
-      cookie.trim().startsWith("refreshToken=")
-    );
-    const refreshToken = refreshTokenCookie
-      ? refreshTokenCookie.split("=")[1]
-      : null;
-
-    if (!refreshToken) {
-      throw new Error("No refresh token found");
-    }
-
-    const response = await api.post(
+    const response = await refreshApi.post(
       "/api/v1/auth/refresh",
       {},
       {
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
-          Authorization: `Bearer ${refreshToken}`,
         },
+        withCredentials: true,
       }
     );
 
-    const { token, refreshToken: newRefreshToken } = response.data;
-
-    // Update the refresh token cookie if a new one is provided
-    if (newRefreshToken) {
-      // Set the refresh token cookie with secure and httpOnly flags
-      document.cookie = `refreshToken=${newRefreshToken}; path=/; secure; samesite=strict`;
-    }
+    const { token } = response.data;
 
     return token;
   } catch (error) {
@@ -275,9 +256,7 @@ api.interceptors.response.use(
 
       processQueue(refreshError, null);
 
-      // Redirect to login page
-      window.location.href = "/login";
-
+      // Instead of forcing a page reload, just reject the promise
       return Promise.reject(new Error("Session expired. Please login again."));
     } finally {
       isRefreshing = false;
