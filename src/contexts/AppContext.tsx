@@ -19,18 +19,23 @@ interface AppContextType {
   accessToken: string | null;
   setAccessToken: (token: string | null) => void;
   clearIds: () => void;
+  users: User[];
+  setUsers: (users: User[]) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: ReactNode }> = ({
-  children,
-}) => {
+interface AppProviderProps {
+  children: ReactNode;
+}
+
+export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
 
   // Listen for access token updates
   useEffect(() => {
@@ -97,6 +102,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         accessToken,
         setAccessToken,
         clearIds,
+        users,
+        setUsers,
       }}
     >
       {children}

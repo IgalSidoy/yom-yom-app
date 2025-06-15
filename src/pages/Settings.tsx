@@ -32,6 +32,7 @@ import {
 import Notification from "../components/Notification";
 import AccountCard from "../components/AccountCard";
 import GroupCard from "../components/GroupCard";
+import UserManagementCard from "../components/UserManagementCard";
 import AddIcon from "@mui/icons-material/Add";
 
 const Settings = () => {
@@ -679,6 +680,29 @@ const Settings = () => {
           </AccordionDetails>
         </Accordion>
 
+        <Accordion
+          expanded={expandedAccordion === "users"}
+          onChange={handleAccordionChange("users")}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="users-content"
+            id="users-header"
+          >
+            <Typography variant="h6">משתמשים</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            {isLoading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <Box sx={{ textAlign: "right" }}>
+                <UserManagementCard accounts={accounts} />
+              </Box>
+            )}
+          </AccordionDetails>
+        </Accordion>
         <Accordion
           expanded={expandedAccordion === "groups"}
           onChange={handleAccordionChange("groups")}
