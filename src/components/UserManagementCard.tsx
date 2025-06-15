@@ -197,6 +197,23 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
     }
   };
 
+  const formatDate = (dateStr: string) => {
+    if (!dateStr || dateStr === "0001-01-01T00:00:00") {
+      return "לא זמין";
+    }
+    const date = new Date(dateStr);
+    return new Intl.DateTimeFormat("he-IL", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+      .format(date)
+      .replace(",", ":");
+  };
+
   return (
     <>
       {isLoading ? (
@@ -325,9 +342,6 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
       >
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
           <Box sx={{ mb: 4 }}>
-            <Typography variant="h6" sx={{ mb: 1 }}>
-              {currentUser.id ? "עריכת משתמש" : "הוספת משתמש חדש"}
-            </Typography>
             <Typography variant="body2" color="text.secondary">
               {currentUser.id
                 ? "עדכון פרטי המשתמש הקיים"
@@ -432,6 +446,102 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                   ))}
                 </Select>
               </FormControl>
+
+              {currentUser.id && (
+                <Box
+                  sx={{
+                    mt: 2,
+                    pt: 3,
+                    borderTop: 1,
+                    borderColor: "divider",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2,
+                  }}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      mb: 1,
+                      color: "text.primary",
+                      fontWeight: 600,
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    פרטי מערכת
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 2,
+                      bgcolor: "background.default",
+                      p: 2,
+                      borderRadius: 2,
+                      border: "1px solid",
+                      borderColor: "divider",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        נוצר בתאריך
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "text.primary",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {currentUser.created && currentUser.created !== ""
+                          ? formatDate(currentUser.created)
+                          : "לא זמין"}
+                      </Typography>
+                    </Box>
+
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        עודכן בתאריך
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "text.primary",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {currentUser.updated && currentUser.updated !== ""
+                          ? formatDate(currentUser.updated)
+                          : "לא זמין"}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
             </Box>
           </Box>
 

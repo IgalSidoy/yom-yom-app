@@ -275,6 +275,8 @@ export interface User {
   accountId: string;
   organizationId: string;
   role: string;
+  created: string;
+  updated: string;
 }
 
 export interface UserResponse {
