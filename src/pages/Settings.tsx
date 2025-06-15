@@ -37,7 +37,7 @@ import AddIcon from "@mui/icons-material/Add";
 
 const Settings = () => {
   const { language, setLanguage } = useLanguage();
-  const { user, setUser } = useApp();
+  const { user } = useApp();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [expandedAccordion, setExpandedAccordion] = useState<string | false>(
@@ -139,27 +139,10 @@ const Settings = () => {
   };
 
   useEffect(() => {
-    if (!user) {
-      fetchUser();
-    } else {
-      // If we have the user, fetch organization
+    if (user) {
       fetchOrganization(user.organizationId);
     }
   }, [user]);
-
-  const fetchUser = async () => {
-    try {
-      setIsLoading(true);
-      const response = await userApi.getUser();
-      const userData = response.data.user;
-      setUser(userData);
-      await fetchOrganization(userData.organizationId);
-    } catch (error) {
-      showNotification("שגיאה בטעינת פרטי המשתמש", "error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const fetchOrganization = async (organizationId: string) => {
     try {
@@ -698,7 +681,11 @@ const Settings = () => {
               </Box>
             ) : (
               <Box sx={{ textAlign: "right" }}>
-                <UserManagementCard accounts={accounts} />
+                <UserManagementCard
+                  accounts={accounts}
+                  isExpanded={expandedAccordion === "users"}
+                  onAccountsChange={handleAccountsChange}
+                />
               </Box>
             )}
           </AccordionDetails>

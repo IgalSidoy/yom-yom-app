@@ -28,13 +28,18 @@ import { useApp } from "../contexts/AppContext";
 
 interface UserManagementCardProps {
   accounts: Account[];
+  isExpanded: boolean;
+  onAccountsChange: () => Promise<void>;
 }
 
 const UserManagementCard: React.FC<UserManagementCardProps> = ({
   accounts,
+  isExpanded,
+  onAccountsChange,
 }) => {
   const { users, setUsers } = useApp();
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<Partial<User>>({
@@ -52,8 +57,21 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
   });
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    const fetchData = async () => {
+      if (isExpanded && !isInitialized) {
+        if (accounts.length === 0) {
+          await onAccountsChange();
+        }
+        if (users.length === 0) {
+          await fetchUsers();
+        }
+        setIsInitialized(true);
+      } else if (!isExpanded) {
+        setIsInitialized(false);
+      }
+    };
+    fetchData();
+  }, [isExpanded, accounts.length]);
 
   const fetchUsers = async () => {
     try {
