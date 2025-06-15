@@ -27,9 +27,14 @@ import { Group, Account, groupApi } from "../services/api";
 interface GroupCardProps {
   accounts: Account[];
   formatDate: (date: string) => string;
+  onAccountDelete?: () => void;
 }
 
-const GroupCard: React.FC<GroupCardProps> = ({ accounts, formatDate }) => {
+const GroupCard: React.FC<GroupCardProps> = ({
+  accounts,
+  formatDate,
+  onAccountDelete,
+}) => {
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
@@ -63,6 +68,13 @@ const GroupCard: React.FC<GroupCardProps> = ({ accounts, formatDate }) => {
       setIsLoadingGroups(false);
     }
   };
+
+  useEffect(() => {
+    if (!accounts.find((acc) => acc.id === selectedAccountId)) {
+      setSelectedAccountId("");
+      setGroups([]);
+    }
+  }, [accounts, selectedAccountId]);
 
   useEffect(() => {
     if (selectedAccountId) {
@@ -159,6 +171,9 @@ const GroupCard: React.FC<GroupCardProps> = ({ accounts, formatDate }) => {
               },
             }}
           >
+            <MenuItem value="">
+              <em>בחר סניף</em>
+            </MenuItem>
             {accounts.map((account) => (
               <MenuItem key={account.id} value={account.id}>
                 {account.branchName || "שם הסניף חסר"}

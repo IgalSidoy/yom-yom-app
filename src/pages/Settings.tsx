@@ -13,6 +13,8 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Container,
+  Grid,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -30,6 +32,7 @@ import {
 import Notification from "../components/Notification";
 import AccountCard from "../components/AccountCard";
 import GroupCard from "../components/GroupCard";
+import AddIcon from "@mui/icons-material/Add";
 
 const Settings = () => {
   const { language, setLanguage } = useLanguage();
@@ -77,9 +80,13 @@ const Settings = () => {
     description: "",
   });
   const [isOrganizationModified, setIsOrganizationModified] = useState(false);
-  const [selectedAccountForGroups, setSelectedAccountForGroups] =
-    useState<string>("");
+  const [selectedAccountForGroups, setSelectedAccountForGroups] = useState<
+    string | null
+  >(null);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>(
+    accounts[0]?.id || ""
+  );
 
   const formatMobileNumber = (value: string) => {
     // Remove all non-digit characters
@@ -134,9 +141,8 @@ const Settings = () => {
     if (!user) {
       fetchUser();
     } else {
-      // If we have the user, fetch organization and accounts
+      // If we have the user, fetch organization
       fetchOrganization(user.organizationId);
-      fetchAccounts();
     }
   }, [user]);
 
@@ -146,10 +152,7 @@ const Settings = () => {
       const response = await userApi.getUser();
       const userData = response.data.user;
       setUser(userData);
-      await Promise.all([
-        fetchOrganization(userData.organizationId),
-        fetchAccounts(),
-      ]);
+      await fetchOrganization(userData.organizationId);
     } catch (error) {
       showNotification("שגיאה בטעינת פרטי המשתמש", "error");
     } finally {
@@ -168,57 +171,40 @@ const Settings = () => {
 
   const fetchAccounts = async () => {
     try {
+      setIsLoading(true);
       const response = await accountApi.getAccounts();
       setAccounts(response.data.accounts);
       if (response.data.accounts.length > 0) {
         setSelectedAccount(response.data.accounts[0]);
       }
+      return response.data.accounts; // Return accounts for chaining
     } catch (error) {
       showNotification("שגיאה בטעינת הסניפים", "error");
+      return []; // Return empty array on error
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const fetchGroups = async (accountId: string) => {
+  const fetchGroups = async () => {
+    if (accounts.length === 0) {
+      showNotification("יש לטעון סניפים קודם", "warning");
+      return;
+    }
+
+    // Use the first account's ID if no account is selected
+    const accountId = selectedAccountForGroups || accounts[0].id;
+
     try {
       setIsLoadingGroups(true);
       const response = await groupApi.getGroups(accountId);
-      console.log("Groups API Response:", response); // Debug log
-      if (response.data && Array.isArray(response.data)) {
-        setGroups(response.data);
-      } else if (
-        response.data &&
-        response.data.groups &&
-        Array.isArray(response.data.groups)
-      ) {
-        setGroups(response.data.groups);
-      } else {
-        console.log("No groups found in response:", response); // Debug log
-        setGroups([]);
-      }
+      setGroups(response.data.groups);
     } catch (error) {
-      console.error("Error fetching groups:", error); // Debug log
       showNotification("שגיאה בטעינת הקבוצות", "error");
-      setGroups([]);
     } finally {
       setIsLoadingGroups(false);
     }
   };
-
-  useEffect(() => {
-    if (organization.id) {
-      fetchAccounts();
-    }
-  }, [organization.id]);
-
-  useEffect(() => {
-    if (selectedAccountForGroups) {
-      fetchGroups(selectedAccountForGroups);
-      // Automatically expand the groups accordion when an account is selected
-      setExpandedAccordion("groups");
-    } else {
-      setGroups([]);
-    }
-  }, [selectedAccountForGroups]);
 
   const handleSave = async () => {
     try {
@@ -353,6 +339,16 @@ const Settings = () => {
   const handleAccordionChange =
     (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
       setExpandedAccordion(isExpanded ? panel : false);
+
+      // Load accounts data when accounts accordion is expanded and no accounts exist
+      if (isExpanded && panel === "accounts" && accounts.length === 0) {
+        fetchAccounts();
+      }
+
+      // Load accounts data when groups accordion is expanded and no accounts exist
+      if (isExpanded && panel === "groups" && accounts.length === 0) {
+        fetchAccounts();
+      }
     };
 
   const handleOpenAccountDialog = (account?: Account) => {
@@ -408,7 +404,7 @@ const Settings = () => {
           accountId: selectedAccountForGroups,
         } as Omit<Group, "id" | "created" | "updated">);
       }
-      await fetchGroups(selectedAccountForGroups);
+      await fetchGroups();
       handleCloseGroupDialog();
       showNotification("הקבוצה נשמרה בהצלחה", "success");
     } catch (error) {
@@ -422,13 +418,56 @@ const Settings = () => {
     try {
       setIsSaving(true);
       await groupApi.deleteGroup(group.id);
-      await fetchGroups(selectedAccount?.id || "");
+      await fetchGroups();
       showNotification("הקבוצה נמחקה בהצלחה", "success");
     } catch (error) {
       showNotification("שגיאה במחיקת הקבוצה", "error");
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleAddAccount = async () => {
+    try {
+      setIsLoading(true);
+      const currentAccount = {
+        branchName: "",
+        branchCode: 0,
+        organizationId: organization.id,
+        isPrimary: false,
+      };
+
+      await accountApi.createAccount({
+        ...currentAccount,
+        organizationId: organization.id,
+      } as Omit<Account, "id" | "created" | "updated">);
+
+      await fetchAccounts();
+      showNotification("חשבון נוצר בהצלחה", "success");
+    } catch (error) {
+      showNotification("שגיאה ביצירת חשבון", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddGroup = () => {
+    // Implementation of handleAddGroup
+  };
+
+  const handleAccountsChange = async (): Promise<void> => {
+    await fetchAccounts();
+  };
+
+  useEffect(() => {
+    if (accounts.length > 0 && !selectedAccountId) {
+      setSelectedAccountId(accounts[0].id);
+    }
+  }, [accounts]);
+
+  const handleAccountDelete = () => {
+    // Clear groups state when an account is deleted
+    setGroups([]);
   };
 
   return (
@@ -633,7 +672,7 @@ const Settings = () => {
                 <AccountCard
                   accounts={accounts}
                   formatDate={formatDate}
-                  onAccountsChange={fetchAccounts}
+                  onAccountsChange={handleAccountsChange}
                 />
               </Box>
             )}
@@ -652,13 +691,19 @@ const Settings = () => {
             <Typography variant="h6">קבוצות</Typography>
           </AccordionSummary>
           <AccordionDetails>
-            {isLoading ? (
+            {isLoadingGroups ? (
               <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
                 <CircularProgress />
               </Box>
+            ) : !accounts || accounts.length === 0 ? (
+              <Typography>יש לטעון סניפים קודם</Typography>
             ) : (
-              <Box sx={{ textAlign: "right" }}>
-                <GroupCard accounts={accounts} formatDate={formatDate} />
+              <Box>
+                <GroupCard
+                  accounts={accounts}
+                  formatDate={formatDate}
+                  onAccountDelete={handleAccountDelete}
+                />
               </Box>
             )}
           </AccordionDetails>

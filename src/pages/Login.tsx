@@ -142,9 +142,6 @@ const Login: React.FC = () => {
 
       const data = await response.json();
 
-      // Store refresh token in a secure cookie
-      document.cookie = `refreshToken=${data.refreshToken}; path=/; secure; samesite=strict`;
-
       // Update AppContext with access token
       setAccessToken(data.token);
 
@@ -171,8 +168,8 @@ const Login: React.FC = () => {
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
-          Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
         },
+        credentials: "include",
         body: JSON.stringify({ mobile }),
       });
 
