@@ -251,7 +251,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                           ? "primary"
                           : user.role === "Parent"
                           ? "success"
-                          : "default"
+                          : "info"
                       }
                       sx={{
                         height: 20,

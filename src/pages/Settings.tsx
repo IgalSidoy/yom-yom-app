@@ -37,7 +37,7 @@ import AddIcon from "@mui/icons-material/Add";
 
 const Settings = () => {
   const { language, setLanguage } = useLanguage();
-  const { user } = useApp();
+  const { user, setUser } = useApp();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [expandedAccordion, setExpandedAccordion] = useState<string | false>(
@@ -139,6 +139,24 @@ const Settings = () => {
   };
 
   useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        console.log("Fetching user data...");
+        const response = await userApi.getUser();
+        console.log("User data received:", response.data);
+        setUser(response.data.user);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        showNotification("שגיאה בטעינת פרטי המשתמש", "error");
+      }
+    };
+
+    if (!user) {
+      fetchUserData();
+    }
+  }, [user, setUser]);
+
+  useEffect(() => {
     if (user) {
       fetchOrganization(user.organizationId);
     }
@@ -146,10 +164,16 @@ const Settings = () => {
 
   const fetchOrganization = async (organizationId: string) => {
     try {
+      console.log("Fetching organization data for ID:", organizationId);
+      setIsLoading(true);
       const response = await organizationApi.getOrganization(organizationId);
+      console.log("Organization data received:", response.data);
       setFormattedOrganization(response.data.organization);
     } catch (error) {
+      console.error("Error fetching organization:", error);
       showNotification("שגיאה בטעינת פרטי הארגון", "error");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -322,7 +346,31 @@ const Settings = () => {
 
   const handleAccordionChange =
     (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
+      console.log("Accordion change:", { panel, isExpanded, user });
       setExpandedAccordion(isExpanded ? panel : false);
+
+      // Load organization data when organization accordion is expanded
+      if (isExpanded && panel === "organization") {
+        if (!user) {
+          console.log("No user found, fetching user data first...");
+          userApi
+            .getUser()
+            .then((response) => {
+              console.log("User data received:", response.data);
+              setUser(response.data.user);
+              if (response.data.user.organizationId) {
+                fetchOrganization(response.data.user.organizationId);
+              }
+            })
+            .catch((error) => {
+              console.error("Error fetching user data:", error);
+              showNotification("שגיאה בטעינת פרטי המשתמש", "error");
+            });
+          return;
+        }
+        console.log("Fetching organization data for user:", user);
+        fetchOrganization(user.organizationId);
+      }
 
       // Load accounts data when accounts accordion is expanded and no accounts exist
       if (isExpanded && panel === "accounts" && accounts.length === 0) {
