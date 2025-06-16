@@ -27,6 +27,7 @@ import Notification from "../components/Notification";
 import AccountCard from "../components/AccountCard";
 import GroupCard from "../components/GroupCard";
 import UserManagementCard from "../components/UserManagementCard";
+import ChildManagementCard from "../components/ChildManagementCard";
 
 const Settings = () => {
   const { language, setLanguage } = useLanguage();
@@ -59,6 +60,8 @@ const Settings = () => {
     updated: "",
   });
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [parents, setParents] = useState<User[]>([]);
   const [isOrganizationModified, setIsOrganizationModified] = useState(false);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
 
@@ -170,6 +173,44 @@ const Settings = () => {
       .replace(",", ":");
   };
 
+  const fetchGroups = async () => {
+    try {
+      setIsLoadingGroups(true);
+      const allGroups: Group[] = [];
+      for (const account of accounts) {
+        const response = await groupApi.getGroups(account.id);
+        if (response.data && Array.isArray(response.data)) {
+          allGroups.push(...response.data);
+        } else if (
+          response.data &&
+          response.data.groups &&
+          Array.isArray(response.data.groups)
+        ) {
+          allGroups.push(...response.data.groups);
+        }
+      }
+      setGroups(allGroups);
+    } catch (error) {
+      showNotification("שגיאה בטעינת הקבוצות", "error");
+    } finally {
+      setIsLoadingGroups(false);
+    }
+  };
+
+  const fetchParents = async () => {
+    try {
+      const response = await userApi.getUsers();
+      if (response.data.users) {
+        const parentUsers = response.data.users.filter(
+          (user: User) => user.role === "Parent"
+        );
+        setParents(parentUsers);
+      }
+    } catch (error) {
+      showNotification("שגיאה בטעינת ההורים", "error");
+    }
+  };
+
   const handleAccordionChange =
     (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
       setExpandedAccordion(isExpanded ? panel : false);
@@ -205,6 +246,18 @@ const Settings = () => {
 
       if (isExpanded && panel === "groups" && accounts.length === 0) {
         fetchAccounts();
+      }
+
+      if (isExpanded && panel === "children") {
+        if (accounts.length === 0) {
+          fetchAccounts();
+        }
+        if (groups.length === 0) {
+          fetchGroups();
+        }
+        if (parents.length === 0) {
+          fetchParents();
+        }
       }
     };
 
@@ -475,6 +528,38 @@ const Settings = () => {
                 <UserManagementCard
                   accounts={accounts}
                   isExpanded={expandedAccordion === "users"}
+                  onAccountsChange={handleAccountsChange}
+                />
+              </Box>
+            )}
+          </AccordionDetails>
+        </Accordion>
+
+        <Accordion
+          expanded={expandedAccordion === "children"}
+          onChange={handleAccordionChange("children")}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="children-content"
+            id="children-header"
+          >
+            <Typography variant="h6">ילדים</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            {isLoading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+                <CircularProgress />
+              </Box>
+            ) : !accounts || accounts.length === 0 ? (
+              <Typography>יש לטעון סניפים קודם</Typography>
+            ) : (
+              <Box sx={{ textAlign: "right" }}>
+                <ChildManagementCard
+                  accounts={accounts}
+                  groups={groups}
+                  parents={parents}
+                  isExpanded={expandedAccordion === "children"}
                   onAccountsChange={handleAccountsChange}
                 />
               </Box>
