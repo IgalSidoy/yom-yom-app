@@ -23,6 +23,7 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
 import { Group, Account, groupApi } from "../services/api";
+import Notification from "./Notification";
 
 interface GroupCardProps {
   accounts: Account[];
@@ -45,6 +46,11 @@ const GroupCard: React.FC<GroupCardProps> = ({
     description: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [notification, setNotification] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "info" | "warning",
+  });
 
   const fetchGroups = async (accountId: string) => {
     try {
@@ -108,21 +114,34 @@ const GroupCard: React.FC<GroupCardProps> = ({
     });
   };
 
+  const showNotification = (
+    message: string,
+    severity: "success" | "error" | "info" | "warning" = "success"
+  ) => {
+    setNotification({
+      open: true,
+      message,
+      severity,
+    });
+  };
+
   const handleSave = async () => {
     try {
       setIsSaving(true);
       if (currentGroup.id) {
         await groupApi.updateGroup(currentGroup as Group);
+        showNotification("קבוצה עודכנה בהצלחה");
       } else {
         await groupApi.createGroup({
           ...currentGroup,
           accountId: selectedAccountId,
         } as Omit<Group, "id" | "created" | "updated">);
+        showNotification("קבוצה נוצרה בהצלחה");
       }
       await fetchGroups(selectedAccountId);
       handleCloseDrawer();
     } catch (error) {
-      console.error("Error saving group:", error);
+      showNotification("שגיאה בשמירת הקבוצה", "error");
     } finally {
       setIsSaving(false);
     }
@@ -136,11 +155,12 @@ const GroupCard: React.FC<GroupCardProps> = ({
     try {
       setIsSaving(true);
       await groupApi.deleteGroup(currentGroup.id!);
+      showNotification("קבוצה נמחקה בהצלחה");
       await fetchGroups(selectedAccountId);
       setIsDeleteDialogOpen(false);
       handleCloseDrawer();
     } catch (error) {
-      console.error("Error deleting group:", error);
+      showNotification("שגיאה במחיקת הקבוצה", "error");
     } finally {
       setIsSaving(false);
     }
@@ -554,6 +574,13 @@ const GroupCard: React.FC<GroupCardProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Notification
+        open={notification.open}
+        message={notification.message}
+        severity={notification.severity}
+        onClose={() => setNotification({ ...notification, open: false })}
+      />
     </>
   );
 };

@@ -24,12 +24,17 @@ interface AccountCardProps {
   accounts: Account[];
   formatDate: (date: string) => string;
   onAccountsChange: () => Promise<void>;
+  onNotification: (
+    message: string,
+    severity: "success" | "error" | "info" | "warning"
+  ) => void;
 }
 
 const AccountCard: React.FC<AccountCardProps> = ({
   accounts,
   formatDate,
   onAccountsChange,
+  onNotification,
 }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -38,6 +43,75 @@ const AccountCard: React.FC<AccountCardProps> = ({
     branchCode: 0,
   });
   const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!currentAccount.branchName) {
+      onNotification("יש להזין שם סניף", "error");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      if (currentAccount.id) {
+        // Find the original account to compare changes
+        const originalAccount = accounts.find(
+          (acc) => acc.id === currentAccount.id
+        );
+        if (!originalAccount) {
+          onNotification("סניף לא נמצא", "error");
+          return;
+        }
+        await accountApi.updateAccount(
+          currentAccount as Account,
+          originalAccount
+        );
+        await onAccountsChange(); // Refresh the accounts list
+        onNotification("סניף עודכן בהצלחה", "success");
+      } else {
+        await accountApi.createAccount({
+          ...currentAccount,
+          organizationId: accounts[0]?.organizationId,
+        } as Omit<Account, "id" | "created" | "updated">);
+        await onAccountsChange(); // Refresh the accounts list
+        onNotification("סניף נוצר בהצלחה", "success");
+      }
+      handleCloseDrawer();
+    } catch (error) {
+      onNotification(
+        currentAccount.id ? "שגיאה בעדכון הסניף" : "שגיאה ביצירת הסניף",
+        "error"
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteClick = () => {
+    if (currentAccount.isPrimary) {
+      onNotification("לא ניתן למחוק סניף ראשי", "error");
+      return;
+    }
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      setIsSaving(true);
+      await accountApi.deleteAccount(currentAccount.id!);
+      await onAccountsChange();
+      onNotification("סניף נמחק בהצלחה", "success");
+      setIsDeleteDialogOpen(false);
+      handleCloseDrawer();
+    } catch (error) {
+      onNotification("שגיאה במחיקת הסניף", "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setIsDeleteDialogOpen(false);
+  };
 
   const handleOpenDrawer = (account?: Account) => {
     if (account) {
@@ -57,58 +131,6 @@ const AccountCard: React.FC<AccountCardProps> = ({
       branchName: "",
       branchCode: 0,
     });
-  };
-
-  const handleSave = async () => {
-    try {
-      setIsSaving(true);
-      if (currentAccount.id) {
-        // Find the original account to compare changes
-        const originalAccount = accounts.find(
-          (acc) => acc.id === currentAccount.id
-        );
-        if (!originalAccount) {
-          throw new Error("Account not found");
-        }
-        await accountApi.updateAccount(
-          currentAccount as Account,
-          originalAccount
-        );
-      } else {
-        await accountApi.createAccount({
-          ...currentAccount,
-          organizationId: accounts[0]?.organizationId,
-        } as Omit<Account, "id" | "created" | "updated">);
-      }
-      await onAccountsChange(); // Refresh the accounts list
-      handleCloseDrawer();
-    } catch (error) {
-      console.error("Error saving account:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDeleteClick = () => {
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    try {
-      setIsSaving(true);
-      await accountApi.deleteAccount(currentAccount.id!);
-      await onAccountsChange();
-      setIsDeleteDialogOpen(false);
-      handleCloseDrawer();
-    } catch (error) {
-      console.error("Error deleting account:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDeleteCancel = () => {
-    setIsDeleteDialogOpen(false);
   };
 
   return (

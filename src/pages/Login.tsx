@@ -13,7 +13,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useApp } from "../contexts/AppContext";
 
 const Login: React.FC = () => {
-  const [mobile, setMobile] = useState("0546605194");
+  const [mobile, setMobile] = useState("054-1111111");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [showOtp, setShowOtp] = useState(false);
   const [error, setError] = useState("");
