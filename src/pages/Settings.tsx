@@ -417,6 +417,7 @@ const Settings = () => {
                   accounts={accounts}
                   formatDate={formatDate}
                   onAccountsChange={handleAccountsChange}
+                  onNotification={showNotification}
                 />
               </Box>
             )}
