@@ -8,21 +8,28 @@ import {
   Button,
   Box,
   Fade,
+  CircularProgress,
 } from "@mui/material";
 import { useAuth } from "../contexts/AuthContext";
 import { useApp } from "../contexts/AppContext";
+import Notification from "../components/Notification";
 
 const Login: React.FC = () => {
   const [mobile, setMobile] = useState("054-1111111");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [showOtp, setShowOtp] = useState(false);
-  const [error, setError] = useState("");
   const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
   const { setUserId, setAccountId, setOrganizationId, setAccessToken } =
     useApp();
+  const [notification, setNotification] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "info" | "warning",
+  });
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -60,16 +67,16 @@ const Login: React.FC = () => {
 
   const handleMobileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
 
     // Validate mobile number (should be 10 digits after removing non-digits)
     const digits = mobile.replace(/\D/g, "");
     if (digits.length !== 10) {
-      setError("מספר טלפון לא תקין");
+      showNotification("מספר טלפון לא תקין", "error");
       return;
     }
 
     try {
+      setIsLoading(true);
       const baseUrl = process.env.REACT_APP_API_BASE_URL;
       const response = await fetch(`${baseUrl}/api/v1/auth/opt`, {
         method: "POST",
@@ -94,8 +101,21 @@ const Login: React.FC = () => {
 
       setShowOtp(true);
     } catch (err) {
-      setError("שליחת הקוד נכשלה. אנא נסה שוב.");
+      showNotification("שליחת הקוד נכשלה. אנא נסה שוב.", "error");
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const showNotification = (
+    message: string,
+    severity: "success" | "error" | "info" | "warning" = "success"
+  ) => {
+    setNotification({
+      open: true,
+      message,
+      severity,
+    });
   };
 
   const handleOtpChange = (index: number, value: string) => {
@@ -119,9 +139,8 @@ const Login: React.FC = () => {
 
   const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
     try {
+      setIsLoading(true);
       const baseUrl = process.env.REACT_APP_API_BASE_URL;
       const response = await fetch(`${baseUrl}/api/v1/auth/login`, {
         method: "POST",
@@ -155,13 +174,15 @@ const Login: React.FC = () => {
 
       navigate("/dashboard");
     } catch (err) {
-      setError("קוד לא תקין. אנא נסה שוב.");
+      showNotification("קוד לא תקין. אנא נסה שוב.", "error");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleResendCode = async () => {
-    setError("");
     try {
+      setIsLoading(true);
       const baseUrl = process.env.REACT_APP_API_BASE_URL;
       const response = await fetch(`${baseUrl}/api/v1/auth/opt`, {
         method: "POST",
@@ -181,7 +202,9 @@ const Login: React.FC = () => {
       setCanResend(false);
       setOtp(["", "", "", "", "", ""]);
     } catch (err) {
-      setError("שליחת הקוד נכשלה. אנא נסה שוב.");
+      showNotification("שליחת הקוד נכשלה. אנא נסה שוב.", "error");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -223,12 +246,6 @@ const Login: React.FC = () => {
             >
               התחברות
             </Typography>
-
-            {error && (
-              <Typography color="error" sx={{ mb: 2 }}>
-                {error}
-              </Typography>
-            )}
 
             <Fade in={!showOtp} timeout={500}>
               <Box sx={{ width: "100%" }}>
@@ -322,6 +339,7 @@ const Login: React.FC = () => {
               color="primary"
               size="large"
               fullWidth
+              disabled={isLoading}
               sx={{
                 borderRadius: 3,
                 fontWeight: 700,
@@ -329,9 +347,25 @@ const Login: React.FC = () => {
                 py: 1.5,
                 bgcolor: "#FF9F43",
                 "&:hover": { bgcolor: "#FF8C1A" },
+                minHeight: "48px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              {showOtp ? "אימות" : "שלח קוד"}
+              {isLoading ? (
+                <CircularProgress
+                  size={28}
+                  thickness={4}
+                  sx={{
+                    color: "#FF8C1A",
+                  }}
+                />
+              ) : showOtp ? (
+                "אימות"
+              ) : (
+                "שלח קוד"
+              )}
             </Button>
 
             {!showOtp && (
@@ -339,6 +373,7 @@ const Login: React.FC = () => {
                 variant="outlined"
                 color="primary"
                 fullWidth
+                disabled={isLoading}
                 sx={{
                   borderRadius: 3,
                   fontWeight: 700,
@@ -358,6 +393,12 @@ const Login: React.FC = () => {
           </Box>
         </Paper>
       </Box>
+      <Notification
+        open={notification.open}
+        message={notification.message}
+        severity={notification.severity}
+        onClose={() => setNotification({ ...notification, open: false })}
+      />
     </Container>
   );
 };

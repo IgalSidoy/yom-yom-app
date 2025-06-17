@@ -13,6 +13,7 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useApp } from "../contexts/AppContext";
+import { useAuth } from "../contexts/AuthContext";
 import {
   organizationApi,
   Organization,
@@ -29,9 +30,34 @@ import GroupCard from "../components/GroupCard";
 import UserManagementCard from "../components/UserManagementCard";
 import ChildManagementCard from "../components/ChildManagementCard";
 
+interface Parent {
+  id: string;
+  firstName: string;
+  lastName: string;
+  mobile: string;
+}
+
+interface Child {
+  id?: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  accountId: string;
+  groupId?: string;
+  parents: Parent[];
+  created?: string;
+  updated?: string;
+}
+
+interface ChildResponse {
+  children: Child[];
+  total: number;
+}
+
 const Settings = () => {
   const { language, setLanguage } = useLanguage();
   const { user, setUser } = useApp();
+  const { accessToken } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [expandedAccordion, setExpandedAccordion] = useState<string | false>(
     false
@@ -64,6 +90,9 @@ const Settings = () => {
   const [parents, setParents] = useState<User[]>([]);
   const [isOrganizationModified, setIsOrganizationModified] = useState(false);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
+  const [isLoadingChildren, setIsLoadingChildren] = useState(false);
+  const [children, setChildren] = useState<Child[]>([]);
+  const [isChildrenInitialized, setIsChildrenInitialized] = useState(false);
 
   const formatMobileNumber = (value: string) => {
     const digits = value.replace(/\D/g, "");
@@ -211,6 +240,41 @@ const Settings = () => {
     }
   };
 
+  const fetchChildren = async () => {
+    try {
+      setIsLoadingChildren(true);
+      const allChildren: Child[] = [];
+
+      for (const account of accounts) {
+        const response = await fetch(
+          `https://localhost:7225/api/v1/account/${account.id}/children`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch children for account ${account.id}`);
+        }
+
+        const data: ChildResponse = await response.json();
+        if (data.children) {
+          allChildren.push(...data.children);
+        }
+      }
+
+      setChildren(allChildren);
+    } catch (error) {
+      console.error("Error fetching children:", error);
+      showNotification("שגיאה בטעינת הילדים", "error");
+      setChildren([]);
+    } finally {
+      setIsLoadingChildren(false);
+    }
+  };
+
   const handleAccordionChange =
     (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
       setExpandedAccordion(isExpanded ? panel : false);
@@ -252,12 +316,18 @@ const Settings = () => {
         if (accounts.length === 0) {
           fetchAccounts();
         }
-        if (groups.length === 0) {
-          fetchGroups();
+        if (!isChildrenInitialized) {
+          if (groups.length === 0) {
+            fetchGroups();
+          }
+          if (parents.length === 0) {
+            fetchParents();
+          }
+          fetchChildren();
+          setIsChildrenInitialized(true);
         }
-        if (parents.length === 0) {
-          fetchParents();
-        }
+      } else if (panel === "children") {
+        setIsChildrenInitialized(false);
       }
     };
 
@@ -294,6 +364,10 @@ const Settings = () => {
 
   const handleAccountDelete = () => {
     // No need to clear groups state as it's handled by the GroupCard component
+  };
+
+  const handleChildrenChange = async () => {
+    await fetchChildren();
   };
 
   return (
@@ -547,7 +621,7 @@ const Settings = () => {
             <Typography variant="h6">ילדים</Typography>
           </AccordionSummary>
           <AccordionDetails>
-            {isLoading ? (
+            {isLoadingChildren ? (
               <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
                 <CircularProgress />
               </Box>
@@ -559,8 +633,11 @@ const Settings = () => {
                   accounts={accounts}
                   groups={groups}
                   parents={parents}
+                  children={children}
+                  isLoading={isLoadingChildren}
                   isExpanded={expandedAccordion === "children"}
                   onAccountsChange={handleAccountsChange}
+                  onChildrenChange={handleChildrenChange}
                 />
               </Box>
             )}

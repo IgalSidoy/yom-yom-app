@@ -54,21 +54,24 @@ interface ChildManagementCardProps {
   accounts: Account[];
   groups: Group[];
   parents: User[];
+  children: Child[];
+  isLoading: boolean;
   isExpanded: boolean;
   onAccountsChange: () => Promise<void>;
+  onChildrenChange: () => Promise<void>;
 }
 
 const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   accounts,
   groups,
   parents,
+  children,
+  isLoading,
   isExpanded,
   onAccountsChange,
+  onChildrenChange,
 }) => {
   const { accessToken } = useAuth();
-  const [children, setChildren] = useState<Child[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentChild, setCurrentChild] = useState<Partial<Child>>({
@@ -84,56 +87,6 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     message: "",
     severity: "success" as "success" | "error" | "info" | "warning",
   });
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (isExpanded && !isInitialized) {
-        if (accounts.length === 0) {
-          await onAccountsChange();
-        }
-        await fetchChildren();
-        setIsInitialized(true);
-      } else if (!isExpanded) {
-        setIsInitialized(false);
-      }
-    };
-    fetchData();
-  }, [isExpanded, accounts.length]);
-
-  const fetchChildren = async () => {
-    try {
-      setIsLoading(true);
-      const allChildren: Child[] = [];
-
-      for (const account of accounts) {
-        const response = await fetch(
-          `https://localhost:7225/api/v1/account/${account.id}/children`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch children for account ${account.id}`);
-        }
-
-        const data: ChildResponse = await response.json();
-        if (data.children) {
-          allChildren.push(...data.children);
-        }
-      }
-
-      setChildren(allChildren);
-    } catch (error) {
-      console.error("Error fetching children:", error);
-      showNotification("שגיאה בטעינת הילדים", "error");
-      setChildren([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const showNotification = (
     message: string,
@@ -183,7 +136,6 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
 
   const handleSaveChild = async () => {
     try {
-      setIsLoading(true);
       const url = currentChild.id
         ? `https://localhost:7225/api/v1/child/${currentChild.id}`
         : "https://localhost:7225/api/v1/child";
@@ -207,11 +159,9 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
         currentChild.id ? "ילד עודכן בהצלחה" : "ילד נוצר בהצלחה"
       );
       handleCloseDrawer();
-      fetchChildren();
+      await onChildrenChange();
     } catch (error) {
       showNotification("שגיאה בשמירת הילד", "error");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -221,7 +171,6 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
 
   const handleDeleteConfirm = async () => {
     try {
-      setIsLoading(true);
       const response = await fetch(
         `https://localhost:7225/api/v1/child/${currentChild.id}`,
         {
@@ -239,11 +188,9 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
       showNotification("ילד נמחק בהצלחה");
       setIsDeleteDialogOpen(false);
       handleCloseDrawer();
-      fetchChildren();
+      await onChildrenChange();
     } catch (error) {
       showNotification("שגיאה במחיקת הילד", "error");
-    } finally {
-      setIsLoading(false);
     }
   };
 
