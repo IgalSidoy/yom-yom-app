@@ -2,6 +2,9 @@ import React from "react";
 import { BrowserRouter as Router } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import "dayjs/locale/he";
 import theme from "./theme";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AppProvider } from "./contexts/AppContext";
@@ -14,11 +17,20 @@ const App: React.FC = () => {
       <Router>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <LanguageProvider>
-            <AuthProvider>
-              <AppRoutes />
-            </AuthProvider>
-          </LanguageProvider>
+          <LocalizationProvider
+            dateAdapter={AdapterDayjs}
+            adapterLocale="he"
+            localeText={{
+              previousMonth: "החודש הקודם",
+              nextMonth: "החודש הבא",
+            }}
+          >
+            <LanguageProvider>
+              <AuthProvider>
+                <AppRoutes />
+              </AuthProvider>
+            </LanguageProvider>
+          </LocalizationProvider>
         </ThemeProvider>
       </Router>
     </AppProvider>

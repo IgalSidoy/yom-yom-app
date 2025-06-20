@@ -19,9 +19,12 @@ import {
   ListItemText,
   Chip,
   Fab,
+  InputAdornment,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
+import SearchIcon from "@mui/icons-material/Search";
+import ClearIcon from "@mui/icons-material/Clear";
 import { userApi, User, Account } from "../services/api";
 import Notification from "./Notification";
 import { useApp } from "../contexts/AppContext";
@@ -37,7 +40,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
   isExpanded,
   onAccountsChange,
 }) => {
-  const { users, setUsers } = useApp();
+  const { users, setUsers, user: currentAppUser } = useApp();
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -55,6 +58,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
     message: "",
     severity: "success" as "success" | "error" | "info" | "warning",
   });
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -214,112 +218,212 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
       .replace(",", ":");
   };
 
+  const filteredUsers = users.filter(
+    (user: User) =>
+      user.firstName.toLowerCase().includes(search.toLowerCase()) ||
+      user.lastName.toLowerCase().includes(search.toLowerCase()) ||
+      user.email.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <>
+    <Box
+      sx={{
+        position: "relative",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       {isLoading ? (
         <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
           <CircularProgress />
         </Box>
       ) : users.length > 0 ? (
         <>
-          {users.map((user: User) => (
-            <ListItem
-              key={user.id}
-              sx={{
-                bgcolor: "background.paper",
-                borderRadius: 2,
-                mb: 1,
-                border: "1px solid",
-                borderColor: "divider",
-                "&:hover": {
-                  borderColor: "primary.main",
-                  boxShadow: 1,
-                },
-              }}
-            >
-              <ListItemText
-                primary={
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Typography
-                      variant="subtitle1"
-                      sx={{
-                        fontWeight: 500,
-                        color: user.firstName
-                          ? "text.primary"
-                          : "text.secondary",
-                        fontStyle: user.firstName ? "normal" : "italic",
-                      }}
-                    >
-                      {user.firstName && user.lastName
-                        ? `${user.firstName} ${user.lastName}`
-                        : user.email}
-                    </Typography>
-                    <Chip
-                      label={
-                        user.role === "Admin"
-                          ? "מנהל"
-                          : user.role === "Parent"
-                          ? "הורה"
-                          : "צוות"
-                      }
-                      size="small"
-                      color={
-                        user.role === "Admin"
-                          ? "primary"
-                          : user.role === "Parent"
-                          ? "success"
-                          : "info"
-                      }
-                      sx={{
-                        height: 20,
-                        fontSize: "0.75rem",
-                        fontWeight: 500,
-                      }}
-                    />
-                  </Box>
-                }
-                secondary={
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 0.5 }}
-                  >
-                    {user.mobile}
-                  </Typography>
-                }
-              />
-              <IconButton
-                edge="end"
-                aria-label="edit"
-                onClick={() => handleOpenDrawer(user)}
+          {/* Sticky Search Bar and Add Button */}
+          <Box
+            sx={{
+              position: "sticky",
+              top: 60,
+              zIndex: 20,
+              bgcolor: "background.default",
+              pt: 1,
+              pb: 1,
+              borderBottom: 1,
+              borderColor: "divider",
+              mt: -1,
+            }}
+          >
+            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+              <TextField
+                fullWidth
+                label="חיפוש"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="חיפוש לפי שם..."
                 sx={{
-                  color: "primary.main",
-                  "&:hover": {
-                    bgcolor: "primary.lighter",
+                  "& .MuiInputLabel-root": {
+                    fontSize: "0.95rem",
                   },
                 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                  endAdornment: search && (
+                    <InputAdornment position="end">
+                      <IconButton
+                        edge="end"
+                        onClick={() => setSearch("")}
+                        sx={{
+                          color: "primary.main",
+                          "&:hover": {
+                            bgcolor: "primary.lighter",
+                          },
+                        }}
+                      >
+                        <ClearIcon />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <Fab
+                color="primary"
+                aria-label="add user"
+                onClick={() => handleOpenDrawer()}
+                sx={{
+                  boxShadow: 3,
+                  flexShrink: 0,
+                  "&:hover": {
+                    boxShadow: 6,
+                    transform: "scale(1.05)",
+                  },
+                  transition: "all 0.2s ease-in-out",
+                }}
               >
-                <EditIcon />
-              </IconButton>
-            </ListItem>
-          ))}
+                <AddIcon />
+              </Fab>
+            </Box>
+          </Box>
 
-          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-            <Fab
-              color="primary"
-              aria-label="add user"
-              onClick={() => handleOpenDrawer()}
-              sx={{
-                boxShadow: 3,
-                "&:hover": {
-                  boxShadow: 6,
-                  transform: "scale(1.05)",
-                },
-                transition: "all 0.2s ease-in-out",
-              }}
-            >
-              <AddIcon />
-            </Fab>
+          {/* Scrollable Users List */}
+          <Box sx={{ flex: 1, overflow: "auto", px: 2 }}>
+            {filteredUsers.length > 0 ? (
+              <>
+                {filteredUsers.map((user: User) => (
+                  <ListItem
+                    key={user.id}
+                    sx={{
+                      bgcolor: "background.paper",
+                      borderRadius: 2,
+                      mb: 1,
+                      border: "1px solid",
+                      borderColor: "divider",
+                      "&:hover": {
+                        borderColor: "primary.main",
+                        boxShadow: 1,
+                      },
+                    }}
+                  >
+                    <ListItemText
+                      primary={
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <Typography
+                            variant="subtitle1"
+                            sx={{
+                              fontWeight: 500,
+                              color: user.firstName
+                                ? "text.primary"
+                                : "text.secondary",
+                              fontStyle: user.firstName ? "normal" : "italic",
+                            }}
+                          >
+                            {user.firstName && user.lastName
+                              ? `${user.firstName} ${user.lastName}`
+                              : user.email}
+                          </Typography>
+                          <Chip
+                            label={
+                              user.role === "Admin"
+                                ? "מנהל"
+                                : user.role === "Parent"
+                                ? "הורה"
+                                : "צוות"
+                            }
+                            size="small"
+                            color={
+                              user.role === "Admin"
+                                ? "primary"
+                                : user.role === "Parent"
+                                ? "success"
+                                : "info"
+                            }
+                            sx={{
+                              height: 20,
+                              fontSize: "0.75rem",
+                              fontWeight: 500,
+                            }}
+                          />
+                          {user.accountId && (
+                            <Chip
+                              label={`סניף: ${
+                                accounts.find(
+                                  (account) => account.id === user.accountId
+                                )?.branchName || "לא ידוע"
+                              }`}
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: "0.75rem",
+                                fontWeight: 500,
+                                bgcolor: "#009688",
+                                color: "white",
+                                "& .MuiChip-label": {
+                                  color: "white",
+                                },
+                              }}
+                            />
+                          )}
+                        </Box>
+                      }
+                      secondary={
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ mt: 0.5 }}
+                        >
+                          {user.mobile}
+                        </Typography>
+                      }
+                    />
+                    <IconButton
+                      edge="end"
+                      aria-label="edit"
+                      onClick={() => handleOpenDrawer(user)}
+                      sx={{
+                        color: "primary.main",
+                        "&:hover": {
+                          bgcolor: "primary.lighter",
+                        },
+                      }}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </ListItem>
+                ))}
+              </>
+            ) : (
+              <Box sx={{ textAlign: "center", py: 3 }}>
+                <Typography color="text.secondary">
+                  לא נמצאו משתמשים התואמים לחיפוש
+                </Typography>
+              </Box>
+            )}
           </Box>
         </>
       ) : (
@@ -422,11 +526,25 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                   value={currentUser.role}
                   label="תפקיד"
                   onChange={(e) => handleUserChange("role", e.target.value)}
+                  disabled={
+                    currentUser.id === currentAppUser?.id &&
+                    currentUser.role === "Admin"
+                  }
                 >
                   <MenuItem value="Admin">מנהל</MenuItem>
                   <MenuItem value="Staff">צוות</MenuItem>
                   <MenuItem value="Parent">הורה</MenuItem>
                 </Select>
+                {currentUser.id === currentAppUser?.id &&
+                  currentUser.role === "Admin" && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mt: 0.5, display: "block" }}
+                    >
+                      לא ניתן לשנות את התפקיד של המשתמש הנוכחי
+                    </Typography>
+                  )}
               </FormControl>
 
               <FormControl fullWidth>
@@ -638,7 +756,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
         severity={notification.severity}
         onClose={() => setNotification({ ...notification, open: false })}
       />
-    </>
+    </Box>
   );
 };
 

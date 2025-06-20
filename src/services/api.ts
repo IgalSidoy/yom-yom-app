@@ -495,4 +495,76 @@ export const groupApi = {
   },
 };
 
+export interface Parent {
+  id: string;
+  firstName: string;
+  lastName: string;
+  mobile: string;
+}
+
+export interface Child {
+  id?: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  accountId: string;
+  groupId?: string;
+  groupName?: string;
+  parents: string[]; // Array of parent IDs (strings)
+  created?: string;
+  updated?: string;
+}
+
+export interface ChildResponse {
+  children: Child[];
+  total: number;
+}
+
+// Child API functions
+export const childApi = {
+  createChild: async (child: Omit<Child, "id" | "created" | "updated">) => {
+    const response = await api.post("/api/v1/child", child, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  },
+
+  updateChild: async (childId: string, child: Partial<Child>) => {
+    const response = await api.put(`/api/v1/child/${childId}`, child, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  },
+
+  deleteChild: async (childId: string) => {
+    const response = await api.delete(`/api/v1/child/${childId}`, {
+      headers: {
+        Accept: "*/*",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  },
+
+  getChildrenByAccount: async (accountId: string) => {
+    const response = await api.get(`/api/v1/account/${accountId}/children`, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    return response.data as ChildResponse;
+  },
+};
+
 export default api;

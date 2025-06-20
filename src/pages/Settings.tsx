@@ -9,10 +9,15 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useApp } from "../contexts/AppContext";
+import { useAuth } from "../contexts/AuthContext";
 import {
   organizationApi,
   Organization,
@@ -22,15 +27,25 @@ import {
   User,
   groupApi,
   Group,
+  childApi,
+  Child,
+  Parent,
 } from "../services/api";
 import Notification from "../components/Notification";
 import AccountCard from "../components/AccountCard";
 import GroupCard from "../components/GroupCard";
 import UserManagementCard from "../components/UserManagementCard";
+import ChildManagementCard from "../components/ChildManagementCard";
+
+interface ChildResponse {
+  children: Child[];
+  total: number;
+}
 
 const Settings = () => {
   const { language, setLanguage } = useLanguage();
   const { user, setUser } = useApp();
+  const { accessToken } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [expandedAccordion, setExpandedAccordion] = useState<string | false>(
     false
@@ -59,8 +74,14 @@ const Settings = () => {
     updated: "",
   });
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [parents, setParents] = useState<User[]>([]);
   const [isOrganizationModified, setIsOrganizationModified] = useState(false);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
+  const [isLoadingChildren, setIsLoadingChildren] = useState(false);
+  const [children, setChildren] = useState<Child[]>([]);
+  const [isChildrenInitialized, setIsChildrenInitialized] = useState(false);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
 
   const formatMobileNumber = (value: string) => {
     const digits = value.replace(/\D/g, "");
@@ -170,6 +191,89 @@ const Settings = () => {
       .replace(",", ":");
   };
 
+  const fetchGroups = async () => {
+    try {
+      console.log("fetchGroups called - accounts:", accounts);
+      setIsLoadingGroups(true);
+      const allGroups: Group[] = [];
+      for (const account of accounts) {
+        console.log("Fetching groups for account:", account.id);
+        const response = await groupApi.getGroups(account.id);
+        console.log(
+          "Group response for account",
+          account.id,
+          ":",
+          response.data
+        );
+        if (response.data && Array.isArray(response.data)) {
+          allGroups.push(...response.data);
+        } else if (
+          response.data &&
+          response.data.groups &&
+          Array.isArray(response.data.groups)
+        ) {
+          allGroups.push(...response.data.groups);
+        }
+      }
+      console.log("All groups fetched:", allGroups);
+      setGroups(allGroups);
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+      showNotification("שגיאה בטעינת הקבוצות", "error");
+    } finally {
+      setIsLoadingGroups(false);
+    }
+  };
+
+  const fetchParents = async () => {
+    try {
+      console.log("Fetching parents...");
+      const response = await userApi.getUsers();
+      if (response.data.users) {
+        const parentUsers = response.data.users.filter(
+          (user: User) => user.role === "Parent"
+        );
+        console.log("All users:", response.data.users);
+        console.log("Parent users:", parentUsers);
+        setParents(parentUsers);
+      }
+    } catch (error) {
+      console.error("Error fetching parents:", error);
+      showNotification("שגיאה בטעינת ההורים", "error");
+    }
+  };
+
+  const fetchChildren = async (accountId?: string) => {
+    try {
+      setIsLoadingChildren(true);
+      const allChildren: Child[] = [];
+
+      if (accountId) {
+        // Fetch children for specific account only
+        const data = await childApi.getChildrenByAccount(accountId);
+        if (data.children) {
+          allChildren.push(...data.children);
+        }
+      } else {
+        // Fetch children for all accounts (original behavior)
+        for (const account of accounts) {
+          const data = await childApi.getChildrenByAccount(account.id);
+          if (data.children) {
+            allChildren.push(...data.children);
+          }
+        }
+      }
+
+      setChildren(allChildren);
+    } catch (error) {
+      console.error("Error fetching children:", error);
+      showNotification("שגיאה בטעינת הילדים", "error");
+      setChildren([]);
+    } finally {
+      setIsLoadingChildren(false);
+    }
+  };
+
   const handleAccordionChange =
     (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
       setExpandedAccordion(isExpanded ? panel : false);
@@ -205,6 +309,33 @@ const Settings = () => {
 
       if (isExpanded && panel === "groups" && accounts.length === 0) {
         fetchAccounts();
+      }
+
+      if (isExpanded && panel === "children") {
+        console.log("Children accordion expanded");
+        console.log("Current groups length:", groups.length);
+        console.log("Current accounts length:", accounts.length);
+
+        if (accounts.length === 0) {
+          console.log("No accounts, fetching accounts first");
+          fetchAccounts();
+        }
+        // Always ensure groups and parents are loaded when accessing children section
+        if (groups.length === 0) {
+          console.log("No groups, fetching groups");
+          fetchGroups();
+        }
+        if (parents.length === 0) {
+          console.log("No parents, fetching parents");
+          fetchParents();
+        }
+        if (!isChildrenInitialized) {
+          console.log("Children not initialized, fetching children");
+          fetchChildren();
+          setIsChildrenInitialized(true);
+        }
+      } else if (panel === "children") {
+        setIsChildrenInitialized(false);
       }
     };
 
@@ -243,6 +374,38 @@ const Settings = () => {
     // No need to clear groups state as it's handled by the GroupCard component
   };
 
+  const handleChildrenChange = async (accountId?: string) => {
+    await fetchChildren(accountId);
+  };
+
+  const handleAccountSelection = async (accountId: string) => {
+    setSelectedAccountId(accountId);
+
+    if (accountId) {
+      setIsLoadingChildren(true);
+      try {
+        await fetchChildren(accountId);
+      } finally {
+        setIsLoadingChildren(false);
+      }
+    } else {
+      setChildren([]);
+    }
+  };
+
+  // Fetch parents when children accordion is expanded
+  useEffect(() => {
+    if (expandedAccordion === "children" && parents.length === 0) {
+      fetchParents();
+    }
+  }, [expandedAccordion, parents.length]);
+
+  // Debug logging
+  console.log("Settings component - groups state:", groups);
+  console.log("Settings component - accounts state:", accounts);
+  console.log("Settings component - parents state:", parents);
+  console.log("Settings component - children state:", children);
+
   return (
     <Box sx={{ mt: 4, textAlign: "center", px: 2 }}>
       <Notification
@@ -252,9 +415,20 @@ const Settings = () => {
         onClose={handleCloseNotification}
       />
 
-      <Typography variant="h5" sx={{ mb: 3 }}>
-        הגדרות
-      </Typography>
+      {/* Sticky Title */}
+      <Box
+        sx={{
+          position: "sticky",
+          top: 0,
+          zIndex: 5,
+          bgcolor: "background.default",
+          pt: 2,
+          pb: 2,
+          mb: 3,
+        }}
+      >
+        <Typography variant="h5">הגדרות</Typography>
+      </Box>
 
       <Box sx={{ maxWidth: 600, mx: "auto" }}>
         <Accordion
@@ -476,6 +650,64 @@ const Settings = () => {
                   accounts={accounts}
                   isExpanded={expandedAccordion === "users"}
                   onAccountsChange={handleAccountsChange}
+                />
+              </Box>
+            )}
+          </AccordionDetails>
+        </Accordion>
+
+        <Accordion
+          expanded={expandedAccordion === "children"}
+          onChange={handleAccordionChange("children")}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="children-content"
+            id="children-header"
+          >
+            <Typography variant="h6">ילדים</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            {isLoadingChildren ? (
+              <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+                <CircularProgress />
+              </Box>
+            ) : !accounts || accounts.length === 0 ? (
+              <Typography>יש לטעון סניפים קודם</Typography>
+            ) : (
+              <Box sx={{ textAlign: "right" }}>
+                {/* Account Selection */}
+                <Box sx={{ mb: 3 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>בחר סניף</InputLabel>
+                    <Select
+                      value={selectedAccountId}
+                      label="בחר סניף"
+                      onChange={(e) => handleAccountSelection(e.target.value)}
+                      sx={{ bgcolor: "background.paper" }}
+                    >
+                      <MenuItem value="">
+                        <em>בחר סניף</em>
+                      </MenuItem>
+                      {accounts.map((account) => (
+                        <MenuItem key={account.id} value={account.id}>
+                          {account.branchName || "שם הסניף חסר"}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+
+                {/* Child Management Card */}
+                <ChildManagementCard
+                  accounts={accounts}
+                  parents={parents}
+                  children={children}
+                  selectedAccountId={selectedAccountId}
+                  isLoading={isLoadingChildren}
+                  isExpanded={expandedAccordion === "children"}
+                  onAccountsChange={handleAccountsChange}
+                  onChildrenChange={handleChildrenChange}
                 />
               </Box>
             )}
