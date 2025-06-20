@@ -23,31 +23,15 @@ import {
   User,
   groupApi,
   Group,
+  childApi,
+  Child,
+  Parent,
 } from "../services/api";
 import Notification from "../components/Notification";
 import AccountCard from "../components/AccountCard";
 import GroupCard from "../components/GroupCard";
 import UserManagementCard from "../components/UserManagementCard";
 import ChildManagementCard from "../components/ChildManagementCard";
-
-interface Parent {
-  id: string;
-  firstName: string;
-  lastName: string;
-  mobile: string;
-}
-
-interface Child {
-  id?: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  accountId: string;
-  groupId?: string;
-  parents: Parent[];
-  created?: string;
-  updated?: string;
-}
 
 interface ChildResponse {
   children: Child[];
@@ -240,28 +224,24 @@ const Settings = () => {
     }
   };
 
-  const fetchChildren = async () => {
+  const fetchChildren = async (accountId?: string) => {
     try {
       setIsLoadingChildren(true);
       const allChildren: Child[] = [];
 
-      for (const account of accounts) {
-        const response = await fetch(
-          `https://localhost:7225/api/v1/account/${account.id}/children`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch children for account ${account.id}`);
-        }
-
-        const data: ChildResponse = await response.json();
+      if (accountId) {
+        // Fetch children for specific account only
+        const data = await childApi.getChildrenByAccount(accountId);
         if (data.children) {
           allChildren.push(...data.children);
+        }
+      } else {
+        // Fetch children for all accounts (original behavior)
+        for (const account of accounts) {
+          const data = await childApi.getChildrenByAccount(account.id);
+          if (data.children) {
+            allChildren.push(...data.children);
+          }
         }
       }
 
@@ -366,8 +346,8 @@ const Settings = () => {
     // No need to clear groups state as it's handled by the GroupCard component
   };
 
-  const handleChildrenChange = async () => {
-    await fetchChildren();
+  const handleChildrenChange = async (accountId?: string) => {
+    await fetchChildren(accountId);
   };
 
   return (
