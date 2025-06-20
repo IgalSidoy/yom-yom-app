@@ -34,6 +34,8 @@ import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import CheckIcon from "@mui/icons-material/Check";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import {
   Account,
   Group,
@@ -578,7 +580,12 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                       newValue?.format("YYYY-MM-DD") || ""
                     );
                   }}
+                  slots={{
+                    leftArrowIcon: KeyboardArrowRightIcon,
+                    rightArrowIcon: KeyboardArrowLeftIcon,
+                  }}
                   slotProps={{
+                    openPickerButton: { sx: { color: "primary.main" } },
                     textField: {
                       fullWidth: true,
                       required: true,
@@ -604,6 +611,11 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                           },
                         },
                       },
+                    },
+                  }}
+                  sx={{
+                    "& .MuiPickersArrowSwitcher-button": {
+                      color: "primary.main",
                     },
                   }}
                 />

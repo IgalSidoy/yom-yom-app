@@ -17,7 +17,14 @@ const App: React.FC = () => {
       <Router>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="he">
+          <LocalizationProvider
+            dateAdapter={AdapterDayjs}
+            adapterLocale="he"
+            localeText={{
+              previousMonth: "החודש הקודם",
+              nextMonth: "החודש הבא",
+            }}
+          >
             <LanguageProvider>
               <AuthProvider>
                 <AppRoutes />
