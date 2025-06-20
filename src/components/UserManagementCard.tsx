@@ -40,7 +40,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
   isExpanded,
   onAccountsChange,
 }) => {
-  const { users, setUsers } = useApp();
+  const { users, setUsers, user: currentAppUser } = useApp();
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -526,11 +526,25 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                   value={currentUser.role}
                   label="תפקיד"
                   onChange={(e) => handleUserChange("role", e.target.value)}
+                  disabled={
+                    currentUser.id === currentAppUser?.id &&
+                    currentUser.role === "Admin"
+                  }
                 >
                   <MenuItem value="Admin">מנהל</MenuItem>
                   <MenuItem value="Staff">צוות</MenuItem>
                   <MenuItem value="Parent">הורה</MenuItem>
                 </Select>
+                {currentUser.id === currentAppUser?.id &&
+                  currentUser.role === "Admin" && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mt: 0.5, display: "block" }}
+                    >
+                      לא ניתן לשנות את התפקיד של המשתמש הנוכחי
+                    </Typography>
+                  )}
               </FormControl>
 
               <FormControl fullWidth>
