@@ -227,14 +227,18 @@ const Settings = () => {
 
   const fetchParents = async () => {
     try {
+      console.log("Fetching parents...");
       const response = await userApi.getUsers();
       if (response.data.users) {
         const parentUsers = response.data.users.filter(
           (user: User) => user.role === "Parent"
         );
+        console.log("All users:", response.data.users);
+        console.log("Parent users:", parentUsers);
         setParents(parentUsers);
       }
     } catch (error) {
+      console.error("Error fetching parents:", error);
       showNotification("שגיאה בטעינת ההורים", "error");
     }
   };
@@ -399,6 +403,8 @@ const Settings = () => {
   // Debug logging
   console.log("Settings component - groups state:", groups);
   console.log("Settings component - accounts state:", accounts);
+  console.log("Settings component - parents state:", parents);
+  console.log("Settings component - children state:", children);
 
   return (
     <Box sx={{ mt: 4, textAlign: "center", px: 2 }}>

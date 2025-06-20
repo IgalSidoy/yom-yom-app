@@ -28,6 +28,7 @@ import {
   CardContent,
   Grid,
   Chip,
+  InputAdornment,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs, { Dayjs } from "dayjs";
@@ -37,6 +38,8 @@ import CheckIcon from "@mui/icons-material/Check";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import SearchIcon from "@mui/icons-material/Search";
+import ClearIcon from "@mui/icons-material/Clear";
 import {
   Account,
   Group,
@@ -63,6 +66,8 @@ interface ChildManagementCardProps {
   onChildrenChange: (accountId?: string) => Promise<void>;
 }
 
+type ChildForm = Omit<Child, "parents"> & { parents: Parent[] };
+
 const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   accounts,
   parents,
@@ -78,7 +83,8 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
-  const [currentChild, setCurrentChild] = useState<Child>({
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentChild, setCurrentChild] = useState<ChildForm>({
     firstName: "",
     lastName: "",
     dateOfBirth: "",
@@ -91,21 +97,6 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     message: "",
     severity: "success" as "success" | "error" | "info" | "warning",
   });
-
-  // Debug effect to log when groups change
-  useEffect(() => {
-    console.log("ChildManagementCard - Groups updated:", groups);
-    console.log("ChildManagementCard - Accounts:", accounts);
-  }, [groups, accounts]);
-
-  // Fetch groups when selectedAccountId changes
-  useEffect(() => {
-    if (selectedAccountId) {
-      fetchGroupsForAccount(selectedAccountId);
-    } else {
-      setGroups([]);
-    }
-  }, [selectedAccountId]);
 
   // Initialize data when accordion is expanded
   useEffect(() => {
@@ -126,10 +117,8 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   // Function to fetch groups for a specific account
   const fetchGroupsForAccount = async (accountId: string) => {
     try {
-      console.log("Fetching groups for account:", accountId);
       setIsLoadingGroups(true);
       const response = await groupApi.getGroups(accountId);
-      console.log("Groups response:", response.data);
 
       let groupsData: Group[] = [];
       if (response.data.groups) {
@@ -143,10 +132,8 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
         }));
       }
 
-      console.log("Groups data:", groupsData);
       setGroups(groupsData);
     } catch (error) {
-      console.error("Error fetching groups:", error);
       showNotification("שגיאה בטעינת הקבוצות", "error");
       setGroups([]);
     } finally {
@@ -154,10 +141,34 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     }
   };
 
-  // Filter children based on selected account
-  const filteredChildren = selectedAccountId
-    ? children.filter((child) => child.accountId === selectedAccountId)
-    : children;
+  // Fetch groups when selectedAccountId changes
+  useEffect(() => {
+    if (selectedAccountId) {
+      fetchGroupsForAccount(selectedAccountId);
+    } else {
+      setGroups([]);
+    }
+  }, [selectedAccountId]);
+
+  // Debug: Log when children or parents change
+  useEffect(() => {
+    console.log("ChildManagementCard - Parents updated:", parents);
+    console.log("ChildManagementCard - Children updated:", children);
+  }, [parents, children]);
+
+  // Filter children based on selected account and search query
+  const filteredChildren = children
+    .filter((child) =>
+      selectedAccountId ? child.accountId === selectedAccountId : true
+    )
+    .filter((child) => {
+      if (!searchQuery.trim()) return true;
+      const fullName = `${child.firstName || ""} ${
+        child.lastName || ""
+      }`.toLowerCase();
+      const query = searchQuery.toLowerCase();
+      return fullName.includes(query);
+    });
 
   // Filter groups based on selected account
   const filteredGroups = selectedAccountId
@@ -177,17 +188,17 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
 
   const handleOpenDrawer = (child?: Child) => {
     if (child) {
-      setCurrentChild(child);
-    } else {
-      setCurrentChild({
-        firstName: "",
-        lastName: "",
-        dateOfBirth: "",
-        accountId: selectedAccountId, // Use the selected account from props
-        groupId: "",
-        parents: [],
-      });
+      handleEditChild(child);
+      return;
     }
+    setCurrentChild({
+      firstName: "",
+      lastName: "",
+      dateOfBirth: "",
+      accountId: selectedAccountId,
+      groupId: "",
+      parents: [],
+    });
     setIsDrawerOpen(true);
   };
 
@@ -203,7 +214,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     });
   };
 
-  const handleChildChange = (field: keyof Child, value: any) => {
+  const handleChildChange = (field: keyof ChildForm, value: any) => {
     setCurrentChild((prev) => ({
       ...prev,
       [field]: value,
@@ -212,12 +223,21 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
 
   const handleSaveChild = async () => {
     try {
+      const childData = {
+        firstName: currentChild.firstName,
+        lastName: currentChild.lastName,
+        dateOfBirth: currentChild.dateOfBirth
+          ? new Date(currentChild.dateOfBirth).toISOString()
+          : "",
+        accountId: currentChild.accountId,
+        groupId: currentChild.groupId || undefined,
+        parents: currentChild.parents.map((p) => p.id),
+      };
       if (currentChild.id) {
-        await childApi.updateChild(currentChild.id, currentChild);
+        await childApi.updateChild(currentChild.id, childData);
       } else {
-        await childApi.createChild(currentChild);
+        await childApi.createChild(childData);
       }
-
       showNotification(
         currentChild.id ? "ילד עודכן בהצלחה" : "ילד נוצר בהצלחה"
       );
@@ -238,18 +258,65 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
         throw new Error("No child ID provided");
       }
 
+      console.log("Deleting child:", currentChild.id);
       await childApi.deleteChild(currentChild.id);
       showNotification("ילד נמחק בהצלחה");
       setIsDeleteDialogOpen(false);
       handleCloseDrawer();
       await onChildrenChange(currentChild.accountId);
     } catch (error) {
+      console.error("Error deleting child:", error);
       showNotification("שגיאה במחיקת הילד", "error");
     }
   };
 
   const handleDeleteCancel = () => {
     setIsDeleteDialogOpen(false);
+  };
+
+  const calculateAge = (dateStr: string) => {
+    if (!dateStr || dateStr === "0001-01-01T00:00:00") {
+      return "לא זמין";
+    }
+    const birthDate = new Date(dateStr);
+    const today = new Date();
+
+    let years = today.getFullYear() - birthDate.getFullYear();
+    let months = today.getMonth() - birthDate.getMonth();
+
+    // Adjust if birthday hasn't occurred yet this year
+    if (months < 0 || (months === 0 && today.getDate() < birthDate.getDate())) {
+      years--;
+      months += 12;
+    }
+
+    // Calculate decimal age (years + months/12)
+    const decimalAge = years + months / 12;
+
+    // Return age in Hebrew format
+    if (years === 0) {
+      if (months === 0) {
+        return "תינוק";
+      } else if (months === 1) {
+        return "חודש";
+      } else {
+        return `${months} חודשים`;
+      }
+    } else if (years === 1) {
+      if (months === 0) {
+        return "שנה";
+      } else {
+        return `${decimalAge.toFixed(1)} שנים`;
+      }
+    } else if (years === 2) {
+      if (months === 0) {
+        return "שנתיים";
+      } else {
+        return `${decimalAge.toFixed(1)} שנים`;
+      }
+    } else {
+      return `${decimalAge.toFixed(1)} שנים`;
+    }
   };
 
   const formatDate = (dateStr: string) => {
@@ -261,42 +328,46 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    })
-      .format(date)
-      .replace(",", ":");
+    }).format(date);
   };
 
   const handleEditChild = (child: Child) => {
-    // Format the date for date input (YYYY-MM-DD)
     const formatDateForInput = (dateString: string) => {
       if (!dateString) return "";
       const date = new Date(dateString);
-      return date.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+      return date.toISOString().split("T")[0];
     };
 
-    console.log("Editing child:", child);
-    console.log("Child accountId:", child.accountId);
+    // Map parent IDs to Parent objects (not User)
+    const parentObjects: Parent[] = (child.parents || [])
+      .map((parent: string | { id: string }) => {
+        const parentId = typeof parent === "string" ? parent : parent.id;
+        const found = parents.find((p) => p.id === parentId);
+        return found
+          ? {
+              id: found.id,
+              firstName: found.firstName,
+              lastName: found.lastName,
+              mobile: found.mobile,
+            }
+          : null;
+      })
+      .filter((parent): parent is Parent => parent !== null);
 
-    // Set child data without groupId initially
     setCurrentChild({
       id: child.id,
       firstName: child.firstName,
       lastName: child.lastName,
       dateOfBirth: formatDateForInput(child.dateOfBirth),
       accountId: child.accountId,
-      groupId: "", // Don't set groupId until groups are loaded
-      parents: child.parents,
+      groupId: "",
+      parents: parentObjects,
       created: child.created,
       updated: child.updated,
     });
 
-    // Always fetch groups for the child's account and then set groupId
     if (child.accountId) {
       fetchGroupsForAccount(child.accountId).then(() => {
-        // After groups are loaded, set the groupId if it exists in the loaded groups
         if (
           child.groupId &&
           groups.some((group) => group.id === child.groupId)
@@ -308,15 +379,80 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
         }
       });
     }
-
     setIsDrawerOpen(true);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
   };
 
   return (
     <Box sx={{ position: "relative", minHeight: "200px", pb: 8 }}>
+      {/* Search Bar and Add Button */}
+      {selectedAccountId && (
+        <Box sx={{ mb: 3, display: "flex", gap: 2, alignItems: "center" }}>
+          <TextField
+            fullWidth
+            placeholder="חיפוש לפי שם..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+              endAdornment: searchQuery && (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={handleClearSearch}
+                    edge="end"
+                  >
+                    <ClearIcon />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 2,
+                bgcolor: "background.paper",
+                "&:hover .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "primary.main",
+                },
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "primary.main",
+                },
+              },
+            }}
+          />
+          <Fab
+            color="primary"
+            aria-label="add child"
+            onClick={() => handleOpenDrawer()}
+            sx={{
+              boxShadow: 3,
+              flexShrink: 0,
+              "&:hover": {
+                boxShadow: 6,
+                transform: "scale(1.05)",
+              },
+              transition: "all 0.2s ease-in-out",
+            }}
+          >
+            <AddIcon />
+          </Fab>
+        </Box>
+      )}
+
       {isLoading ? (
         <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
           <CircularProgress />
+        </Box>
+      ) : parents.length === 0 ? (
+        <Box sx={{ textAlign: "center", py: 3 }}>
+          <Typography color="text.secondary">טוען רשימת הורים...</Typography>
         </Box>
       ) : filteredChildren.length > 0 ? (
         <>
@@ -337,7 +473,9 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
             >
               <ListItemText
                 primary={
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Box
+                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
+                  >
                     <Typography
                       variant="subtitle1"
                       sx={{
@@ -352,16 +490,48 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                         ? `${child.firstName} ${child.lastName}`
                         : "שם חסר"}
                     </Typography>
-                    <Chip
-                      label={formatDate(child.dateOfBirth)}
-                      size="small"
-                      color="info"
-                      sx={{
-                        height: 20,
-                        fontSize: "0.75rem",
-                        fontWeight: 500,
-                      }}
-                    />
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Chip
+                        label={formatDate(child.dateOfBirth)}
+                        size="small"
+                        color="info"
+                        sx={{
+                          height: 20,
+                          fontSize: "0.75rem",
+                          fontWeight: 500,
+                        }}
+                      />
+                      <Chip
+                        label={`גיל: ${calculateAge(child.dateOfBirth)}`}
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: "0.75rem",
+                          fontWeight: 500,
+                          bgcolor: "green",
+                          color: "white",
+                          "& .MuiChip-label": {
+                            color: "white",
+                          },
+                        }}
+                      />
+                      {child.groupId && (
+                        <Chip
+                          label={`קבוצה: ${child.groupName || "לא ידועה"}`}
+                          size="small"
+                          sx={{
+                            height: 20,
+                            fontSize: "0.75rem",
+                            fontWeight: 500,
+                            bgcolor: "#9c27b0",
+                            color: "white",
+                            "& .MuiChip-label": {
+                              color: "white",
+                            },
+                          }}
+                        />
+                      )}
+                    </Box>
                   </Box>
                 }
                 secondary={
@@ -370,15 +540,38 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                     color="text.secondary"
                     sx={{ mt: 0.5 }}
                   >
-                    {child.parents && child.parents.length > 0
-                      ? `הורים: ${child.parents
-                          .map((parent) =>
-                            parent.firstName && parent.lastName
-                              ? `${parent.firstName} ${parent.lastName}`
-                              : "הורה לא ידוע"
-                          )
-                          .join(", ")}`
-                      : "אין הורים מוגדרים"}
+                    {(() => {
+                      console.log(
+                        `Displaying parents for child ${child.id}:`,
+                        child.parents
+                      );
+                      console.log("Available parents for lookup:", parents);
+
+                      if (child.parents && child.parents.length > 0) {
+                        const parentNames = child.parents
+                          .map((parent: string | { id: string }) => {
+                            const parentId =
+                              typeof parent === "string" ? parent : parent.id;
+                            const parentObj = parents.find(
+                              (p) => p.id === parentId
+                            );
+                            console.log(
+                              `Looking for parent ID ${parentId}:`,
+                              parentObj
+                            );
+                            return parentObj &&
+                              parentObj.firstName &&
+                              parentObj.lastName
+                              ? `${parentObj.firstName} ${parentObj.lastName}`
+                              : "הורה לא ידוע";
+                          })
+                          .join(", ");
+                        console.log("Final parent names:", parentNames);
+                        return `הורים: ${parentNames}`;
+                      } else {
+                        return "אין הורים מוגדרים";
+                      }
+                    })()}
                   </Typography>
                 }
               />
@@ -401,29 +594,12 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
       ) : (
         <Box sx={{ textAlign: "center", py: 3 }}>
           <Typography color="text.secondary">
-            {selectedAccountId ? "אין ילדים בסניף זה" : "אין ילדים להצגה"}
+            {searchQuery
+              ? "לא נמצאו ילדים התואמים לחיפוש"
+              : selectedAccountId
+              ? "אין ילדים בסניף זה"
+              : "אין ילדים להצגה"}
           </Typography>
-        </Box>
-      )}
-
-      {/* Add button - show when account is selected */}
-      {selectedAccountId && (
-        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-          <Fab
-            color="primary"
-            aria-label="add child"
-            onClick={() => handleOpenDrawer()}
-            sx={{
-              boxShadow: 3,
-              "&:hover": {
-                boxShadow: 6,
-                transform: "scale(1.05)",
-              },
-              transition: "all 0.2s ease-in-out",
-            }}
-          >
-            <AddIcon />
-          </Fab>
         </Box>
       )}
 
@@ -471,22 +647,14 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                   <InputLabel>הורים</InputLabel>
                   <Select
                     multiple
-                    value={currentChild.parents?.map((p) => p.id) || []}
+                    value={currentChild.parents.map((p) => p.id)}
                     label="הורים"
                     onChange={(e) => {
                       const selectedIds = e.target.value as string[];
-                      const selectedParents = parents
-                        .filter((parent) => selectedIds.includes(parent.id))
-                        .map((parent) => ({
-                          id: parent.id,
-                          firstName: parent.firstName,
-                          lastName: parent.lastName,
-                          mobile: parent.mobile,
-                        }));
+                      const selectedParents = parents.filter((parent) =>
+                        selectedIds.includes(parent.id)
+                      );
                       handleChildChange("parents", selectedParents);
-
-                      // If this is the first parent being selected and the child's last name is empty,
-                      // set it to match the parent's last name
                       if (
                         selectedParents.length === 1 &&
                         !currentChild.lastName
@@ -520,7 +688,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                       .map((parent) => (
                         <MenuItem key={parent.id} value={parent.id}>
                           <ListItemIcon>
-                            {currentChild.parents?.some(
+                            {currentChild.parents.some(
                               (p) => p.id === parent.id
                             ) && (
                               <CheckIcon
