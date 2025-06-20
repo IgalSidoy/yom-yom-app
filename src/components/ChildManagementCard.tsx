@@ -387,221 +387,247 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   };
 
   return (
-    <Box sx={{ position: "relative", minHeight: "200px", pb: 8 }}>
-      {/* Search Bar and Add Button */}
+    <Box
+      sx={{
+        position: "relative",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Sticky Search Bar and Add Button */}
       {selectedAccountId && (
-        <Box sx={{ mb: 3, display: "flex", gap: 2, alignItems: "center" }}>
-          <TextField
-            fullWidth
-            placeholder="חיפוש לפי שם..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon color="action" />
-                </InputAdornment>
-              ),
-              endAdornment: searchQuery && (
-                <InputAdornment position="end">
-                  <IconButton
-                    size="small"
-                    onClick={handleClearSearch}
-                    edge="end"
-                  >
-                    <ClearIcon />
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 2,
-                bgcolor: "background.paper",
-                "&:hover .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "primary.main",
+        <Box
+          sx={{
+            position: "sticky",
+            top: 60,
+            zIndex: 20,
+            bgcolor: "background.default",
+            pt: 1,
+            pb: 1,
+            borderBottom: 1,
+            borderColor: "divider",
+            mt: -1,
+          }}
+        >
+          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+            <TextField
+              fullWidth
+              placeholder="חיפוש לפי שם..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+                endAdornment: searchQuery && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={handleClearSearch}
+                      edge="end"
+                    >
+                      <ClearIcon />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                  bgcolor: "background.paper",
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "primary.main",
+                  },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "primary.main",
+                  },
                 },
-                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "primary.main",
+              }}
+            />
+            <Fab
+              color="primary"
+              aria-label="add child"
+              onClick={() => handleOpenDrawer()}
+              sx={{
+                boxShadow: 3,
+                flexShrink: 0,
+                "&:hover": {
+                  boxShadow: 6,
+                  transform: "scale(1.05)",
                 },
-              },
-            }}
-          />
-          <Fab
-            color="primary"
-            aria-label="add child"
-            onClick={() => handleOpenDrawer()}
-            sx={{
-              boxShadow: 3,
-              flexShrink: 0,
-              "&:hover": {
-                boxShadow: 6,
-                transform: "scale(1.05)",
-              },
-              transition: "all 0.2s ease-in-out",
-            }}
-          >
-            <AddIcon />
-          </Fab>
+                transition: "all 0.2s ease-in-out",
+              }}
+            >
+              <AddIcon />
+            </Fab>
+          </Box>
         </Box>
       )}
 
-      {isLoading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-          <CircularProgress />
-        </Box>
-      ) : parents.length === 0 ? (
-        <Box sx={{ textAlign: "center", py: 3 }}>
-          <Typography color="text.secondary">טוען רשימת הורים...</Typography>
-        </Box>
-      ) : filteredChildren.length > 0 ? (
-        <>
-          {filteredChildren.map((child: Child) => (
-            <ListItem
-              key={child.id}
-              sx={{
-                bgcolor: "background.paper",
-                borderRadius: 2,
-                mb: 1,
-                border: "1px solid",
-                borderColor: "divider",
-                "&:hover": {
-                  borderColor: "primary.main",
-                  boxShadow: 1,
-                },
-              }}
-            >
-              <ListItemText
-                primary={
-                  <Box
-                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
-                  >
-                    <Typography
-                      variant="subtitle1"
-                      sx={{
-                        fontWeight: 500,
-                        color: child.firstName
-                          ? "text.primary"
-                          : "text.secondary",
-                        fontStyle: child.firstName ? "normal" : "italic",
-                      }}
+      {/* Scrollable Children List */}
+      <Box sx={{ flex: 1, overflow: "auto", px: 2, pb: 8 }}>
+        {isLoading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+            <CircularProgress />
+          </Box>
+        ) : parents.length === 0 ? (
+          <Box sx={{ textAlign: "center", py: 3 }}>
+            <Typography color="text.secondary">טוען רשימת הורים...</Typography>
+          </Box>
+        ) : filteredChildren.length > 0 ? (
+          <>
+            {filteredChildren.map((child: Child) => (
+              <ListItem
+                key={child.id}
+                sx={{
+                  bgcolor: "background.paper",
+                  borderRadius: 2,
+                  mb: 1,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  "&:hover": {
+                    borderColor: "primary.main",
+                    boxShadow: 1,
+                  },
+                }}
+              >
+                <ListItemText
+                  primary={
+                    <Box
+                      sx={{ display: "flex", flexDirection: "column", gap: 1 }}
                     >
-                      {child.firstName && child.lastName
-                        ? `${child.firstName} ${child.lastName}`
-                        : "שם חסר"}
-                    </Typography>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Chip
-                        label={formatDate(child.dateOfBirth)}
-                        size="small"
-                        color="info"
+                      <Typography
+                        variant="subtitle1"
                         sx={{
-                          height: 20,
-                          fontSize: "0.75rem",
                           fontWeight: 500,
+                          color: child.firstName
+                            ? "text.primary"
+                            : "text.secondary",
+                          fontStyle: child.firstName ? "normal" : "italic",
                         }}
-                      />
-                      <Chip
-                        label={`גיל: ${calculateAge(child.dateOfBirth)}`}
-                        size="small"
-                        sx={{
-                          height: 20,
-                          fontSize: "0.75rem",
-                          fontWeight: 500,
-                          bgcolor: "green",
-                          color: "white",
-                          "& .MuiChip-label": {
-                            color: "white",
-                          },
-                        }}
-                      />
-                      {child.groupId && (
+                      >
+                        {child.firstName && child.lastName
+                          ? `${child.firstName} ${child.lastName}`
+                          : "שם חסר"}
+                      </Typography>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
                         <Chip
-                          label={`קבוצה: ${child.groupName || "לא ידועה"}`}
+                          label={formatDate(child.dateOfBirth)}
+                          size="small"
+                          color="info"
+                          sx={{
+                            height: 20,
+                            fontSize: "0.75rem",
+                            fontWeight: 500,
+                          }}
+                        />
+                        <Chip
+                          label={`גיל: ${calculateAge(child.dateOfBirth)}`}
                           size="small"
                           sx={{
                             height: 20,
                             fontSize: "0.75rem",
                             fontWeight: 500,
-                            bgcolor: "#9c27b0",
+                            bgcolor: "green",
                             color: "white",
                             "& .MuiChip-label": {
                               color: "white",
                             },
                           }}
                         />
-                      )}
+                        {child.groupId && (
+                          <Chip
+                            label={`קבוצה: ${child.groupName || "לא ידועה"}`}
+                            size="small"
+                            sx={{
+                              height: 20,
+                              fontSize: "0.75rem",
+                              fontWeight: 500,
+                              bgcolor: "#9c27b0",
+                              color: "white",
+                              "& .MuiChip-label": {
+                                color: "white",
+                              },
+                            }}
+                          />
+                        )}
+                      </Box>
                     </Box>
-                  </Box>
-                }
-                secondary={
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 0.5 }}
-                  >
-                    {(() => {
-                      console.log(
-                        `Displaying parents for child ${child.id}:`,
-                        child.parents
-                      );
-                      console.log("Available parents for lookup:", parents);
+                  }
+                  secondary={
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 0.5 }}
+                    >
+                      {(() => {
+                        console.log(
+                          `Displaying parents for child ${child.id}:`,
+                          child.parents
+                        );
+                        console.log("Available parents for lookup:", parents);
 
-                      if (child.parents && child.parents.length > 0) {
-                        const parentNames = child.parents
-                          .map((parent: string | { id: string }) => {
-                            const parentId =
-                              typeof parent === "string" ? parent : parent.id;
-                            const parentObj = parents.find(
-                              (p) => p.id === parentId
-                            );
-                            console.log(
-                              `Looking for parent ID ${parentId}:`,
-                              parentObj
-                            );
-                            return parentObj &&
-                              parentObj.firstName &&
-                              parentObj.lastName
-                              ? `${parentObj.firstName} ${parentObj.lastName}`
-                              : "הורה לא ידוע";
-                          })
-                          .join(", ");
-                        console.log("Final parent names:", parentNames);
-                        return `הורים: ${parentNames}`;
-                      } else {
-                        return "אין הורים מוגדרים";
-                      }
-                    })()}
-                  </Typography>
-                }
-              />
-              <IconButton
-                edge="end"
-                aria-label="edit"
-                onClick={() => handleEditChild(child)}
-                sx={{
-                  color: "primary.main",
-                  "&:hover": {
-                    bgcolor: "primary.lighter",
-                  },
-                }}
-              >
-                <EditIcon />
-              </IconButton>
-            </ListItem>
-          ))}
-        </>
-      ) : (
-        <Box sx={{ textAlign: "center", py: 3 }}>
-          <Typography color="text.secondary">
-            {searchQuery
-              ? "לא נמצאו ילדים התואמים לחיפוש"
-              : selectedAccountId
-              ? "אין ילדים בסניף זה"
-              : "אין ילדים להצגה"}
-          </Typography>
-        </Box>
-      )}
+                        if (child.parents && child.parents.length > 0) {
+                          const parentNames = child.parents
+                            .map((parent: string | { id: string }) => {
+                              const parentId =
+                                typeof parent === "string" ? parent : parent.id;
+                              const parentObj = parents.find(
+                                (p) => p.id === parentId
+                              );
+                              console.log(
+                                `Looking for parent ID ${parentId}:`,
+                                parentObj
+                              );
+                              return parentObj &&
+                                parentObj.firstName &&
+                                parentObj.lastName
+                                ? `${parentObj.firstName} ${parentObj.lastName}`
+                                : "הורה לא ידוע";
+                            })
+                            .join(", ");
+                          console.log("Final parent names:", parentNames);
+                          return `הורים: ${parentNames}`;
+                        } else {
+                          return "אין הורים מוגדרים";
+                        }
+                      })()}
+                    </Typography>
+                  }
+                />
+                <IconButton
+                  edge="end"
+                  aria-label="edit"
+                  onClick={() => handleEditChild(child)}
+                  sx={{
+                    color: "primary.main",
+                    "&:hover": {
+                      bgcolor: "primary.lighter",
+                    },
+                  }}
+                >
+                  <EditIcon />
+                </IconButton>
+              </ListItem>
+            ))}
+          </>
+        ) : (
+          <Box sx={{ textAlign: "center", py: 3 }}>
+            <Typography color="text.secondary">
+              {searchQuery
+                ? "לא נמצאו ילדים התואמים לחיפוש"
+                : selectedAccountId
+                ? "אין ילדים בסניף זה"
+                : "אין ילדים להצגה"}
+            </Typography>
+          </Box>
+        )}
+      </Box>
 
       <Drawer
         anchor="right"

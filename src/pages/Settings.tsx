@@ -415,9 +415,20 @@ const Settings = () => {
         onClose={handleCloseNotification}
       />
 
-      <Typography variant="h5" sx={{ mb: 3 }}>
-        הגדרות
-      </Typography>
+      {/* Sticky Title */}
+      <Box
+        sx={{
+          position: "sticky",
+          top: 0,
+          zIndex: 5,
+          bgcolor: "background.default",
+          pt: 2,
+          pb: 2,
+          mb: 3,
+        }}
+      >
+        <Typography variant="h5">הגדרות</Typography>
+      </Box>
 
       <Box sx={{ maxWidth: 600, mx: "auto" }}>
         <Accordion
