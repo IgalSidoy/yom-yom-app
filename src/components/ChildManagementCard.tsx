@@ -20,12 +20,29 @@ import {
   Fab,
   ListItemIcon,
   OutlinedInput,
+  Tooltip,
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Card,
+  CardContent,
+  Grid,
 } from "@mui/material";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import dayjs, { Dayjs } from "dayjs";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import CheckIcon from "@mui/icons-material/Check";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
-import { Account, Group, User, childApi, Child, Parent } from "../services/api";
+import {
+  Account,
+  Group,
+  User,
+  childApi,
+  Child,
+  Parent,
+  groupApi,
+} from "../services/api";
 import Notification from "./Notification";
 import { useApp } from "../contexts/AppContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -34,7 +51,6 @@ import BottomNav from "./BottomNav";
 
 interface ChildManagementCardProps {
   accounts: Account[];
-  groups: Group[];
   parents: User[];
   children: Child[];
   isLoading: boolean;
@@ -45,7 +61,6 @@ interface ChildManagementCardProps {
 
 const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   accounts,
-  groups,
   parents,
   children,
   isLoading,
@@ -57,6 +72,8 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [currentChild, setCurrentChild] = useState<Child>({
     firstName: "",
     lastName: "",
@@ -70,6 +87,42 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     message: "",
     severity: "success" as "success" | "error" | "info" | "warning",
   });
+
+  // Debug effect to log when groups change
+  useEffect(() => {
+    console.log("ChildManagementCard - Groups updated:", groups);
+    console.log("ChildManagementCard - Accounts:", accounts);
+  }, [groups, accounts]);
+
+  // Function to fetch groups for a specific account
+  const fetchGroupsForAccount = async (accountId: string) => {
+    try {
+      console.log("Fetching groups for account:", accountId);
+      setIsLoadingGroups(true);
+      const response = await groupApi.getGroups(accountId);
+      console.log("Groups response:", response.data);
+
+      let groupsData: Group[] = [];
+      if (response.data && Array.isArray(response.data)) {
+        groupsData = response.data;
+      } else if (
+        response.data &&
+        response.data.groups &&
+        Array.isArray(response.data.groups)
+      ) {
+        groupsData = response.data.groups;
+      }
+
+      console.log("Groups data:", groupsData);
+      setGroups(groupsData);
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+      showNotification("שגיאה בטעינת הקבוצות", "error");
+      setGroups([]);
+    } finally {
+      setIsLoadingGroups(false);
+    }
+  };
 
   // Filter children based on selected account
   const filteredChildren = selectedAccountId
@@ -96,11 +149,12 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     if (child) {
       setCurrentChild(child);
     } else {
+      // For new child, set the accountId based on the selected account
       setCurrentChild({
         firstName: "",
         lastName: "",
         dateOfBirth: "",
-        accountId: "",
+        accountId: selectedAccountId, // Set to currently selected account
         groupId: "",
         parents: [],
       });
@@ -125,26 +179,6 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
       ...prev,
       [field]: value,
     }));
-  };
-
-  const handleAccountChange = async (event: SelectChangeEvent<string>) => {
-    const accountId = event.target.value;
-    setSelectedAccountId(accountId);
-
-    // Reset current child's account and group when changing accounts
-    // Only clear groupId if we're creating a new child (no id) or if the account actually changed
-    if (currentChild.accountId !== accountId) {
-      handleChildChange("accountId", accountId);
-      // Only clear groupId if we're not editing an existing child
-      if (!currentChild.id) {
-        handleChildChange("groupId", "");
-      }
-    }
-
-    // Trigger children refresh when account changes
-    if (accountId) {
-      await onChildrenChange(accountId);
-    }
   };
 
   const handleSaveChild = async () => {
@@ -207,35 +241,58 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   };
 
   const handleEditChild = (child: Child) => {
-    // Format the date for datetime-local input (YYYY-MM-DDTHH:mm)
+    // Format the date for date input (YYYY-MM-DD)
     const formatDateForInput = (dateString: string) => {
       if (!dateString) return "";
       const date = new Date(dateString);
-      return date.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:mm
+      return date.toISOString().split("T")[0]; // Format: YYYY-MM-DD
     };
 
-    console.log("Editing child:", child); // Debug log
-    console.log("Child groupId:", child.groupId); // Debug log
+    console.log("Editing child:", child);
+    console.log("Child accountId:", child.accountId);
 
+    // Set child data without groupId initially
     setCurrentChild({
       id: child.id,
       firstName: child.firstName,
       lastName: child.lastName,
       dateOfBirth: formatDateForInput(child.dateOfBirth),
       accountId: child.accountId,
-      groupId: child.groupId,
+      groupId: "", // Don't set groupId until groups are loaded
       parents: child.parents,
       created: child.created,
       updated: child.updated,
     });
 
-    // Ensure the child's group is available in the groups list
-    // This is needed in case the groups data doesn't include the child's group
-    if (child.groupId && !groups.some((group) => group.id === child.groupId)) {
-      // If the child's group is not in the groups list, we need to fetch it
-      // For now, we'll add a placeholder group to ensure the UI works
-      // In a real implementation, you might want to fetch the specific group
-      console.warn(`Child's group ${child.groupId} not found in groups list`);
+    // Always fetch groups for the child's account and then set groupId
+    if (child.accountId) {
+      setIsLoadingGroups(true);
+      groupApi
+        .getGroups(child.accountId)
+        .then((response) => {
+          let groupsData: Group[] = [];
+          if (response.data && Array.isArray(response.data)) {
+            groupsData = response.data;
+          } else if (
+            response.data &&
+            response.data.groups &&
+            Array.isArray(response.data.groups)
+          ) {
+            groupsData = response.data.groups;
+          }
+          setGroups(groupsData);
+          // After groups are loaded, set the groupId if it exists in the loaded groups
+          if (
+            child.groupId &&
+            groupsData.some((group) => group.id === child.groupId)
+          ) {
+            setCurrentChild((prev) => ({
+              ...prev,
+              groupId: child.groupId,
+            }));
+          }
+        })
+        .finally(() => setIsLoadingGroups(false));
     }
 
     setIsDrawerOpen(true);
@@ -249,7 +306,19 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
           <Select
             value={selectedAccountId}
             label="סניף"
-            onChange={handleAccountChange}
+            onChange={async (e) => {
+              const accountId = e.target.value;
+              setSelectedAccountId(accountId);
+
+              // Fetch groups for the selected account
+              if (accountId) {
+                await fetchGroupsForAccount(accountId);
+                await onChildrenChange(accountId);
+              } else {
+                // Clear groups if no account is selected
+                setGroups([]);
+              }
+            }}
             sx={{ bgcolor: "background.paper" }}
           >
             <MenuItem value="">
@@ -321,19 +390,21 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                     </Box>
                   }
                 />
-                <IconButton
-                  edge="end"
-                  aria-label="edit"
-                  onClick={() => handleEditChild(child)}
-                  sx={{
-                    color: "primary.main",
-                    "&:hover": {
-                      bgcolor: "primary.lighter",
-                    },
-                  }}
-                >
-                  <EditIcon />
-                </IconButton>
+                <Tooltip title="עריכה">
+                  <IconButton
+                    edge="end"
+                    aria-label="edit"
+                    onClick={() => handleEditChild(child)}
+                    sx={{
+                      color: "primary.main",
+                      "&:hover": {
+                        bgcolor: "primary.lighter",
+                      },
+                    }}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                </Tooltip>
               </ListItem>
             ))
           ) : (
@@ -494,98 +565,91 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                   }}
                 />
 
-                <TextField
-                  fullWidth
+                <DatePicker
                   label="תאריך לידה"
-                  type="datetime-local"
-                  value={currentChild.dateOfBirth}
-                  onChange={(e) =>
-                    handleChildChange("dateOfBirth", e.target.value)
+                  value={
+                    currentChild.dateOfBirth
+                      ? dayjs(currentChild.dateOfBirth)
+                      : null
                   }
-                  required
-                  InputLabelProps={{
-                    shrink: true,
+                  onChange={(newValue) => {
+                    handleChildChange(
+                      "dateOfBirth",
+                      newValue?.format("YYYY-MM-DD") || ""
+                    );
                   }}
-                  sx={{
-                    "& .MuiInputLabel-root": {
-                      fontSize: "0.95rem",
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      required: true,
+                      sx: {
+                        "& .MuiInputLabel-root": {
+                          fontSize: "0.95rem",
+                          color: "text.secondary",
+                        },
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: 2,
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "primary.main",
+                            borderWidth: "2px",
+                          },
+                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "primary.main",
+                            borderWidth: "2px",
+                          },
+                          "& .MuiInputBase-input": {
+                            fontSize: "0.95rem",
+                            color: "text.primary",
+                            padding: "12px 14px",
+                          },
+                        },
+                      },
                     },
                   }}
                 />
 
                 <FormControl fullWidth>
-                  <InputLabel>סניף</InputLabel>
-                  <Select
-                    value={currentChild.accountId || ""}
-                    label="סניף"
-                    onChange={(e) =>
-                      handleChildChange("accountId", e.target.value)
-                    }
-                    required
-                  >
-                    {accounts.map((account) => (
-                      <MenuItem key={account.id} value={account.id}>
-                        {account.branchName || "שם הסניף חסר"}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <FormControl fullWidth>
                   <InputLabel>קבוצה</InputLabel>
                   <Select
-                    value={currentChild.groupId || ""}
+                    value={
+                      currentChild.groupId &&
+                      groups.some((group) => group.id === currentChild.groupId)
+                        ? currentChild.groupId
+                        : ""
+                    }
                     label="קבוצה"
                     onChange={(e) =>
                       handleChildChange("groupId", e.target.value)
                     }
+                    disabled={isLoadingGroups}
                   >
                     <MenuItem value="">
                       <em>בחר קבוצה</em>
                     </MenuItem>
-                    {(() => {
-                      // Debug logs
-                      console.log(
-                        "Current child groupId:",
-                        currentChild.groupId
-                      );
-                      console.log("All groups:", groups);
-                      console.log(
-                        "Current child accountId:",
-                        currentChild.accountId
-                      );
-
-                      // Get groups for the current account
-                      const accountGroups = groups.filter(
-                        (group) => group.accountId === currentChild.accountId
-                      );
-
-                      console.log("Account groups:", accountGroups);
-
-                      // If we're editing a child and their group is not in the account groups,
-                      // we need to ensure it's available for selection
-                      if (currentChild.id && currentChild.groupId) {
-                        const childGroup = groups.find(
-                          (group) => group.id === currentChild.groupId
-                        );
-                        console.log("Child group found:", childGroup);
-                        if (
-                          childGroup &&
-                          !accountGroups.some(
-                            (group) => group.id === childGroup.id
-                          )
-                        ) {
-                          accountGroups.push(childGroup);
-                          console.log("Added child group to account groups");
-                        }
-                      }
-
-                      return accountGroups.map((group) => (
+                    {isLoadingGroups ? (
+                      <MenuItem disabled>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <CircularProgress size={16} />
+                          <Typography variant="body2">
+                            טוען קבוצות...
+                          </Typography>
+                        </Box>
+                      </MenuItem>
+                    ) : groups.length === 0 ? (
+                      <MenuItem disabled>
+                        <Typography variant="body2" color="text.secondary">
+                          אין קבוצות זמינות
+                        </Typography>
+                      </MenuItem>
+                    ) : (
+                      groups.map((group) => (
                         <MenuItem key={group.id} value={group.id}>
                           {group.name || "שם הקבוצה חסר"}
                         </MenuItem>
-                      ));
-                    })()}
+                      ))
+                    )}
                   </Select>
                 </FormControl>
 
@@ -608,6 +672,37 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                         gap: 2,
                       }}
                     >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 0.5,
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "text.secondary",
+                            fontSize: "0.75rem",
+                          }}
+                        >
+                          סניף
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "text.primary",
+                            fontWeight: 500,
+                          }}
+                        >
+                          {currentChild.accountId
+                            ? accounts.find(
+                                (acc) => acc.id === currentChild.accountId
+                              )?.branchName || "שם הסניף חסר"
+                            : "לא זמין"}
+                        </Typography>
+                      </Box>
+
                       <Box
                         sx={{
                           display: "flex",

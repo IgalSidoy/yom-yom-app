@@ -188,10 +188,18 @@ const Settings = () => {
 
   const fetchGroups = async () => {
     try {
+      console.log("fetchGroups called - accounts:", accounts);
       setIsLoadingGroups(true);
       const allGroups: Group[] = [];
       for (const account of accounts) {
+        console.log("Fetching groups for account:", account.id);
         const response = await groupApi.getGroups(account.id);
+        console.log(
+          "Group response for account",
+          account.id,
+          ":",
+          response.data
+        );
         if (response.data && Array.isArray(response.data)) {
           allGroups.push(...response.data);
         } else if (
@@ -202,8 +210,10 @@ const Settings = () => {
           allGroups.push(...response.data.groups);
         }
       }
+      console.log("All groups fetched:", allGroups);
       setGroups(allGroups);
     } catch (error) {
+      console.error("Error fetching groups:", error);
       showNotification("שגיאה בטעינת הקבוצות", "error");
     } finally {
       setIsLoadingGroups(false);
@@ -293,16 +303,25 @@ const Settings = () => {
       }
 
       if (isExpanded && panel === "children") {
+        console.log("Children accordion expanded");
+        console.log("Current groups length:", groups.length);
+        console.log("Current accounts length:", accounts.length);
+
         if (accounts.length === 0) {
+          console.log("No accounts, fetching accounts first");
           fetchAccounts();
         }
+        // Always ensure groups and parents are loaded when accessing children section
+        if (groups.length === 0) {
+          console.log("No groups, fetching groups");
+          fetchGroups();
+        }
+        if (parents.length === 0) {
+          console.log("No parents, fetching parents");
+          fetchParents();
+        }
         if (!isChildrenInitialized) {
-          if (groups.length === 0) {
-            fetchGroups();
-          }
-          if (parents.length === 0) {
-            fetchParents();
-          }
+          console.log("Children not initialized, fetching children");
           fetchChildren();
           setIsChildrenInitialized(true);
         }
@@ -349,6 +368,10 @@ const Settings = () => {
   const handleChildrenChange = async (accountId?: string) => {
     await fetchChildren(accountId);
   };
+
+  // Debug logging
+  console.log("Settings component - groups state:", groups);
+  console.log("Settings component - accounts state:", accounts);
 
   return (
     <Box sx={{ mt: 4, textAlign: "center", px: 2 }}>
@@ -611,7 +634,6 @@ const Settings = () => {
               <Box sx={{ textAlign: "right" }}>
                 <ChildManagementCard
                   accounts={accounts}
-                  groups={groups}
                   parents={parents}
                   children={children}
                   isLoading={isLoadingChildren}
