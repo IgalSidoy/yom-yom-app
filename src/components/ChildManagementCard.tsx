@@ -27,6 +27,7 @@ import {
   Card,
   CardContent,
   Grid,
+  Chip,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs, { Dayjs } from "dayjs";
@@ -55,6 +56,7 @@ interface ChildManagementCardProps {
   accounts: Account[];
   parents: User[];
   children: Child[];
+  selectedAccountId: string;
   isLoading: boolean;
   isExpanded: boolean;
   onAccountsChange: () => Promise<void>;
@@ -65,6 +67,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   accounts,
   parents,
   children,
+  selectedAccountId,
   isLoading,
   isExpanded,
   onAccountsChange,
@@ -73,7 +76,6 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   const { accessToken } = useAuth();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [currentChild, setCurrentChild] = useState<Child>({
@@ -96,6 +98,31 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     console.log("ChildManagementCard - Accounts:", accounts);
   }, [groups, accounts]);
 
+  // Fetch groups when selectedAccountId changes
+  useEffect(() => {
+    if (selectedAccountId) {
+      fetchGroupsForAccount(selectedAccountId);
+    } else {
+      setGroups([]);
+    }
+  }, [selectedAccountId]);
+
+  // Initialize data when accordion is expanded
+  useEffect(() => {
+    const initializeData = async () => {
+      if (isExpanded) {
+        if (accounts.length === 0) {
+          await onAccountsChange();
+        }
+        if (parents.length === 0) {
+          // Fetch parents if needed
+          // This would need to be implemented in the parent component
+        }
+      }
+    };
+    initializeData();
+  }, [isExpanded, accounts.length, parents.length]);
+
   // Function to fetch groups for a specific account
   const fetchGroupsForAccount = async (accountId: string) => {
     try {
@@ -105,14 +132,15 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
       console.log("Groups response:", response.data);
 
       let groupsData: Group[] = [];
-      if (response.data && Array.isArray(response.data)) {
-        groupsData = response.data;
-      } else if (
-        response.data &&
-        response.data.groups &&
-        Array.isArray(response.data.groups)
-      ) {
-        groupsData = response.data.groups;
+      if (response.data.groups) {
+        groupsData = response.data.groups.map((group: any) => ({
+          id: group.id,
+          name: group.name,
+          description: group.description || "",
+          accountId: group.accountId,
+          created: group.created,
+          updated: group.updated,
+        }));
       }
 
       console.log("Groups data:", groupsData);
@@ -151,12 +179,11 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     if (child) {
       setCurrentChild(child);
     } else {
-      // For new child, set the accountId based on the selected account
       setCurrentChild({
         firstName: "",
         lastName: "",
         dateOfBirth: "",
-        accountId: selectedAccountId, // Set to currently selected account
+        accountId: selectedAccountId, // Use the selected account from props
         groupId: "",
         parents: [],
       });
@@ -268,33 +295,18 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
 
     // Always fetch groups for the child's account and then set groupId
     if (child.accountId) {
-      setIsLoadingGroups(true);
-      groupApi
-        .getGroups(child.accountId)
-        .then((response) => {
-          let groupsData: Group[] = [];
-          if (response.data && Array.isArray(response.data)) {
-            groupsData = response.data;
-          } else if (
-            response.data &&
-            response.data.groups &&
-            Array.isArray(response.data.groups)
-          ) {
-            groupsData = response.data.groups;
-          }
-          setGroups(groupsData);
-          // After groups are loaded, set the groupId if it exists in the loaded groups
-          if (
-            child.groupId &&
-            groupsData.some((group) => group.id === child.groupId)
-          ) {
-            setCurrentChild((prev) => ({
-              ...prev,
-              groupId: child.groupId,
-            }));
-          }
-        })
-        .finally(() => setIsLoadingGroups(false));
+      fetchGroupsForAccount(child.accountId).then(() => {
+        // After groups are loaded, set the groupId if it exists in the loaded groups
+        if (
+          child.groupId &&
+          groups.some((group) => group.id === child.groupId)
+        ) {
+          setCurrentChild((prev) => ({
+            ...prev,
+            groupId: child.groupId,
+          }));
+        }
+      });
     }
 
     setIsDrawerOpen(true);
@@ -302,63 +314,30 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
 
   return (
     <Box sx={{ position: "relative", minHeight: "200px", pb: 8 }}>
-      <Box sx={{ mb: 3 }}>
-        <FormControl fullWidth>
-          <InputLabel>סניף</InputLabel>
-          <Select
-            value={selectedAccountId}
-            label="סניף"
-            onChange={async (e) => {
-              const accountId = e.target.value;
-              setSelectedAccountId(accountId);
-
-              // Fetch groups for the selected account
-              if (accountId) {
-                await fetchGroupsForAccount(accountId);
-                await onChildrenChange(accountId);
-              } else {
-                // Clear groups if no account is selected
-                setGroups([]);
-              }
-            }}
-            sx={{ bgcolor: "background.paper" }}
-          >
-            <MenuItem value="">
-              <em>הצג את כל הסניפים</em>
-            </MenuItem>
-            {accounts.map((account) => (
-              <MenuItem key={account.id} value={account.id}>
-                {account.branchName || "שם הסניף חסר"}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
-
       {isLoading ? (
         <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
           <CircularProgress />
         </Box>
-      ) : (
+      ) : filteredChildren.length > 0 ? (
         <>
-          {filteredChildren.length > 0 ? (
-            filteredChildren.map((child) => (
-              <ListItem
-                key={child.id}
-                sx={{
-                  bgcolor: "background.paper",
-                  borderRadius: 2,
-                  mb: 1,
-                  border: "1px solid",
-                  borderColor: "divider",
-                  "&:hover": {
-                    borderColor: "primary.main",
-                    boxShadow: 1,
-                  },
-                }}
-              >
-                <ListItemText
-                  primary={
+          {filteredChildren.map((child: Child) => (
+            <ListItem
+              key={child.id}
+              sx={{
+                bgcolor: "background.paper",
+                borderRadius: 2,
+                mb: 1,
+                border: "1px solid",
+                borderColor: "divider",
+                "&:hover": {
+                  borderColor: "primary.main",
+                  boxShadow: 1,
+                },
+              }}
+            >
+              <ListItemText
+                primary={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <Typography
                       variant="subtitle1"
                       sx={{
@@ -373,50 +352,79 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                         ? `${child.firstName} ${child.lastName}`
                         : "שם חסר"}
                     </Typography>
-                  }
-                  secondary={
-                    <Box sx={{ mt: 0.5 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        {child.dateOfBirth
-                          ? formatDate(child.dateOfBirth)
-                          : "תאריך לידה חסר"}
-                      </Typography>
-                      {child.parents && child.parents.length > 0 && (
-                        <Typography variant="body2" color="text.secondary">
-                          הורים:{" "}
-                          {child.parents
-                            .map((p) => `${p.firstName} ${p.lastName}`)
-                            .join(", ")}
-                        </Typography>
-                      )}
-                    </Box>
-                  }
-                />
-                <Tooltip title="עריכה">
-                  <IconButton
-                    edge="end"
-                    aria-label="edit"
-                    onClick={() => handleEditChild(child)}
-                    sx={{
-                      color: "primary.main",
-                      "&:hover": {
-                        bgcolor: "primary.lighter",
-                      },
-                    }}
+                    <Chip
+                      label={formatDate(child.dateOfBirth)}
+                      size="small"
+                      color="info"
+                      sx={{
+                        height: 20,
+                        fontSize: "0.75rem",
+                        fontWeight: 500,
+                      }}
+                    />
+                  </Box>
+                }
+                secondary={
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 0.5 }}
                   >
-                    <EditIcon />
-                  </IconButton>
-                </Tooltip>
-              </ListItem>
-            ))
-          ) : (
-            <Box sx={{ textAlign: "center", py: 3 }}>
-              <Typography color="text.secondary">
-                {selectedAccountId ? "אין ילדים בסניף זה" : "אין ילדים להצגה"}
-              </Typography>
-            </Box>
-          )}
+                    {child.parents && child.parents.length > 0
+                      ? `הורים: ${child.parents
+                          .map((parent) =>
+                            parent.firstName && parent.lastName
+                              ? `${parent.firstName} ${parent.lastName}`
+                              : "הורה לא ידוע"
+                          )
+                          .join(", ")}`
+                      : "אין הורים מוגדרים"}
+                  </Typography>
+                }
+              />
+              <IconButton
+                edge="end"
+                aria-label="edit"
+                onClick={() => handleEditChild(child)}
+                sx={{
+                  color: "primary.main",
+                  "&:hover": {
+                    bgcolor: "primary.lighter",
+                  },
+                }}
+              >
+                <EditIcon />
+              </IconButton>
+            </ListItem>
+          ))}
         </>
+      ) : (
+        <Box sx={{ textAlign: "center", py: 3 }}>
+          <Typography color="text.secondary">
+            {selectedAccountId ? "אין ילדים בסניף זה" : "אין ילדים להצגה"}
+          </Typography>
+        </Box>
+      )}
+
+      {/* Add button - show when account is selected */}
+      {selectedAccountId && (
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+          <Fab
+            color="primary"
+            aria-label="add child"
+            onClick={() => handleOpenDrawer()}
+            sx={{
+              boxShadow: 3,
+              "&:hover": {
+                boxShadow: 6,
+                transform: "scale(1.05)",
+              },
+              transition: "all 0.2s ease-in-out",
+            }}
+          >
+            <AddIcon />
+          </Fab>
+        </Box>
       )}
 
       <Drawer
@@ -880,21 +888,6 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
         severity={notification.severity}
         onClose={() => setNotification({ ...notification, open: false })}
       />
-
-      <Fab
-        color="primary"
-        aria-label="add"
-        onClick={() => handleOpenDrawer()}
-        sx={{
-          position: "sticky",
-          bottom: 24,
-          right: 24,
-          mt: 2,
-          zIndex: 1000,
-        }}
-      >
-        <AddIcon />
-      </Fab>
     </Box>
   );
 };

@@ -9,6 +9,10 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -77,6 +81,7 @@ const Settings = () => {
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
   const [children, setChildren] = useState<Child[]>([]);
   const [isChildrenInitialized, setIsChildrenInitialized] = useState(false);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
 
   const formatMobileNumber = (value: string) => {
     const digits = value.replace(/\D/g, "");
@@ -369,6 +374,28 @@ const Settings = () => {
     await fetchChildren(accountId);
   };
 
+  const handleAccountSelection = async (accountId: string) => {
+    setSelectedAccountId(accountId);
+
+    if (accountId) {
+      setIsLoadingChildren(true);
+      try {
+        await fetchChildren(accountId);
+      } finally {
+        setIsLoadingChildren(false);
+      }
+    } else {
+      setChildren([]);
+    }
+  };
+
+  // Fetch parents when children accordion is expanded
+  useEffect(() => {
+    if (expandedAccordion === "children" && parents.length === 0) {
+      fetchParents();
+    }
+  }, [expandedAccordion, parents.length]);
+
   // Debug logging
   console.log("Settings component - groups state:", groups);
   console.log("Settings component - accounts state:", accounts);
@@ -632,10 +659,34 @@ const Settings = () => {
               <Typography>יש לטעון סניפים קודם</Typography>
             ) : (
               <Box sx={{ textAlign: "right" }}>
+                {/* Account Selection */}
+                <Box sx={{ mb: 3 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>בחר סניף</InputLabel>
+                    <Select
+                      value={selectedAccountId}
+                      label="בחר סניף"
+                      onChange={(e) => handleAccountSelection(e.target.value)}
+                      sx={{ bgcolor: "background.paper" }}
+                    >
+                      <MenuItem value="">
+                        <em>בחר סניף</em>
+                      </MenuItem>
+                      {accounts.map((account) => (
+                        <MenuItem key={account.id} value={account.id}>
+                          {account.branchName || "שם הסניף חסר"}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+
+                {/* Child Management Card */}
                 <ChildManagementCard
                   accounts={accounts}
                   parents={parents}
                   children={children}
+                  selectedAccountId={selectedAccountId}
                   isLoading={isLoadingChildren}
                   isExpanded={expandedAccordion === "children"}
                   onAccountsChange={handleAccountsChange}
