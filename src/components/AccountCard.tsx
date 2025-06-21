@@ -179,15 +179,6 @@ const AccountCard: React.FC<AccountCardProps> = ({
                 )}
               </Box>
             }
-            secondary={
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mt: 0.5 }}
-              >
-                {account.branchCode || "אין קוד סניף"}
-              </Typography>
-            }
           />
           <IconButton
             edge="end"

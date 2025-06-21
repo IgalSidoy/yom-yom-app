@@ -20,12 +20,22 @@ import {
   Chip,
   Fab,
   InputAdornment,
+  Popover,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText as MuiListItemText,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
-import SearchIcon from "@mui/icons-material/Search";
-import ClearIcon from "@mui/icons-material/Clear";
-import { userApi, User, Account } from "../services/api";
+import {
+  Add as AddIcon,
+  Clear as ClearIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon,
+  Search as SearchIcon,
+  Sort as SortIcon,
+} from "@mui/icons-material";
+import { userApi, User, Account, Group, groupApi } from "../services/api";
 import Notification from "./Notification";
 import { useApp } from "../contexts/AppContext";
 
@@ -45,6 +55,8 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
   const [isInitialized, setIsInitialized] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [currentUser, setCurrentUser] = useState<Partial<User>>({
     email: "",
     firstName: "",
@@ -52,6 +64,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
     mobile: "",
     role: "Staff",
     accountId: "",
+    groupId: "",
   });
   const [notification, setNotification] = useState({
     open: false,
@@ -59,6 +72,14 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
     severity: "success" as "success" | "error" | "info" | "warning",
   });
   const [search, setSearch] = useState("");
+  const [selectedAccountFilter, setSelectedAccountFilter] =
+    useState<string>("");
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>("");
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>("");
+  const [sortBy, setSortBy] = useState<"name" | "account" | "role">("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortPopoverOpen, setSortPopoverOpen] = useState(false);
+  const [sortAnchorEl, setSortAnchorEl] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -68,6 +89,24 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
         }
         if (users.length === 0) {
           await fetchUsers();
+        }
+        // Fetch groups for all accounts to display group names in user list
+        if (accounts.length > 0) {
+          const allGroups: Group[] = [];
+          for (const account of accounts) {
+            try {
+              const response = await groupApi.getGroups(account.id);
+              if (response.data.groups) {
+                allGroups.push(...response.data.groups);
+              }
+            } catch (error) {
+              console.error(
+                `Error fetching groups for account ${account.id}:`,
+                error
+              );
+            }
+          }
+          setGroups(allGroups);
         }
         setIsInitialized(true);
       } else if (!isExpanded) {
@@ -94,6 +133,25 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
     }
   };
 
+  const fetchGroupsForAccount = async (accountId: string) => {
+    try {
+      setIsLoadingGroups(true);
+      const response = await groupApi.getGroups(accountId);
+      let groupsData: Group[] = [];
+      if (response.data.groups) {
+        groupsData = response.data.groups;
+      }
+      setGroups(groupsData);
+      return groupsData;
+    } catch (error) {
+      showNotification("שגיאה בטעינת הקבוצות", "error");
+      setGroups([]);
+      return [];
+    } finally {
+      setIsLoadingGroups(false);
+    }
+  };
+
   const showNotification = (
     message: string,
     severity: "success" | "error" | "info" | "warning" = "success"
@@ -110,7 +168,23 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
       setCurrentUser({
         ...user,
         accountId: user.accountId || "",
+        groupId: "", // Start with empty groupId, will be set after groups load
       });
+      // Fetch groups for the user's account and then set the groupId
+      if (user.accountId) {
+        fetchGroupsForAccount(user.accountId).then((groupsData) => {
+          // After groups are fetched, check if we need to set the groupId
+          if (
+            user.groupId &&
+            groupsData.some((group) => group.id === user.groupId)
+          ) {
+            setCurrentUser((prev) => ({
+              ...prev,
+              groupId: user.groupId,
+            }));
+          }
+        });
+      }
     } else {
       setCurrentUser({
         email: "",
@@ -119,7 +193,9 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
         mobile: "",
         role: "Staff",
         accountId: "",
+        groupId: "",
       });
+      setGroups([]);
     }
     setIsDrawerOpen(true);
   };
@@ -133,18 +209,47 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
       mobile: "",
       role: "Staff",
       accountId: "",
+      groupId: "",
     });
   };
 
   const handleUserChange = (field: keyof User, value: string) => {
-    setCurrentUser((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setCurrentUser((prev) => {
+      const updated = {
+        ...prev,
+        [field]: value,
+      };
+
+      // If accountId changed, fetch groups for the new account and clear groupId
+      if (field === "accountId" && value !== prev.accountId) {
+        if (value) {
+          fetchGroupsForAccount(value);
+        } else {
+          setGroups([]);
+        }
+        updated.groupId = "";
+      }
+
+      // If role changed from Staff to something else, clear groupId
+      if (field === "role" && prev.role === "Staff" && value !== "Staff") {
+        updated.groupId = "";
+      }
+
+      return updated;
+    });
   };
 
   const handleSaveUser = async () => {
     try {
+      // Validate that Staff users have a group assigned
+      if (
+        currentUser.role === "Staff" &&
+        (!currentUser.groupId || currentUser.groupId === "")
+      ) {
+        showNotification("עובדי צוות חייבים להיות משויכים לקבוצה", "warning");
+        return;
+      }
+
       setIsLoading(true);
       if (currentUser.id) {
         // Update existing user
@@ -157,8 +262,48 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
       }
       handleCloseDrawer();
       fetchUsers();
-    } catch (error) {
-      showNotification("שגיאה בשמירת המשתמש", "error");
+    } catch (error: any) {
+      // Extract error message from API response
+      let errorMessage = "שגיאה בשמירת המשתמש";
+
+      if (error.response?.data?.Message) {
+        // Translate common API error messages to Hebrew
+        const apiMessage = error.response.data.Message;
+        switch (apiMessage) {
+          case "mobile number already in use":
+            errorMessage = "מספר הטלפון כבר קיים במערכת";
+            break;
+          case "email already in use":
+            errorMessage = "כתובת האימייל כבר קיימת במערכת";
+            break;
+          case "user not found":
+            errorMessage = "המשתמש לא נמצא";
+            break;
+          case "invalid email format":
+            errorMessage = "פורמט אימייל לא תקין";
+            break;
+          case "invalid mobile format":
+            errorMessage = "פורמט מספר טלפון לא תקין";
+            break;
+          case "account not found":
+            errorMessage = "הסניף לא נמצא";
+            break;
+          case "group not found":
+            errorMessage = "הקבוצה לא נמצאה";
+            break;
+          default:
+            // Use the original message if no translation is available
+            errorMessage = apiMessage;
+        }
+      } else if (error.response?.status === 422) {
+        // Handle 422 validation errors
+        errorMessage = "שגיאה בנתונים שהוזנו";
+      } else if (error.message) {
+        // Use the error message if available
+        errorMessage = error.message;
+      }
+
+      showNotification(errorMessage, "error");
     } finally {
       setIsLoading(false);
     }
@@ -185,6 +330,20 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
 
   const handleDeleteCancel = () => {
     setIsDeleteDialogOpen(false);
+  };
+
+  const handleAccountFilterClick = (accountId: string) => {
+    if (selectedAccountFilter === accountId) {
+      // If clicking the same account, clear the filter
+      setSelectedAccountFilter("");
+    } else {
+      // Set the new account filter
+      setSelectedAccountFilter(accountId);
+    }
+  };
+
+  const clearAccountFilter = () => {
+    setSelectedAccountFilter("");
   };
 
   const formatMobileNumber = (value: string) => {
@@ -218,11 +377,60 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
       .replace(",", ":");
   };
 
-  const filteredUsers = users.filter(
-    (user: User) =>
-      user.firstName.toLowerCase().includes(search.toLowerCase()) ||
-      user.lastName.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase())
+  const sortUsers = (users: User[]) => {
+    return [...users].sort((a, b) => {
+      let aValue: string;
+      let bValue: string;
+
+      switch (sortBy) {
+        case "name":
+          aValue = `${a.firstName || ""} ${a.lastName || ""}`.trim() || a.email;
+          bValue = `${b.firstName || ""} ${b.lastName || ""}`.trim() || b.email;
+          break;
+        case "account":
+          const aAccount = accounts.find((acc) => acc.id === a.accountId);
+          const bAccount = accounts.find((acc) => acc.id === b.accountId);
+          aValue = aAccount?.branchName || "לא ידוע";
+          bValue = bAccount?.branchName || "לא ידוע";
+          break;
+        case "role":
+          aValue = a.role;
+          bValue = b.role;
+          break;
+        default:
+          return 0;
+      }
+
+      const comparison = aValue.localeCompare(bValue, "he");
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+  };
+
+  const filteredUsers = sortUsers(
+    users.filter((user: User) => {
+      // Filter by account if selected
+      if (selectedAccountFilter && user.accountId !== selectedAccountFilter) {
+        return false;
+      }
+      // Filter by role if selected
+      if (selectedRoleFilter && user.role !== selectedRoleFilter) {
+        return false;
+      }
+      // Filter by group if selected
+      if (selectedGroupFilter && user.groupId !== selectedGroupFilter) {
+        return false;
+      }
+      // Filter by search query
+      if (search) {
+        const searchLower = search.toLowerCase();
+        return (
+          user.firstName.toLowerCase().includes(searchLower) ||
+          user.lastName.toLowerCase().includes(searchLower) ||
+          user.email.toLowerCase().includes(searchLower)
+        );
+      }
+      return true;
+    })
   );
 
   return (
@@ -272,17 +480,15 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                       <SearchIcon />
                     </InputAdornment>
                   ),
-                  endAdornment: search && (
+                  endAdornment: (search || selectedAccountFilter) && (
                     <InputAdornment position="end">
                       <IconButton
-                        edge="end"
-                        onClick={() => setSearch("")}
-                        sx={{
-                          color: "primary.main",
-                          "&:hover": {
-                            bgcolor: "primary.lighter",
-                          },
+                        size="small"
+                        onClick={() => {
+                          setSearch("");
+                          clearAccountFilter();
                         }}
+                        edge="end"
                       >
                         <ClearIcon />
                       </IconButton>
@@ -290,6 +496,36 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                   ),
                 }}
               />
+
+              {/* Sort Controls */}
+              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    bgcolor: "background.paper",
+                    borderRadius: 2,
+                    border: 1,
+                    borderColor: "divider",
+                    px: 1,
+                    py: 0.5,
+                    cursor: "pointer",
+                    "&:hover": {
+                      bgcolor: "action.hover",
+                      borderColor: "primary.main",
+                    },
+                    transition: "all 0.2s ease-in-out",
+                  }}
+                  onClick={(event) => {
+                    setSortPopoverOpen(true);
+                    setSortAnchorEl(event.currentTarget);
+                  }}
+                >
+                  <SortIcon sx={{ fontSize: 18, color: "text.secondary" }} />
+                </Box>
+              </Box>
+
               <Fab
                 color="primary"
                 aria-label="add user"
@@ -307,6 +543,73 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                 <AddIcon />
               </Fab>
             </Box>
+
+            {/* Active Account/Role/Group Filter Display */}
+            {(selectedAccountFilter ||
+              selectedRoleFilter ||
+              selectedGroupFilter) && (
+              <Box
+                sx={{ mt: 1, display: "flex", alignItems: "center", gap: 1 }}
+              >
+                {selectedAccountFilter && (
+                  <Chip
+                    label={`סניף: ${
+                      accounts.find((acc) => acc.id === selectedAccountFilter)
+                        ?.branchName || "לא ידוע"
+                    }`}
+                    size="small"
+                    color="primary"
+                    onDelete={clearAccountFilter}
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                    }}
+                  />
+                )}
+                {selectedRoleFilter && (
+                  <Chip
+                    label={`תפקיד: ${
+                      selectedRoleFilter === "Admin"
+                        ? "מנהל"
+                        : selectedRoleFilter === "Parent"
+                        ? "הורה"
+                        : "צוות"
+                    }`}
+                    size="small"
+                    color="warning"
+                    onDelete={() => setSelectedRoleFilter("")}
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                    }}
+                  />
+                )}
+                {selectedGroupFilter && (
+                  <Chip
+                    label={`קבוצה: ${
+                      groups.find((group) => group.id === selectedGroupFilter)
+                        ?.name || "לא ידועה"
+                    }`}
+                    size="small"
+                    color="secondary"
+                    onDelete={() => setSelectedGroupFilter("")}
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                    }}
+                  />
+                )}
+                <Typography variant="caption" color="text.secondary">
+                  {selectedAccountFilter ||
+                  selectedRoleFilter ||
+                  selectedGroupFilter
+                    ? `מציג משתמשים${selectedAccountFilter ? " מסניף זה" : ""}${
+                        selectedRoleFilter ? " בעלי תפקיד זה" : ""
+                      }${selectedGroupFilter ? " מקבוצה זו" : ""} בלבד`
+                    : ""}
+                </Typography>
+              </Box>
+            )}
           </Box>
 
           {/* Scrollable Users List */}
@@ -331,7 +634,11 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                     <ListItemText
                       primary={
                         <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 1,
+                          }}
                         >
                           <Typography
                             variant="subtitle1"
@@ -347,48 +654,166 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                               ? `${user.firstName} ${user.lastName}`
                               : user.email}
                           </Typography>
-                          <Chip
-                            label={
-                              user.role === "Admin"
-                                ? "מנהל"
-                                : user.role === "Parent"
-                                ? "הורה"
-                                : "צוות"
-                            }
-                            size="small"
-                            color={
-                              user.role === "Admin"
-                                ? "primary"
-                                : user.role === "Parent"
-                                ? "success"
-                                : "info"
-                            }
+                          <Box
                             sx={{
-                              height: 20,
-                              fontSize: "0.75rem",
-                              fontWeight: 500,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              flexWrap: "wrap",
                             }}
-                          />
-                          {user.accountId && (
+                          >
                             <Chip
-                              label={`סניף: ${
-                                accounts.find(
-                                  (account) => account.id === user.accountId
-                                )?.branchName || "לא ידוע"
-                              }`}
+                              label={
+                                user.role === "Admin"
+                                  ? "מנהל"
+                                  : user.role === "Parent"
+                                  ? "הורה"
+                                  : "צוות"
+                              }
                               size="small"
+                              color={
+                                user.role === "Admin"
+                                  ? "primary"
+                                  : user.role === "Parent"
+                                  ? "success"
+                                  : "info"
+                              }
+                              onClick={() =>
+                                setSelectedRoleFilter(
+                                  selectedRoleFilter === user.role
+                                    ? ""
+                                    : user.role
+                                )
+                              }
                               sx={{
                                 height: 20,
                                 fontSize: "0.75rem",
-                                fontWeight: 500,
-                                bgcolor: "#009688",
-                                color: "white",
+                                fontWeight:
+                                  selectedRoleFilter === user.role ? 700 : 500,
+                                cursor: "pointer",
+                                bgcolor:
+                                  selectedRoleFilter === user.role
+                                    ? "#FF914D"
+                                    : undefined,
+                                color:
+                                  selectedRoleFilter === user.role
+                                    ? "#4E342E"
+                                    : undefined,
+                                "&:hover": {
+                                  bgcolor:
+                                    selectedRoleFilter === user.role
+                                      ? "#FF7A1A"
+                                      : undefined,
+                                  transform: "scale(1.05)",
+                                },
+                                transition: "all 0.2s ease-in-out",
                                 "& .MuiChip-label": {
-                                  color: "white",
+                                  color:
+                                    selectedRoleFilter === user.role
+                                      ? "#4E342E"
+                                      : undefined,
+                                  fontWeight:
+                                    selectedRoleFilter === user.role
+                                      ? 700
+                                      : 500,
                                 },
                               }}
                             />
-                          )}
+                            {user.accountId && (
+                              <Chip
+                                label={`סניף: ${
+                                  accounts.find(
+                                    (account) => account.id === user.accountId
+                                  )?.branchName || "לא ידוע"
+                                }`}
+                                size="small"
+                                onClick={() =>
+                                  handleAccountFilterClick(user.accountId)
+                                }
+                                sx={{
+                                  height: 20,
+                                  fontSize: "0.75rem",
+                                  fontWeight:
+                                    selectedAccountFilter === user.accountId
+                                      ? 700
+                                      : 500,
+                                  bgcolor:
+                                    selectedAccountFilter === user.accountId
+                                      ? "#FF914D"
+                                      : "#009688",
+                                  color: "white",
+                                  cursor: "pointer",
+                                  "&:hover": {
+                                    bgcolor:
+                                      selectedAccountFilter === user.accountId
+                                        ? "#FF7A1A"
+                                        : "#00796b",
+                                    transform: "scale(1.05)",
+                                  },
+                                  transition: "all 0.2s ease-in-out",
+                                  "& .MuiChip-label": {
+                                    color: "white",
+                                    fontWeight:
+                                      selectedAccountFilter === user.accountId
+                                        ? 700
+                                        : 500,
+                                  },
+                                }}
+                              />
+                            )}
+                            {user.groupId && (
+                              <Chip
+                                label={`קבוצה: ${
+                                  groups.find(
+                                    (group) => group.id === user.groupId
+                                  )?.name || "לא ידועה"
+                                }`}
+                                size="small"
+                                onClick={() =>
+                                  setSelectedGroupFilter(
+                                    selectedGroupFilter === (user.groupId ?? "")
+                                      ? ""
+                                      : user.groupId ?? ""
+                                  )
+                                }
+                                sx={{
+                                  height: 20,
+                                  fontSize: "0.75rem",
+                                  fontWeight:
+                                    selectedGroupFilter === user.groupId
+                                      ? 700
+                                      : 500,
+                                  bgcolor:
+                                    selectedGroupFilter === user.groupId
+                                      ? "#FF914D"
+                                      : "#9c27b0",
+                                  color:
+                                    selectedGroupFilter === user.groupId
+                                      ? "#4E342E"
+                                      : "white",
+                                  cursor: "pointer",
+                                  "&:hover": {
+                                    bgcolor:
+                                      selectedGroupFilter === user.groupId
+                                        ? "#FF7A1A"
+                                        : "#7b1fa2",
+                                    transform: "scale(1.05)",
+                                  },
+                                  transition: "all 0.2s ease-in-out",
+                                  "& .MuiChip-label": {
+                                    color:
+                                      selectedGroupFilter === user.groupId
+                                        ? "#4E342E"
+                                        : "white",
+                                    fontWeight:
+                                      selectedGroupFilter === user.groupId
+                                        ? 700
+                                        : 500,
+                                  },
+                                }}
+                              />
+                            )}
+                          </Box>
                         </Box>
                       }
                       secondary={
@@ -397,7 +822,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                           color="text.secondary"
                           sx={{ mt: 0.5 }}
                         >
-                          {user.mobile}
+                          {formatMobileNumber(user.mobile)}
                         </Typography>
                       }
                     />
@@ -439,13 +864,25 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
         PaperProps={{
           sx: {
             width: { xs: "100%", sm: 400 },
-            p: 3,
             bgcolor: "background.paper",
           },
         }}
       >
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-          <Box sx={{ mb: 4 }}>
+          {/* Sticky Header */}
+          <Box
+            sx={{
+              p: 3,
+              pb: 2,
+              borderBottom: 1,
+              borderColor: "divider",
+              bgcolor: "background.paper",
+              zIndex: 1,
+            }}
+          >
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              {currentUser.id ? "עריכת משתמש" : "הוספת משתמש חדש"}
+            </Typography>
             <Typography variant="body2" color="text.secondary">
               {currentUser.id
                 ? "עדכון פרטי המשתמש הקיים"
@@ -453,7 +890,8 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
             </Typography>
           </Box>
 
-          <Box sx={{ flex: 1 }}>
+          {/* Scrollable Content */}
+          <Box sx={{ flex: 1, overflow: "auto", p: 3, pt: 2 }}>
             <Box
               sx={{
                 display: "flex",
@@ -565,6 +1003,48 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                 </Select>
               </FormControl>
 
+              {currentUser.role === "Staff" && (
+                <FormControl fullWidth>
+                  <InputLabel>קבוצה</InputLabel>
+                  <Select
+                    value={currentUser.groupId || ""}
+                    label="קבוצה"
+                    onChange={(e) =>
+                      handleUserChange("groupId", e.target.value)
+                    }
+                    disabled={isLoadingGroups || !currentUser.accountId}
+                  >
+                    <MenuItem value="">
+                      <em>בחר קבוצה (אופציונלי)</em>
+                    </MenuItem>
+                    {isLoadingGroups ? (
+                      <MenuItem disabled>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <CircularProgress size={16} />
+                          <Typography variant="body2">
+                            טוען קבוצות...
+                          </Typography>
+                        </Box>
+                      </MenuItem>
+                    ) : groups.length === 0 ? (
+                      <MenuItem disabled>
+                        <Typography variant="body2" color="text.secondary">
+                          אין קבוצות זמינות בסניף זה
+                        </Typography>
+                      </MenuItem>
+                    ) : (
+                      groups.map((group) => (
+                        <MenuItem key={group.id} value={group.id}>
+                          {group.name || "שם הקבוצה חסר"}
+                        </MenuItem>
+                      ))
+                    )}
+                  </Select>
+                </FormControl>
+              )}
+
               {currentUser.id && (
                 <Box
                   sx={{
@@ -663,14 +1143,18 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
             </Box>
           </Box>
 
+          {/* Fixed Bottom Buttons */}
           <Box
             sx={{
               display: "flex",
               gap: 2,
-              mt: "auto",
-              pt: 3,
+              p: 3,
+              pt: 2,
+              pb: 3,
               borderTop: "1px solid",
               borderColor: "divider",
+              bgcolor: "background.paper",
+              zIndex: 1,
             }}
           >
             {currentUser.id && currentUser.role !== "Admin" && (
@@ -756,6 +1240,85 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
         severity={notification.severity}
         onClose={() => setNotification({ ...notification, open: false })}
       />
+
+      <Popover
+        open={sortPopoverOpen}
+        onClose={() => {
+          setSortPopoverOpen(false);
+          setSortAnchorEl(null);
+        }}
+        anchorEl={sortAnchorEl}
+        anchorOrigin={{
+          vertical: "center",
+          horizontal: "left",
+        }}
+        transformOrigin={{
+          vertical: "center",
+          horizontal: "right",
+        }}
+        PaperProps={{
+          sx: {
+            minWidth: 180,
+            ml: 1,
+            boxShadow: 3,
+            borderRadius: 2,
+          },
+        }}
+      >
+        <Box sx={{ p: 1.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <FormControl size="small" sx={{ flex: 1 }}>
+              <Select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value as "name" | "account" | "role");
+                  setSortPopoverOpen(false);
+                  setSortAnchorEl(null);
+                }}
+                displayEmpty
+                sx={{
+                  "& .MuiSelect-select": {
+                    py: 1,
+                    px: 1.5,
+                  },
+                }}
+              >
+                <MenuItem value="name">שם</MenuItem>
+                <MenuItem value="account">סניף</MenuItem>
+                <MenuItem value="role">תפקיד</MenuItem>
+              </Select>
+            </FormControl>
+
+            <IconButton
+              onClick={() => {
+                setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                setSortPopoverOpen(false);
+                setSortAnchorEl(null);
+              }}
+              size="small"
+              sx={{
+                border: 1,
+                borderColor: "divider",
+                "&:hover": {
+                  borderColor: "primary.main",
+                  bgcolor: "action.hover",
+                },
+                transition: "all 0.2s ease-in-out",
+              }}
+            >
+              <KeyboardArrowDownIcon
+                sx={{
+                  color: "primary.main",
+                  fontSize: 20,
+                  transform:
+                    sortOrder === "desc" ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.2s ease-in-out",
+                }}
+              />
+            </IconButton>
+          </Box>
+        </Box>
+      </Popover>
     </Box>
   );
 };

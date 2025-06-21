@@ -275,6 +275,7 @@ export interface User {
   accountId: string;
   organizationId: string;
   role: string;
+  groupId?: string;
   created: string;
   updated: string;
 }
@@ -304,23 +305,47 @@ export const userApi = {
     return response as { data: UsersResponse };
   },
   createUser: async (user: Omit<User, "id">) => {
-    const response = await api.post("/api/v1/user", user, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
+    const response = await api.post(
+      "/api/v1/user",
+      {
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        mobile: user.mobile,
+        accountId: user.accountId,
+        groupId: user.groupId === "" ? null : user.groupId,
+        role: user.role,
       },
-      withCredentials: true,
-    });
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
     return response as { data: UserResponse };
   },
   updateUser: async (user: User) => {
-    const response = await api.put(`/api/v1/user/${user.id}`, user, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
+    const response = await api.put(
+      `/api/v1/user/${user.id}`,
+      {
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        mobile: user.mobile,
+        accountId: user.accountId,
+        groupId: user.groupId === "" ? null : user.groupId,
+        role: user.role,
       },
-      withCredentials: true,
-    });
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
     return response as { data: UserResponse };
   },
   deleteUser: async (userId: string) => {

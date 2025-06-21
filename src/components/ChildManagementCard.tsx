@@ -29,6 +29,7 @@ import {
   Grid,
   Chip,
   InputAdornment,
+  Popover,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs, { Dayjs } from "dayjs";
@@ -40,6 +41,10 @@ import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
+import {
+  Sort as SortIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon,
+} from "@mui/icons-material";
 import {
   Account,
   Group,
@@ -84,6 +89,13 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>("");
+  const [sortBy, setSortBy] = useState<"name" | "age" | "group" | "birthDate">(
+    "name"
+  );
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortPopoverOpen, setSortPopoverOpen] = useState(false);
+  const [sortAnchorEl, setSortAnchorEl] = useState<HTMLElement | null>(null);
   const [currentChild, setCurrentChild] = useState<ChildForm>({
     firstName: "",
     lastName: "",
@@ -156,19 +168,56 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     console.log("ChildManagementCard - Children updated:", children);
   }, [parents, children]);
 
-  // Filter children based on selected account and search query
-  const filteredChildren = children
-    .filter((child) =>
-      selectedAccountId ? child.accountId === selectedAccountId : true
-    )
-    .filter((child) => {
-      if (!searchQuery.trim()) return true;
-      const fullName = `${child.firstName || ""} ${
-        child.lastName || ""
-      }`.toLowerCase();
-      const query = searchQuery.toLowerCase();
-      return fullName.includes(query);
+  const sortChildren = (children: Child[]) => {
+    return [...children].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortBy) {
+        case "name":
+          aValue = `${a.firstName || ""} ${a.lastName || ""}`.toLowerCase();
+          bValue = `${b.firstName || ""} ${b.lastName || ""}`.toLowerCase();
+          break;
+        case "age":
+          aValue = calculateAge(a.dateOfBirth);
+          bValue = calculateAge(b.dateOfBirth);
+          break;
+        case "group":
+          aValue = a.groupName || "";
+          bValue = b.groupName || "";
+          break;
+        case "birthDate":
+          aValue = new Date(a.dateOfBirth);
+          bValue = new Date(b.dateOfBirth);
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortOrder === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortOrder === "asc" ? 1 : -1;
+      return 0;
     });
+  };
+
+  // Filter children based on selected account, group, and search query
+  const filteredChildren = sortChildren(
+    children
+      .filter((child) =>
+        selectedAccountId ? child.accountId === selectedAccountId : true
+      )
+      .filter((child) =>
+        selectedGroupFilter ? child.groupId === selectedGroupFilter : true
+      )
+      .filter((child) => {
+        if (!searchQuery.trim()) return true;
+        const fullName = `${child.firstName || ""} ${
+          child.lastName || ""
+        }`.toLowerCase();
+        const query = searchQuery.toLowerCase();
+        return fullName.includes(query);
+      })
+  );
 
   // Filter groups based on selected account
   const filteredGroups = selectedAccountId
@@ -354,13 +403,21 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
       })
       .filter((parent): parent is Parent => parent !== null);
 
+    // Check if groups are already loaded for this account
+    const existingGroups = groups.filter(
+      (group) => group.accountId === child.accountId
+    );
+    const shouldSetGroupId =
+      child.groupId &&
+      existingGroups.some((group) => group.id === child.groupId);
+
     setCurrentChild({
       id: child.id,
       firstName: child.firstName,
       lastName: child.lastName,
       dateOfBirth: formatDateForInput(child.dateOfBirth),
       accountId: child.accountId,
-      groupId: "",
+      groupId: shouldSetGroupId ? child.groupId : "",
       parents: parentObjects,
       created: child.created,
       updated: child.updated,
@@ -368,10 +425,8 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
 
     if (child.accountId) {
       fetchGroupsForAccount(child.accountId).then(() => {
-        if (
-          child.groupId &&
-          groups.some((group) => group.id === child.groupId)
-        ) {
+        // After groups are fetched, check if we need to set the groupId
+        if (child.groupId && !shouldSetGroupId) {
           setCurrentChild((prev) => ({
             ...prev,
             groupId: child.groupId,
@@ -384,6 +439,20 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
 
   const handleClearSearch = () => {
     setSearchQuery("");
+  };
+
+  const handleGroupFilterClick = (groupId: string) => {
+    if (selectedGroupFilter === groupId) {
+      // If clicking the same group, clear the filter
+      setSelectedGroupFilter("");
+    } else {
+      // Set the new group filter
+      setSelectedGroupFilter(groupId);
+    }
+  };
+
+  const clearGroupFilter = () => {
+    setSelectedGroupFilter("");
   };
 
   return (
@@ -422,11 +491,14 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                     <SearchIcon color="action" />
                   </InputAdornment>
                 ),
-                endAdornment: searchQuery && (
+                endAdornment: (searchQuery || selectedGroupFilter) && (
                   <InputAdornment position="end">
                     <IconButton
                       size="small"
-                      onClick={handleClearSearch}
+                      onClick={() => {
+                        setSearchQuery("");
+                        clearGroupFilter();
+                      }}
                       edge="end"
                     >
                       <ClearIcon />
@@ -447,6 +519,36 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                 },
               }}
             />
+
+            {/* Sort Controls */}
+            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  bgcolor: "background.paper",
+                  borderRadius: 2,
+                  border: 1,
+                  borderColor: "divider",
+                  px: 1,
+                  py: 0.5,
+                  cursor: "pointer",
+                  "&:hover": {
+                    bgcolor: "action.hover",
+                    borderColor: "warning.main",
+                  },
+                  transition: "all 0.2s ease-in-out",
+                }}
+                onClick={(event) => {
+                  setSortPopoverOpen(true);
+                  setSortAnchorEl(event.currentTarget);
+                }}
+              >
+                <SortIcon sx={{ fontSize: 18, color: "warning.main" }} />
+              </Box>
+            </Box>
+
             <Fab
               color="primary"
               aria-label="add child"
@@ -464,6 +566,28 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
               <AddIcon />
             </Fab>
           </Box>
+
+          {/* Active Group Filter Display */}
+          {selectedGroupFilter && (
+            <Box sx={{ mt: 1, display: "flex", alignItems: "center", gap: 1 }}>
+              <Chip
+                label={`קבוצה: ${
+                  groups.find((group) => group.id === selectedGroupFilter)
+                    ?.name || "לא ידועה"
+                }`}
+                size="small"
+                color="primary"
+                onDelete={clearGroupFilter}
+                sx={{
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                }}
+              />
+              <Typography variant="caption" color="text.secondary">
+                מציג ילדים מקבוצה זו בלבד
+              </Typography>
+            </Box>
+          )}
         </Box>
       )}
 
@@ -544,12 +668,28 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                           <Chip
                             label={`קבוצה: ${child.groupName || "לא ידועה"}`}
                             size="small"
+                            onClick={() =>
+                              child.groupId &&
+                              handleGroupFilterClick(child.groupId)
+                            }
                             sx={{
                               height: 20,
                               fontSize: "0.75rem",
                               fontWeight: 500,
-                              bgcolor: "#9c27b0",
+                              bgcolor:
+                                selectedGroupFilter === child.groupId
+                                  ? "primary.main"
+                                  : "#9c27b0",
                               color: "white",
+                              cursor: "pointer",
+                              "&:hover": {
+                                bgcolor:
+                                  selectedGroupFilter === child.groupId
+                                    ? "primary.dark"
+                                    : "#7b1fa2",
+                                transform: "scale(1.05)",
+                              },
+                              transition: "all 0.2s ease-in-out",
                               "& .MuiChip-label": {
                                 color: "white",
                               },
@@ -827,7 +967,11 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                   <Select
                     value={
                       currentChild.groupId &&
-                      groups.some((group) => group.id === currentChild.groupId)
+                      groups
+                        .filter(
+                          (group) => group.accountId === currentChild.accountId
+                        )
+                        .some((group) => group.id === currentChild.groupId)
                         ? currentChild.groupId
                         : ""
                     }
@@ -851,18 +995,24 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                           </Typography>
                         </Box>
                       </MenuItem>
-                    ) : groups.length === 0 ? (
+                    ) : groups.filter(
+                        (group) => group.accountId === currentChild.accountId
+                      ).length === 0 ? (
                       <MenuItem disabled>
                         <Typography variant="body2" color="text.secondary">
                           אין קבוצות זמינות
                         </Typography>
                       </MenuItem>
                     ) : (
-                      groups.map((group) => (
-                        <MenuItem key={group.id} value={group.id}>
-                          {group.name || "שם הקבוצה חסר"}
-                        </MenuItem>
-                      ))
+                      groups
+                        .filter(
+                          (group) => group.accountId === currentChild.accountId
+                        )
+                        .map((group) => (
+                          <MenuItem key={group.id} value={group.id}>
+                            {group.name || "שם הקבוצה חסר"}
+                          </MenuItem>
+                        ))
                     )}
                   </Select>
                 </FormControl>
@@ -1082,6 +1232,88 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
         severity={notification.severity}
         onClose={() => setNotification({ ...notification, open: false })}
       />
+
+      <Popover
+        open={sortPopoverOpen}
+        onClose={() => {
+          setSortPopoverOpen(false);
+          setSortAnchorEl(null);
+        }}
+        anchorEl={sortAnchorEl}
+        anchorOrigin={{
+          vertical: "center",
+          horizontal: "left",
+        }}
+        transformOrigin={{
+          vertical: "center",
+          horizontal: "right",
+        }}
+        PaperProps={{
+          sx: {
+            minWidth: 180,
+            ml: 1,
+            boxShadow: 3,
+            borderRadius: 2,
+          },
+        }}
+      >
+        <Box sx={{ p: 1.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <FormControl size="small" sx={{ flex: 1 }}>
+              <Select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(
+                    e.target.value as "name" | "age" | "group" | "birthDate"
+                  );
+                  setSortPopoverOpen(false);
+                  setSortAnchorEl(null);
+                }}
+                displayEmpty
+                sx={{
+                  "& .MuiSelect-select": {
+                    py: 1,
+                    px: 1.5,
+                  },
+                }}
+              >
+                <MenuItem value="name">שם</MenuItem>
+                <MenuItem value="age">גיל</MenuItem>
+                <MenuItem value="group">קבוצה</MenuItem>
+                <MenuItem value="birthDate">תאריך לידה</MenuItem>
+              </Select>
+            </FormControl>
+
+            <IconButton
+              onClick={() => {
+                setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                setSortPopoverOpen(false);
+                setSortAnchorEl(null);
+              }}
+              size="small"
+              sx={{
+                border: 1,
+                borderColor: "divider",
+                "&:hover": {
+                  borderColor: "primary.main",
+                  bgcolor: "action.hover",
+                },
+                transition: "all 0.2s ease-in-out",
+              }}
+            >
+              <KeyboardArrowDownIcon
+                sx={{
+                  color: "primary.main",
+                  fontSize: 20,
+                  transform:
+                    sortOrder === "desc" ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.2s ease-in-out",
+                }}
+              />
+            </IconButton>
+          </Box>
+        </Box>
+      </Popover>
     </Box>
   );
 };
