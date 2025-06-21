@@ -20,11 +20,21 @@ import {
   Chip,
   Fab,
   InputAdornment,
+  Popover,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText as MuiListItemText,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
-import SearchIcon from "@mui/icons-material/Search";
-import ClearIcon from "@mui/icons-material/Clear";
+import {
+  Add as AddIcon,
+  Clear as ClearIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon,
+  Search as SearchIcon,
+  Sort as SortIcon,
+} from "@mui/icons-material";
 import { userApi, User, Account, Group, groupApi } from "../services/api";
 import Notification from "./Notification";
 import { useApp } from "../contexts/AppContext";
@@ -64,6 +74,10 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
   const [search, setSearch] = useState("");
   const [selectedAccountFilter, setSelectedAccountFilter] =
     useState<string>("");
+  const [sortBy, setSortBy] = useState<"name" | "account" | "role">("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortPopoverOpen, setSortPopoverOpen] = useState(false);
+  const [sortAnchorEl, setSortAnchorEl] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -361,24 +375,55 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
       .replace(",", ":");
   };
 
-  const filteredUsers = users.filter((user: User) => {
-    // Filter by account if selected
-    if (selectedAccountFilter && user.accountId !== selectedAccountFilter) {
-      return false;
-    }
+  const sortUsers = (users: User[]) => {
+    return [...users].sort((a, b) => {
+      let aValue: string;
+      let bValue: string;
 
-    // Filter by search query
-    if (search) {
-      const searchLower = search.toLowerCase();
-      return (
-        user.firstName.toLowerCase().includes(searchLower) ||
-        user.lastName.toLowerCase().includes(searchLower) ||
-        user.email.toLowerCase().includes(searchLower)
-      );
-    }
+      switch (sortBy) {
+        case "name":
+          aValue = `${a.firstName || ""} ${a.lastName || ""}`.trim() || a.email;
+          bValue = `${b.firstName || ""} ${b.lastName || ""}`.trim() || b.email;
+          break;
+        case "account":
+          const aAccount = accounts.find((acc) => acc.id === a.accountId);
+          const bAccount = accounts.find((acc) => acc.id === b.accountId);
+          aValue = aAccount?.branchName || "לא ידוע";
+          bValue = bAccount?.branchName || "לא ידוע";
+          break;
+        case "role":
+          aValue = a.role;
+          bValue = b.role;
+          break;
+        default:
+          return 0;
+      }
 
-    return true;
-  });
+      const comparison = aValue.localeCompare(bValue, "he");
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+  };
+
+  const filteredUsers = sortUsers(
+    users.filter((user: User) => {
+      // Filter by account if selected
+      if (selectedAccountFilter && user.accountId !== selectedAccountFilter) {
+        return false;
+      }
+
+      // Filter by search query
+      if (search) {
+        const searchLower = search.toLowerCase();
+        return (
+          user.firstName.toLowerCase().includes(searchLower) ||
+          user.lastName.toLowerCase().includes(searchLower) ||
+          user.email.toLowerCase().includes(searchLower)
+        );
+      }
+
+      return true;
+    })
+  );
 
   return (
     <Box
@@ -443,6 +488,36 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                   ),
                 }}
               />
+
+              {/* Sort Controls */}
+              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    bgcolor: "background.paper",
+                    borderRadius: 2,
+                    border: 1,
+                    borderColor: "divider",
+                    px: 1,
+                    py: 0.5,
+                    cursor: "pointer",
+                    "&:hover": {
+                      bgcolor: "action.hover",
+                      borderColor: "warning.main",
+                    },
+                    transition: "all 0.2s ease-in-out",
+                  }}
+                  onClick={(event) => {
+                    setSortPopoverOpen(true);
+                    setSortAnchorEl(event.currentTarget);
+                  }}
+                >
+                  <SortIcon sx={{ fontSize: 18, color: "warning.main" }} />
+                </Box>
+              </Box>
+
               <Fab
                 color="primary"
                 aria-label="add user"
@@ -1040,6 +1115,85 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
         severity={notification.severity}
         onClose={() => setNotification({ ...notification, open: false })}
       />
+
+      <Popover
+        open={sortPopoverOpen}
+        onClose={() => {
+          setSortPopoverOpen(false);
+          setSortAnchorEl(null);
+        }}
+        anchorEl={sortAnchorEl}
+        anchorOrigin={{
+          vertical: "center",
+          horizontal: "left",
+        }}
+        transformOrigin={{
+          vertical: "center",
+          horizontal: "right",
+        }}
+        PaperProps={{
+          sx: {
+            minWidth: 180,
+            ml: 1,
+            boxShadow: 3,
+            borderRadius: 2,
+          },
+        }}
+      >
+        <Box sx={{ p: 1.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <FormControl size="small" sx={{ flex: 1 }}>
+              <Select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value as "name" | "account" | "role");
+                  setSortPopoverOpen(false);
+                  setSortAnchorEl(null);
+                }}
+                displayEmpty
+                sx={{
+                  "& .MuiSelect-select": {
+                    py: 1,
+                    px: 1.5,
+                  },
+                }}
+              >
+                <MenuItem value="name">שם</MenuItem>
+                <MenuItem value="account">סניף</MenuItem>
+                <MenuItem value="role">תפקיד</MenuItem>
+              </Select>
+            </FormControl>
+
+            <IconButton
+              onClick={() => {
+                setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                setSortPopoverOpen(false);
+                setSortAnchorEl(null);
+              }}
+              size="small"
+              sx={{
+                border: 1,
+                borderColor: "divider",
+                "&:hover": {
+                  borderColor: "primary.main",
+                  bgcolor: "action.hover",
+                },
+                transition: "all 0.2s ease-in-out",
+              }}
+            >
+              <KeyboardArrowDownIcon
+                sx={{
+                  color: "primary.main",
+                  fontSize: 20,
+                  transform:
+                    sortOrder === "desc" ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.2s ease-in-out",
+                }}
+              />
+            </IconButton>
+          </Box>
+        </Box>
+      </Popover>
     </Box>
   );
 };
