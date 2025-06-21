@@ -25,7 +25,7 @@ import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
-import { userApi, User, Account } from "../services/api";
+import { userApi, User, Account, Group, groupApi } from "../services/api";
 import Notification from "./Notification";
 import { useApp } from "../contexts/AppContext";
 
@@ -45,6 +45,8 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
   const [isInitialized, setIsInitialized] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [currentUser, setCurrentUser] = useState<Partial<User>>({
     email: "",
     firstName: "",
@@ -52,6 +54,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
     mobile: "",
     role: "Staff",
     accountId: "",
+    groupId: "",
   });
   const [notification, setNotification] = useState({
     open: false,
@@ -59,6 +62,8 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
     severity: "success" as "success" | "error" | "info" | "warning",
   });
   const [search, setSearch] = useState("");
+  const [selectedAccountFilter, setSelectedAccountFilter] =
+    useState<string>("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -68,6 +73,24 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
         }
         if (users.length === 0) {
           await fetchUsers();
+        }
+        // Fetch groups for all accounts to display group names in user list
+        if (accounts.length > 0) {
+          const allGroups: Group[] = [];
+          for (const account of accounts) {
+            try {
+              const response = await groupApi.getGroups(account.id);
+              if (response.data.groups) {
+                allGroups.push(...response.data.groups);
+              }
+            } catch (error) {
+              console.error(
+                `Error fetching groups for account ${account.id}:`,
+                error
+              );
+            }
+          }
+          setGroups(allGroups);
         }
         setIsInitialized(true);
       } else if (!isExpanded) {
@@ -94,6 +117,25 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
     }
   };
 
+  const fetchGroupsForAccount = async (accountId: string) => {
+    try {
+      setIsLoadingGroups(true);
+      const response = await groupApi.getGroups(accountId);
+      let groupsData: Group[] = [];
+      if (response.data.groups) {
+        groupsData = response.data.groups;
+      }
+      setGroups(groupsData);
+      return groupsData;
+    } catch (error) {
+      showNotification("שגיאה בטעינת הקבוצות", "error");
+      setGroups([]);
+      return [];
+    } finally {
+      setIsLoadingGroups(false);
+    }
+  };
+
   const showNotification = (
     message: string,
     severity: "success" | "error" | "info" | "warning" = "success"
@@ -110,7 +152,23 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
       setCurrentUser({
         ...user,
         accountId: user.accountId || "",
+        groupId: "", // Start with empty groupId, will be set after groups load
       });
+      // Fetch groups for the user's account and then set the groupId
+      if (user.accountId) {
+        fetchGroupsForAccount(user.accountId).then((groupsData) => {
+          // After groups are fetched, check if we need to set the groupId
+          if (
+            user.groupId &&
+            groupsData.some((group) => group.id === user.groupId)
+          ) {
+            setCurrentUser((prev) => ({
+              ...prev,
+              groupId: user.groupId,
+            }));
+          }
+        });
+      }
     } else {
       setCurrentUser({
         email: "",
@@ -119,7 +177,9 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
         mobile: "",
         role: "Staff",
         accountId: "",
+        groupId: "",
       });
+      setGroups([]);
     }
     setIsDrawerOpen(true);
   };
@@ -133,18 +193,47 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
       mobile: "",
       role: "Staff",
       accountId: "",
+      groupId: "",
     });
   };
 
   const handleUserChange = (field: keyof User, value: string) => {
-    setCurrentUser((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setCurrentUser((prev) => {
+      const updated = {
+        ...prev,
+        [field]: value,
+      };
+
+      // If accountId changed, fetch groups for the new account and clear groupId
+      if (field === "accountId" && value !== prev.accountId) {
+        if (value) {
+          fetchGroupsForAccount(value);
+        } else {
+          setGroups([]);
+        }
+        updated.groupId = "";
+      }
+
+      // If role changed from Staff to something else, clear groupId
+      if (field === "role" && prev.role === "Staff" && value !== "Staff") {
+        updated.groupId = "";
+      }
+
+      return updated;
+    });
   };
 
   const handleSaveUser = async () => {
     try {
+      // Validate that Staff users have a group assigned
+      if (
+        currentUser.role === "Staff" &&
+        (!currentUser.groupId || currentUser.groupId === "")
+      ) {
+        showNotification("עובדי צוות חייבים להיות משויכים לקבוצה", "warning");
+        return;
+      }
+
       setIsLoading(true);
       if (currentUser.id) {
         // Update existing user
@@ -157,8 +246,48 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
       }
       handleCloseDrawer();
       fetchUsers();
-    } catch (error) {
-      showNotification("שגיאה בשמירת המשתמש", "error");
+    } catch (error: any) {
+      // Extract error message from API response
+      let errorMessage = "שגיאה בשמירת המשתמש";
+
+      if (error.response?.data?.Message) {
+        // Translate common API error messages to Hebrew
+        const apiMessage = error.response.data.Message;
+        switch (apiMessage) {
+          case "mobile number already in use":
+            errorMessage = "מספר הטלפון כבר קיים במערכת";
+            break;
+          case "email already in use":
+            errorMessage = "כתובת האימייל כבר קיימת במערכת";
+            break;
+          case "user not found":
+            errorMessage = "המשתמש לא נמצא";
+            break;
+          case "invalid email format":
+            errorMessage = "פורמט אימייל לא תקין";
+            break;
+          case "invalid mobile format":
+            errorMessage = "פורמט מספר טלפון לא תקין";
+            break;
+          case "account not found":
+            errorMessage = "הסניף לא נמצא";
+            break;
+          case "group not found":
+            errorMessage = "הקבוצה לא נמצאה";
+            break;
+          default:
+            // Use the original message if no translation is available
+            errorMessage = apiMessage;
+        }
+      } else if (error.response?.status === 422) {
+        // Handle 422 validation errors
+        errorMessage = "שגיאה בנתונים שהוזנו";
+      } else if (error.message) {
+        // Use the error message if available
+        errorMessage = error.message;
+      }
+
+      showNotification(errorMessage, "error");
     } finally {
       setIsLoading(false);
     }
@@ -185,6 +314,20 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
 
   const handleDeleteCancel = () => {
     setIsDeleteDialogOpen(false);
+  };
+
+  const handleAccountFilterClick = (accountId: string) => {
+    if (selectedAccountFilter === accountId) {
+      // If clicking the same account, clear the filter
+      setSelectedAccountFilter("");
+    } else {
+      // Set the new account filter
+      setSelectedAccountFilter(accountId);
+    }
+  };
+
+  const clearAccountFilter = () => {
+    setSelectedAccountFilter("");
   };
 
   const formatMobileNumber = (value: string) => {
@@ -218,12 +361,24 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
       .replace(",", ":");
   };
 
-  const filteredUsers = users.filter(
-    (user: User) =>
-      user.firstName.toLowerCase().includes(search.toLowerCase()) ||
-      user.lastName.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredUsers = users.filter((user: User) => {
+    // Filter by account if selected
+    if (selectedAccountFilter && user.accountId !== selectedAccountFilter) {
+      return false;
+    }
+
+    // Filter by search query
+    if (search) {
+      const searchLower = search.toLowerCase();
+      return (
+        user.firstName.toLowerCase().includes(searchLower) ||
+        user.lastName.toLowerCase().includes(searchLower) ||
+        user.email.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return true;
+  });
 
   return (
     <Box
@@ -272,17 +427,15 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                       <SearchIcon />
                     </InputAdornment>
                   ),
-                  endAdornment: search && (
+                  endAdornment: (search || selectedAccountFilter) && (
                     <InputAdornment position="end">
                       <IconButton
-                        edge="end"
-                        onClick={() => setSearch("")}
-                        sx={{
-                          color: "primary.main",
-                          "&:hover": {
-                            bgcolor: "primary.lighter",
-                          },
+                        size="small"
+                        onClick={() => {
+                          setSearch("");
+                          clearAccountFilter();
                         }}
+                        edge="end"
                       >
                         <ClearIcon />
                       </IconButton>
@@ -307,6 +460,30 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                 <AddIcon />
               </Fab>
             </Box>
+
+            {/* Active Account Filter Display */}
+            {selectedAccountFilter && (
+              <Box
+                sx={{ mt: 1, display: "flex", alignItems: "center", gap: 1 }}
+              >
+                <Chip
+                  label={`סניף: ${
+                    accounts.find((acc) => acc.id === selectedAccountFilter)
+                      ?.branchName || "לא ידוע"
+                  }`}
+                  size="small"
+                  color="primary"
+                  onDelete={clearAccountFilter}
+                  sx={{
+                    fontSize: "0.75rem",
+                    fontWeight: 500,
+                  }}
+                />
+                <Typography variant="caption" color="text.secondary">
+                  מציג משתמשים מסניף זה בלבד
+                </Typography>
+              </Box>
+            )}
           </Box>
 
           {/* Scrollable Users List */}
@@ -331,7 +508,11 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                     <ListItemText
                       primary={
                         <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 1,
+                          }}
                         >
                           <Typography
                             variant="subtitle1"
@@ -347,48 +528,92 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                               ? `${user.firstName} ${user.lastName}`
                               : user.email}
                           </Typography>
-                          <Chip
-                            label={
-                              user.role === "Admin"
-                                ? "מנהל"
-                                : user.role === "Parent"
-                                ? "הורה"
-                                : "צוות"
-                            }
-                            size="small"
-                            color={
-                              user.role === "Admin"
-                                ? "primary"
-                                : user.role === "Parent"
-                                ? "success"
-                                : "info"
-                            }
+                          <Box
                             sx={{
-                              height: 20,
-                              fontSize: "0.75rem",
-                              fontWeight: 500,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              flexWrap: "wrap",
                             }}
-                          />
-                          {user.accountId && (
+                          >
                             <Chip
-                              label={`סניף: ${
-                                accounts.find(
-                                  (account) => account.id === user.accountId
-                                )?.branchName || "לא ידוע"
-                              }`}
+                              label={
+                                user.role === "Admin"
+                                  ? "מנהל"
+                                  : user.role === "Parent"
+                                  ? "הורה"
+                                  : "צוות"
+                              }
                               size="small"
+                              color={
+                                user.role === "Admin"
+                                  ? "primary"
+                                  : user.role === "Parent"
+                                  ? "success"
+                                  : "info"
+                              }
                               sx={{
                                 height: 20,
                                 fontSize: "0.75rem",
                                 fontWeight: 500,
-                                bgcolor: "#009688",
-                                color: "white",
-                                "& .MuiChip-label": {
-                                  color: "white",
-                                },
                               }}
                             />
-                          )}
+                            {user.accountId && (
+                              <Chip
+                                label={`סניף: ${
+                                  accounts.find(
+                                    (account) => account.id === user.accountId
+                                  )?.branchName || "לא ידוע"
+                                }`}
+                                size="small"
+                                onClick={() =>
+                                  handleAccountFilterClick(user.accountId)
+                                }
+                                sx={{
+                                  height: 20,
+                                  fontSize: "0.75rem",
+                                  fontWeight: 500,
+                                  bgcolor:
+                                    selectedAccountFilter === user.accountId
+                                      ? "primary.main"
+                                      : "#009688",
+                                  color: "white",
+                                  cursor: "pointer",
+                                  "&:hover": {
+                                    bgcolor:
+                                      selectedAccountFilter === user.accountId
+                                        ? "primary.dark"
+                                        : "#00796b",
+                                    transform: "scale(1.05)",
+                                  },
+                                  transition: "all 0.2s ease-in-out",
+                                  "& .MuiChip-label": {
+                                    color: "white",
+                                  },
+                                }}
+                              />
+                            )}
+                            {user.groupId && (
+                              <Chip
+                                label={`קבוצה: ${
+                                  groups.find(
+                                    (group) => group.id === user.groupId
+                                  )?.name || "לא ידועה"
+                                }`}
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: "0.75rem",
+                                  fontWeight: 500,
+                                  bgcolor: "#9c27b0",
+                                  color: "white",
+                                  "& .MuiChip-label": {
+                                    color: "white",
+                                  },
+                                }}
+                              />
+                            )}
+                          </Box>
                         </Box>
                       }
                       secondary={
@@ -397,7 +622,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                           color="text.secondary"
                           sx={{ mt: 0.5 }}
                         >
-                          {user.mobile}
+                          {formatMobileNumber(user.mobile)}
                         </Typography>
                       }
                     />
@@ -439,13 +664,25 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
         PaperProps={{
           sx: {
             width: { xs: "100%", sm: 400 },
-            p: 3,
             bgcolor: "background.paper",
           },
         }}
       >
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-          <Box sx={{ mb: 4 }}>
+          {/* Sticky Header */}
+          <Box
+            sx={{
+              p: 3,
+              pb: 2,
+              borderBottom: 1,
+              borderColor: "divider",
+              bgcolor: "background.paper",
+              zIndex: 1,
+            }}
+          >
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              {currentUser.id ? "עריכת משתמש" : "הוספת משתמש חדש"}
+            </Typography>
             <Typography variant="body2" color="text.secondary">
               {currentUser.id
                 ? "עדכון פרטי המשתמש הקיים"
@@ -453,7 +690,8 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
             </Typography>
           </Box>
 
-          <Box sx={{ flex: 1 }}>
+          {/* Scrollable Content */}
+          <Box sx={{ flex: 1, overflow: "auto", p: 3, pt: 2 }}>
             <Box
               sx={{
                 display: "flex",
@@ -565,6 +803,48 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                 </Select>
               </FormControl>
 
+              {currentUser.role === "Staff" && (
+                <FormControl fullWidth>
+                  <InputLabel>קבוצה</InputLabel>
+                  <Select
+                    value={currentUser.groupId || ""}
+                    label="קבוצה"
+                    onChange={(e) =>
+                      handleUserChange("groupId", e.target.value)
+                    }
+                    disabled={isLoadingGroups || !currentUser.accountId}
+                  >
+                    <MenuItem value="">
+                      <em>בחר קבוצה (אופציונלי)</em>
+                    </MenuItem>
+                    {isLoadingGroups ? (
+                      <MenuItem disabled>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <CircularProgress size={16} />
+                          <Typography variant="body2">
+                            טוען קבוצות...
+                          </Typography>
+                        </Box>
+                      </MenuItem>
+                    ) : groups.length === 0 ? (
+                      <MenuItem disabled>
+                        <Typography variant="body2" color="text.secondary">
+                          אין קבוצות זמינות בסניף זה
+                        </Typography>
+                      </MenuItem>
+                    ) : (
+                      groups.map((group) => (
+                        <MenuItem key={group.id} value={group.id}>
+                          {group.name || "שם הקבוצה חסר"}
+                        </MenuItem>
+                      ))
+                    )}
+                  </Select>
+                </FormControl>
+              )}
+
               {currentUser.id && (
                 <Box
                   sx={{
@@ -663,14 +943,18 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
             </Box>
           </Box>
 
+          {/* Fixed Bottom Buttons */}
           <Box
             sx={{
               display: "flex",
               gap: 2,
-              mt: "auto",
-              pt: 3,
+              p: 3,
+              pt: 2,
+              pb: 3,
               borderTop: "1px solid",
               borderColor: "divider",
+              bgcolor: "background.paper",
+              zIndex: 1,
             }}
           >
             {currentUser.id && currentUser.role !== "Admin" && (

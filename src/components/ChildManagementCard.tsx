@@ -84,6 +84,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>("");
   const [currentChild, setCurrentChild] = useState<ChildForm>({
     firstName: "",
     lastName: "",
@@ -156,10 +157,13 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     console.log("ChildManagementCard - Children updated:", children);
   }, [parents, children]);
 
-  // Filter children based on selected account and search query
+  // Filter children based on selected account, group, and search query
   const filteredChildren = children
     .filter((child) =>
       selectedAccountId ? child.accountId === selectedAccountId : true
+    )
+    .filter((child) =>
+      selectedGroupFilter ? child.groupId === selectedGroupFilter : true
     )
     .filter((child) => {
       if (!searchQuery.trim()) return true;
@@ -392,6 +396,20 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     setSearchQuery("");
   };
 
+  const handleGroupFilterClick = (groupId: string) => {
+    if (selectedGroupFilter === groupId) {
+      // If clicking the same group, clear the filter
+      setSelectedGroupFilter("");
+    } else {
+      // Set the new group filter
+      setSelectedGroupFilter(groupId);
+    }
+  };
+
+  const clearGroupFilter = () => {
+    setSelectedGroupFilter("");
+  };
+
   return (
     <Box
       sx={{
@@ -428,11 +446,14 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                     <SearchIcon color="action" />
                   </InputAdornment>
                 ),
-                endAdornment: searchQuery && (
+                endAdornment: (searchQuery || selectedGroupFilter) && (
                   <InputAdornment position="end">
                     <IconButton
                       size="small"
-                      onClick={handleClearSearch}
+                      onClick={() => {
+                        setSearchQuery("");
+                        clearGroupFilter();
+                      }}
                       edge="end"
                     >
                       <ClearIcon />
@@ -470,6 +491,28 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
               <AddIcon />
             </Fab>
           </Box>
+
+          {/* Active Group Filter Display */}
+          {selectedGroupFilter && (
+            <Box sx={{ mt: 1, display: "flex", alignItems: "center", gap: 1 }}>
+              <Chip
+                label={`קבוצה: ${
+                  groups.find((group) => group.id === selectedGroupFilter)
+                    ?.name || "לא ידועה"
+                }`}
+                size="small"
+                color="primary"
+                onDelete={clearGroupFilter}
+                sx={{
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                }}
+              />
+              <Typography variant="caption" color="text.secondary">
+                מציג ילדים מקבוצה זו בלבד
+              </Typography>
+            </Box>
+          )}
         </Box>
       )}
 
@@ -550,12 +593,28 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                           <Chip
                             label={`קבוצה: ${child.groupName || "לא ידועה"}`}
                             size="small"
+                            onClick={() =>
+                              child.groupId &&
+                              handleGroupFilterClick(child.groupId)
+                            }
                             sx={{
                               height: 20,
                               fontSize: "0.75rem",
                               fontWeight: 500,
-                              bgcolor: "#9c27b0",
+                              bgcolor:
+                                selectedGroupFilter === child.groupId
+                                  ? "primary.main"
+                                  : "#9c27b0",
                               color: "white",
+                              cursor: "pointer",
+                              "&:hover": {
+                                bgcolor:
+                                  selectedGroupFilter === child.groupId
+                                    ? "primary.dark"
+                                    : "#7b1fa2",
+                                transform: "scale(1.05)",
+                              },
+                              transition: "all 0.2s ease-in-out",
                               "& .MuiChip-label": {
                                 color: "white",
                               },
