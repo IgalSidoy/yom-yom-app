@@ -74,6 +74,8 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
   const [search, setSearch] = useState("");
   const [selectedAccountFilter, setSelectedAccountFilter] =
     useState<string>("");
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>("");
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>("");
   const [sortBy, setSortBy] = useState<"name" | "account" | "role">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [sortPopoverOpen, setSortPopoverOpen] = useState(false);
@@ -410,7 +412,14 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
       if (selectedAccountFilter && user.accountId !== selectedAccountFilter) {
         return false;
       }
-
+      // Filter by role if selected
+      if (selectedRoleFilter && user.role !== selectedRoleFilter) {
+        return false;
+      }
+      // Filter by group if selected
+      if (selectedGroupFilter && user.groupId !== selectedGroupFilter) {
+        return false;
+      }
       // Filter by search query
       if (search) {
         const searchLower = search.toLowerCase();
@@ -420,7 +429,6 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
           user.email.toLowerCase().includes(searchLower)
         );
       }
-
       return true;
     })
   );
@@ -505,7 +513,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                     cursor: "pointer",
                     "&:hover": {
                       bgcolor: "action.hover",
-                      borderColor: "warning.main",
+                      borderColor: "primary.main",
                     },
                     transition: "all 0.2s ease-in-out",
                   }}
@@ -514,7 +522,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                     setSortAnchorEl(event.currentTarget);
                   }}
                 >
-                  <SortIcon sx={{ fontSize: 18, color: "warning.main" }} />
+                  <SortIcon sx={{ fontSize: 18, color: "text.secondary" }} />
                 </Box>
               </Box>
 
@@ -536,26 +544,69 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
               </Fab>
             </Box>
 
-            {/* Active Account Filter Display */}
-            {selectedAccountFilter && (
+            {/* Active Account/Role/Group Filter Display */}
+            {(selectedAccountFilter ||
+              selectedRoleFilter ||
+              selectedGroupFilter) && (
               <Box
                 sx={{ mt: 1, display: "flex", alignItems: "center", gap: 1 }}
               >
-                <Chip
-                  label={`סניף: ${
-                    accounts.find((acc) => acc.id === selectedAccountFilter)
-                      ?.branchName || "לא ידוע"
-                  }`}
-                  size="small"
-                  color="primary"
-                  onDelete={clearAccountFilter}
-                  sx={{
-                    fontSize: "0.75rem",
-                    fontWeight: 500,
-                  }}
-                />
+                {selectedAccountFilter && (
+                  <Chip
+                    label={`סניף: ${
+                      accounts.find((acc) => acc.id === selectedAccountFilter)
+                        ?.branchName || "לא ידוע"
+                    }`}
+                    size="small"
+                    color="primary"
+                    onDelete={clearAccountFilter}
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                    }}
+                  />
+                )}
+                {selectedRoleFilter && (
+                  <Chip
+                    label={`תפקיד: ${
+                      selectedRoleFilter === "Admin"
+                        ? "מנהל"
+                        : selectedRoleFilter === "Parent"
+                        ? "הורה"
+                        : "צוות"
+                    }`}
+                    size="small"
+                    color="warning"
+                    onDelete={() => setSelectedRoleFilter("")}
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                    }}
+                  />
+                )}
+                {selectedGroupFilter && (
+                  <Chip
+                    label={`קבוצה: ${
+                      groups.find((group) => group.id === selectedGroupFilter)
+                        ?.name || "לא ידועה"
+                    }`}
+                    size="small"
+                    color="secondary"
+                    onDelete={() => setSelectedGroupFilter("")}
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                    }}
+                  />
+                )}
                 <Typography variant="caption" color="text.secondary">
-                  מציג משתמשים מסניף זה בלבד
+                  {selectedAccountFilter ||
+                  selectedRoleFilter ||
+                  selectedGroupFilter
+                    ? `מציג משתמשים${selectedAccountFilter ? " מסניף זה" : ""}${
+                        selectedRoleFilter ? " בעלי תפקיד זה" : ""
+                      }${selectedGroupFilter ? " מקבוצה זו" : ""} בלבד`
+                    : ""}
                 </Typography>
               </Box>
             )}
@@ -627,10 +678,45 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                                   ? "success"
                                   : "info"
                               }
+                              onClick={() =>
+                                setSelectedRoleFilter(
+                                  selectedRoleFilter === user.role
+                                    ? ""
+                                    : user.role
+                                )
+                              }
                               sx={{
                                 height: 20,
                                 fontSize: "0.75rem",
-                                fontWeight: 500,
+                                fontWeight:
+                                  selectedRoleFilter === user.role ? 700 : 500,
+                                cursor: "pointer",
+                                bgcolor:
+                                  selectedRoleFilter === user.role
+                                    ? "#FF914D"
+                                    : undefined,
+                                color:
+                                  selectedRoleFilter === user.role
+                                    ? "#4E342E"
+                                    : undefined,
+                                "&:hover": {
+                                  bgcolor:
+                                    selectedRoleFilter === user.role
+                                      ? "#FF7A1A"
+                                      : undefined,
+                                  transform: "scale(1.05)",
+                                },
+                                transition: "all 0.2s ease-in-out",
+                                "& .MuiChip-label": {
+                                  color:
+                                    selectedRoleFilter === user.role
+                                      ? "#4E342E"
+                                      : undefined,
+                                  fontWeight:
+                                    selectedRoleFilter === user.role
+                                      ? 700
+                                      : 500,
+                                },
                               }}
                             />
                             {user.accountId && (
@@ -647,23 +733,30 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                                 sx={{
                                   height: 20,
                                   fontSize: "0.75rem",
-                                  fontWeight: 500,
+                                  fontWeight:
+                                    selectedAccountFilter === user.accountId
+                                      ? 700
+                                      : 500,
                                   bgcolor:
                                     selectedAccountFilter === user.accountId
-                                      ? "primary.main"
+                                      ? "#FF914D"
                                       : "#009688",
                                   color: "white",
                                   cursor: "pointer",
                                   "&:hover": {
                                     bgcolor:
                                       selectedAccountFilter === user.accountId
-                                        ? "primary.dark"
+                                        ? "#FF7A1A"
                                         : "#00796b",
                                     transform: "scale(1.05)",
                                   },
                                   transition: "all 0.2s ease-in-out",
                                   "& .MuiChip-label": {
                                     color: "white",
+                                    fontWeight:
+                                      selectedAccountFilter === user.accountId
+                                        ? 700
+                                        : 500,
                                   },
                                 }}
                               />
@@ -676,14 +769,46 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                                   )?.name || "לא ידועה"
                                 }`}
                                 size="small"
+                                onClick={() =>
+                                  setSelectedGroupFilter(
+                                    selectedGroupFilter === (user.groupId ?? "")
+                                      ? ""
+                                      : user.groupId ?? ""
+                                  )
+                                }
                                 sx={{
                                   height: 20,
                                   fontSize: "0.75rem",
-                                  fontWeight: 500,
-                                  bgcolor: "#9c27b0",
-                                  color: "white",
+                                  fontWeight:
+                                    selectedGroupFilter === user.groupId
+                                      ? 700
+                                      : 500,
+                                  bgcolor:
+                                    selectedGroupFilter === user.groupId
+                                      ? "#FF914D"
+                                      : "#9c27b0",
+                                  color:
+                                    selectedGroupFilter === user.groupId
+                                      ? "#4E342E"
+                                      : "white",
+                                  cursor: "pointer",
+                                  "&:hover": {
+                                    bgcolor:
+                                      selectedGroupFilter === user.groupId
+                                        ? "#FF7A1A"
+                                        : "#7b1fa2",
+                                    transform: "scale(1.05)",
+                                  },
+                                  transition: "all 0.2s ease-in-out",
                                   "& .MuiChip-label": {
-                                    color: "white",
+                                    color:
+                                      selectedGroupFilter === user.groupId
+                                        ? "#4E342E"
+                                        : "white",
+                                    fontWeight:
+                                      selectedGroupFilter === user.groupId
+                                        ? 700
+                                        : 500,
                                   },
                                 }}
                               />
