@@ -354,13 +354,21 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
       })
       .filter((parent): parent is Parent => parent !== null);
 
+    // Check if groups are already loaded for this account
+    const existingGroups = groups.filter(
+      (group) => group.accountId === child.accountId
+    );
+    const shouldSetGroupId =
+      child.groupId &&
+      existingGroups.some((group) => group.id === child.groupId);
+
     setCurrentChild({
       id: child.id,
       firstName: child.firstName,
       lastName: child.lastName,
       dateOfBirth: formatDateForInput(child.dateOfBirth),
       accountId: child.accountId,
-      groupId: "",
+      groupId: shouldSetGroupId ? child.groupId : "",
       parents: parentObjects,
       created: child.created,
       updated: child.updated,
@@ -368,10 +376,8 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
 
     if (child.accountId) {
       fetchGroupsForAccount(child.accountId).then(() => {
-        if (
-          child.groupId &&
-          groups.some((group) => group.id === child.groupId)
-        ) {
+        // After groups are fetched, check if we need to set the groupId
+        if (child.groupId && !shouldSetGroupId) {
           setCurrentChild((prev) => ({
             ...prev,
             groupId: child.groupId,
@@ -827,7 +833,11 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                   <Select
                     value={
                       currentChild.groupId &&
-                      groups.some((group) => group.id === currentChild.groupId)
+                      groups
+                        .filter(
+                          (group) => group.accountId === currentChild.accountId
+                        )
+                        .some((group) => group.id === currentChild.groupId)
                         ? currentChild.groupId
                         : ""
                     }
@@ -851,18 +861,24 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                           </Typography>
                         </Box>
                       </MenuItem>
-                    ) : groups.length === 0 ? (
+                    ) : groups.filter(
+                        (group) => group.accountId === currentChild.accountId
+                      ).length === 0 ? (
                       <MenuItem disabled>
                         <Typography variant="body2" color="text.secondary">
                           אין קבוצות זמינות
                         </Typography>
                       </MenuItem>
                     ) : (
-                      groups.map((group) => (
-                        <MenuItem key={group.id} value={group.id}>
-                          {group.name || "שם הקבוצה חסר"}
-                        </MenuItem>
-                      ))
+                      groups
+                        .filter(
+                          (group) => group.accountId === currentChild.accountId
+                        )
+                        .map((group) => (
+                          <MenuItem key={group.id} value={group.id}>
+                            {group.name || "שם הקבוצה חסר"}
+                          </MenuItem>
+                        ))
                     )}
                   </Select>
                 </FormControl>
