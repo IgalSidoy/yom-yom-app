@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { FixedSizeList as VirtualList } from "react-window";
 import {
   Typography,
   Box,
@@ -74,6 +75,162 @@ interface ChildManagementCardProps {
 }
 
 type ChildForm = Omit<Child, "parents"> & { parents: Parent[] };
+
+// Memoized Child List Item Component
+const ChildListItem = memo<{
+  child: Child;
+  parents: User[];
+  selectedGroupFilter: string;
+  onGroupFilterClick: (groupId: string) => void;
+  onEditClick: (child: Child) => void;
+  calculateAge: (dateStr: string) => string;
+  formatDate: (dateStr: string) => string;
+}>(
+  ({
+    child,
+    parents,
+    selectedGroupFilter,
+    onGroupFilterClick,
+    onEditClick,
+    calculateAge,
+    formatDate,
+  }) => {
+    const parentNames = useMemo(() => {
+      if (child.parents && child.parents.length > 0) {
+        return child.parents
+          .map((parent: string | { id: string }) => {
+            const parentId = typeof parent === "string" ? parent : parent.id;
+            const parentObj = parents.find((p) => p.id === parentId);
+            return parentObj && parentObj.firstName && parentObj.lastName
+              ? `${parentObj.firstName} ${parentObj.lastName}`
+              : "הורה לא ידוע";
+          })
+          .join(", ");
+      }
+      return "אין הורים מוגדרים";
+    }, [child.parents, parents]);
+
+    return (
+      <ListItem
+        sx={{
+          bgcolor: "background.paper",
+          borderRadius: 2,
+          mb: 1,
+          border: "1px solid",
+          borderColor: "divider",
+          "&:hover": {
+            borderColor: "primary.main",
+            boxShadow: 1,
+          },
+        }}
+      >
+        <ListItemText
+          primary={
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 500,
+                    color: child.firstName ? "text.primary" : "text.secondary",
+                    fontStyle: child.firstName ? "normal" : "italic",
+                  }}
+                >
+                  {child.firstName && child.lastName
+                    ? `${child.firstName} ${child.lastName}`
+                    : "שם חסר"}
+                </Typography>
+                <IconButton
+                  size="small"
+                  aria-label="edit"
+                  onClick={() => onEditClick(child)}
+                  sx={{
+                    color: "primary.main",
+                    "&:hover": {
+                      bgcolor: "primary.lighter",
+                    },
+                  }}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Chip
+                  label={formatDate(child.dateOfBirth)}
+                  size="small"
+                  color="info"
+                  sx={{
+                    height: 20,
+                    fontSize: "0.75rem",
+                    fontWeight: 500,
+                  }}
+                />
+                <Chip
+                  label={`גיל: ${calculateAge(child.dateOfBirth)}`}
+                  size="small"
+                  sx={{
+                    height: 20,
+                    fontSize: "0.75rem",
+                    fontWeight: 500,
+                    bgcolor: "green",
+                    color: "white",
+                    "& .MuiChip-label": {
+                      color: "white",
+                    },
+                  }}
+                />
+                {child.groupId && (
+                  <Chip
+                    label={`קבוצה: ${child.groupName || "לא ידועה"}`}
+                    size="small"
+                    onClick={() =>
+                      child.groupId && onGroupFilterClick(child.groupId)
+                    }
+                    sx={{
+                      height: 20,
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                      bgcolor:
+                        selectedGroupFilter === child.groupId
+                          ? "primary.main"
+                          : "#9c27b0",
+                      color: "white",
+                      cursor: "pointer",
+                      "&:hover": {
+                        bgcolor:
+                          selectedGroupFilter === child.groupId
+                            ? "primary.dark"
+                            : "#7b1fa2",
+                        transform: "scale(1.05)",
+                      },
+                      transition: "all 0.2s ease-in-out",
+                      "& .MuiChip-label": {
+                        color: "white",
+                      },
+                    }}
+                  />
+                )}
+              </Box>
+            </Box>
+          }
+          secondary={
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {`הורים: ${parentNames}`}
+            </Typography>
+          }
+        />
+      </ListItem>
+    );
+  }
+);
+
+ChildListItem.displayName = "ChildListItem";
 
 const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   accounts,
@@ -206,28 +363,63 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   };
 
   // Filter children based on selected account, group, and search query
-  const filteredChildren = sortChildren(
-    children
-      .filter((child) =>
-        selectedAccountId ? child.accountId === selectedAccountId : true
-      )
-      .filter((child) =>
-        selectedGroupFilter ? child.groupId === selectedGroupFilter : true
-      )
-      .filter((child) => {
-        if (!searchQuery.trim()) return true;
-        const fullName = `${child.firstName || ""} ${
-          child.lastName || ""
-        }`.toLowerCase();
-        const query = searchQuery.toLowerCase();
-        return fullName.includes(query);
-      })
-  );
+  const filteredChildren = useMemo(() => {
+    return sortChildren(
+      children
+        .filter((child) =>
+          selectedAccountId ? child.accountId === selectedAccountId : true
+        )
+        .filter((child) =>
+          selectedGroupFilter ? child.groupId === selectedGroupFilter : true
+        )
+        .filter((child) => {
+          if (!searchQuery.trim()) return true;
+          const fullName = `${child.firstName || ""} ${
+            child.lastName || ""
+          }`.toLowerCase();
+          const query = searchQuery.toLowerCase();
+          return fullName.includes(query);
+        })
+    );
+  }, [
+    children,
+    selectedAccountId,
+    selectedGroupFilter,
+    searchQuery,
+    sortBy,
+    sortOrder,
+  ]);
 
   // Filter groups based on selected account
-  const filteredGroups = selectedAccountId
-    ? groups.filter((group) => group.accountId === selectedAccountId)
-    : groups;
+  const filteredGroups = useMemo(() => {
+    return selectedAccountId
+      ? groups.filter((group) => group.accountId === selectedAccountId)
+      : groups;
+  }, [groups, selectedAccountId]);
+
+  // Memoized callback functions
+  const handleGroupFilterClick = useCallback(
+    (groupId: string) => {
+      setSelectedGroupFilter(selectedGroupFilter === groupId ? "" : groupId);
+    },
+    [selectedGroupFilter]
+  );
+
+  const handleEditClick = useCallback((child: Child) => {
+    handleEditChild(child);
+  }, []);
+
+  const handleSearchChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setSearchQuery(event.target.value);
+    },
+    []
+  );
+
+  const clearAllFilters = useCallback(() => {
+    setSelectedGroupFilter("");
+    setSearchQuery("");
+  }, []);
 
   const showNotification = (
     message: string,
@@ -444,24 +636,6 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     setIsDrawerOpen(true);
   };
 
-  const handleClearSearch = () => {
-    setSearchQuery("");
-  };
-
-  const handleGroupFilterClick = (groupId: string) => {
-    if (selectedGroupFilter === groupId) {
-      // If clicking the same group, clear the filter
-      setSelectedGroupFilter("");
-    } else {
-      // Set the new group filter
-      setSelectedGroupFilter(groupId);
-    }
-  };
-
-  const clearGroupFilter = () => {
-    setSelectedGroupFilter("");
-  };
-
   return (
     <Box
       sx={{
@@ -491,7 +665,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
               fullWidth
               placeholder="חיפוש לפי שם..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -502,10 +676,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                   <InputAdornment position="end">
                     <IconButton
                       size="small"
-                      onClick={() => {
-                        setSearchQuery("");
-                        clearGroupFilter();
-                      }}
+                      onClick={clearAllFilters}
                       edge="end"
                     >
                       <ClearIcon />
@@ -584,7 +755,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                 }`}
                 size="small"
                 color="primary"
-                onDelete={clearGroupFilter}
+                onDelete={clearAllFilters}
                 sx={{
                   fontSize: "0.75rem",
                   fontWeight: 500,
@@ -592,6 +763,18 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
               />
               <Typography variant="caption" color="text.secondary">
                 מציג ילדים מקבוצה זו בלבד
+                {filteredChildren.length > 5 && (
+                  <span style={{ marginRight: "8px" }}>
+                    • מציג {filteredChildren.length} ילדים (מצב ביצועים מיטבי)
+                  </span>
+                )}
+              </Typography>
+            </Box>
+          )}
+          {!selectedGroupFilter && filteredChildren.length > 5 && (
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                מציג {filteredChildren.length} ילדים (מצב ביצועים מיטבי)
               </Typography>
             </Box>
           )}
@@ -610,166 +793,57 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
           </Box>
         ) : filteredChildren.length > 0 ? (
           <>
-            {filteredChildren.map((child: Child) => (
-              <ListItem
-                key={child.id}
-                sx={{
-                  bgcolor: "background.paper",
-                  borderRadius: 2,
-                  mb: 1,
-                  border: "1px solid",
-                  borderColor: "divider",
-                  "&:hover": {
-                    borderColor: "primary.main",
-                    boxShadow: 1,
-                  },
+            {filteredChildren.length > 5 ? (
+              // Use virtualization for larger lists
+              <VirtualList
+                height={500}
+                itemCount={filteredChildren.length}
+                itemSize={140}
+                width="100%"
+                overscanCount={8}
+                itemKey={(index, data) =>
+                  data.children[index]?.id || `child-${index}`
+                }
+                itemData={{
+                  children: filteredChildren,
+                  parents,
+                  selectedGroupFilter,
+                  onGroupFilterClick: handleGroupFilterClick,
+                  onEditClick: handleEditClick,
+                  calculateAge,
+                  formatDate,
                 }}
               >
-                <ListItemText
-                  primary={
-                    <Box
-                      sx={{ display: "flex", flexDirection: "column", gap: 1 }}
-                    >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <Typography
-                          variant="subtitle1"
-                          sx={{
-                            fontWeight: 500,
-                            color: child.firstName
-                              ? "text.primary"
-                              : "text.secondary",
-                            fontStyle: child.firstName ? "normal" : "italic",
-                          }}
-                        >
-                          {child.firstName && child.lastName
-                            ? `${child.firstName} ${child.lastName}`
-                            : "שם חסר"}
-                        </Typography>
-                        <IconButton
-                          size="small"
-                          aria-label="edit"
-                          onClick={() => handleEditChild(child)}
-                          sx={{
-                            color: "primary.main",
-                            "&:hover": {
-                              bgcolor: "primary.lighter",
-                            },
-                          }}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <Chip
-                          label={formatDate(child.dateOfBirth)}
-                          size="small"
-                          color="info"
-                          sx={{
-                            height: 20,
-                            fontSize: "0.75rem",
-                            fontWeight: 500,
-                          }}
-                        />
-                        <Chip
-                          label={`גיל: ${calculateAge(child.dateOfBirth)}`}
-                          size="small"
-                          sx={{
-                            height: 20,
-                            fontSize: "0.75rem",
-                            fontWeight: 500,
-                            bgcolor: "green",
-                            color: "white",
-                            "& .MuiChip-label": {
-                              color: "white",
-                            },
-                          }}
-                        />
-                        {child.groupId && (
-                          <Chip
-                            label={`קבוצה: ${child.groupName || "לא ידועה"}`}
-                            size="small"
-                            onClick={() =>
-                              child.groupId &&
-                              handleGroupFilterClick(child.groupId)
-                            }
-                            sx={{
-                              height: 20,
-                              fontSize: "0.75rem",
-                              fontWeight: 500,
-                              bgcolor:
-                                selectedGroupFilter === child.groupId
-                                  ? "primary.main"
-                                  : "#9c27b0",
-                              color: "white",
-                              cursor: "pointer",
-                              "&:hover": {
-                                bgcolor:
-                                  selectedGroupFilter === child.groupId
-                                    ? "primary.dark"
-                                    : "#7b1fa2",
-                                transform: "scale(1.05)",
-                              },
-                              transition: "all 0.2s ease-in-out",
-                              "& .MuiChip-label": {
-                                color: "white",
-                              },
-                            }}
-                          />
-                        )}
-                      </Box>
-                    </Box>
-                  }
-                  secondary={
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mt: 0.5 }}
-                    >
-                      {(() => {
-                        console.log(
-                          `Displaying parents for child ${child.id}:`,
-                          child.parents
-                        );
-                        console.log("Available parents for lookup:", parents);
-
-                        if (child.parents && child.parents.length > 0) {
-                          const parentNames = child.parents
-                            .map((parent: string | { id: string }) => {
-                              const parentId =
-                                typeof parent === "string" ? parent : parent.id;
-                              const parentObj = parents.find(
-                                (p) => p.id === parentId
-                              );
-                              console.log(
-                                `Looking for parent ID ${parentId}:`,
-                                parentObj
-                              );
-                              return parentObj &&
-                                parentObj.firstName &&
-                                parentObj.lastName
-                                ? `${parentObj.firstName} ${parentObj.lastName}`
-                                : "הורה לא ידוע";
-                            })
-                            .join(", ");
-                          console.log("Final parent names:", parentNames);
-                          return `הורים: ${parentNames}`;
-                        } else {
-                          return "אין הורים מוגדרים";
-                        }
-                      })()}
-                    </Typography>
-                  }
+                {({ index, style, data }) => (
+                  <div style={style}>
+                    <ChildListItem
+                      key={data.children[index].id}
+                      child={data.children[index]}
+                      parents={data.parents}
+                      selectedGroupFilter={data.selectedGroupFilter}
+                      onGroupFilterClick={data.onGroupFilterClick}
+                      onEditClick={data.onEditClick}
+                      calculateAge={data.calculateAge}
+                      formatDate={data.formatDate}
+                    />
+                  </div>
+                )}
+              </VirtualList>
+            ) : (
+              // Use regular rendering for smaller lists
+              filteredChildren.map((child: Child) => (
+                <ChildListItem
+                  key={child.id}
+                  child={child}
+                  parents={parents}
+                  selectedGroupFilter={selectedGroupFilter}
+                  onGroupFilterClick={handleGroupFilterClick}
+                  onEditClick={handleEditClick}
+                  calculateAge={calculateAge}
+                  formatDate={formatDate}
                 />
-              </ListItem>
-            ))}
+              ))
+            )}
           </>
         ) : (
           <Box sx={{ textAlign: "center", py: 3 }}>
