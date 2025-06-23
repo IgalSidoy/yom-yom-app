@@ -80,7 +80,6 @@ const Settings = () => {
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
   const [children, setChildren] = useState<Child[]>([]);
-  const [isChildrenInitialized, setIsChildrenInitialized] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
 
   const formatMobileNumber = (value: string) => {
@@ -320,22 +319,16 @@ const Settings = () => {
           console.log("No accounts, fetching accounts first");
           fetchAccounts();
         }
-        // Always ensure groups and parents are loaded when accessing children section
+        // Always ensure groups are loaded when accessing children section
         if (groups.length === 0) {
           console.log("No groups, fetching groups");
           fetchGroups();
         }
-        if (parents.length === 0) {
-          console.log("No parents, fetching parents");
-          fetchParents();
-        }
-        if (!isChildrenInitialized) {
-          console.log("Children not initialized, fetching children");
-          fetchChildren();
-          setIsChildrenInitialized(true);
-        }
+        // Parents will be fetched by the useEffect hook when needed
       } else if (panel === "children") {
-        setIsChildrenInitialized(false);
+        // Clear children state when accordion is collapsed
+        setChildren([]);
+        setSelectedAccountId("");
       }
     };
 
@@ -706,6 +699,7 @@ const Settings = () => {
                   selectedAccountId={selectedAccountId}
                   isLoading={isLoadingChildren}
                   isExpanded={expandedAccordion === "children"}
+                  readOnlyParents={false}
                   onAccountsChange={handleAccountsChange}
                   onChildrenChange={handleChildrenChange}
                 />

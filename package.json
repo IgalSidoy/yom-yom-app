@@ -12,7 +12,6 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
-    "@types/axios": "^0.14.4",
     "@types/react": "^19.1.4",
     "@types/react-dom": "^19.1.5",
     "@types/react-router-dom": "^5.3.3",
@@ -21,7 +20,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.0",
-    "react-scripts": "5.0.1",
+    "react-scripts": "^5.0.1",
     "web-vitals": "^2.1.4"
   },
   "main": "src/index.tsx",
@@ -29,7 +28,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "start:prod": "npx serve -s build -l 3000",
+    "build:prod": "npm run build && npm run start:prod"
   },
   "eslintConfig": {
     "extends": [

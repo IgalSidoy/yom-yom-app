@@ -613,7 +613,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
           </Box>
 
           {/* Scrollable Users List */}
-          <Box sx={{ flex: 1, overflow: "auto", px: 2 }}>
+          <Box sx={{ flex: 1, overflow: "auto", px: 2, pt: 2 }}>
             {filteredUsers.length > 0 ? (
               <>
                 {filteredUsers.map((user: User) => (

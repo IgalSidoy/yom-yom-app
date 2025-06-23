@@ -30,6 +30,7 @@ import {
   Chip,
   InputAdornment,
   Popover,
+  Autocomplete,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs, { Dayjs } from "dayjs";
@@ -67,6 +68,7 @@ interface ChildManagementCardProps {
   selectedAccountId: string;
   isLoading: boolean;
   isExpanded: boolean;
+  readOnlyParents?: boolean;
   onAccountsChange: () => Promise<void>;
   onChildrenChange: (accountId?: string) => Promise<void>;
 }
@@ -80,6 +82,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   selectedAccountId,
   isLoading,
   isExpanded,
+  readOnlyParents,
   onAccountsChange,
   onChildrenChange,
 }) => {
@@ -96,6 +99,8 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [sortPopoverOpen, setSortPopoverOpen] = useState(false);
   const [sortAnchorEl, setSortAnchorEl] = useState<HTMLElement | null>(null);
+  const [parentSearchInput, setParentSearchInput] = useState("");
+  const [lastParentSearch, setLastParentSearch] = useState("");
   const [currentChild, setCurrentChild] = useState<ChildForm>({
     firstName: "",
     lastName: "",
@@ -261,6 +266,8 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
       groupId: "",
       parents: [],
     });
+    setParentSearchInput("");
+    setLastParentSearch("");
   };
 
   const handleChildChange = (field: keyof ChildForm, value: any) => {
@@ -592,7 +599,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
       )}
 
       {/* Scrollable Children List */}
-      <Box sx={{ flex: 1, overflow: "auto", px: 2, pb: 8 }}>
+      <Box sx={{ flex: 1, overflow: "auto", px: 2, pb: 8, pt: 2 }}>
         {isLoading ? (
           <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
             <CircularProgress />
@@ -623,20 +630,41 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                     <Box
                       sx={{ display: "flex", flexDirection: "column", gap: 1 }}
                     >
-                      <Typography
-                        variant="subtitle1"
+                      <Box
                         sx={{
-                          fontWeight: 500,
-                          color: child.firstName
-                            ? "text.primary"
-                            : "text.secondary",
-                          fontStyle: child.firstName ? "normal" : "italic",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
                         }}
                       >
-                        {child.firstName && child.lastName
-                          ? `${child.firstName} ${child.lastName}`
-                          : "שם חסר"}
-                      </Typography>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: 500,
+                            color: child.firstName
+                              ? "text.primary"
+                              : "text.secondary",
+                            fontStyle: child.firstName ? "normal" : "italic",
+                          }}
+                        >
+                          {child.firstName && child.lastName
+                            ? `${child.firstName} ${child.lastName}`
+                            : "שם חסר"}
+                        </Typography>
+                        <IconButton
+                          size="small"
+                          aria-label="edit"
+                          onClick={() => handleEditChild(child)}
+                          sx={{
+                            color: "primary.main",
+                            "&:hover": {
+                              bgcolor: "primary.lighter",
+                            },
+                          }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
                       <Box
                         sx={{ display: "flex", alignItems: "center", gap: 1 }}
                       >
@@ -740,19 +768,6 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                     </Typography>
                   }
                 />
-                <IconButton
-                  edge="end"
-                  aria-label="edit"
-                  onClick={() => handleEditChild(child)}
-                  sx={{
-                    color: "primary.main",
-                    "&:hover": {
-                      bgcolor: "primary.lighter",
-                    },
-                  }}
-                >
-                  <EditIcon />
-                </IconButton>
               </ListItem>
             ))}
           </>
@@ -809,73 +824,206 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
               }}
             >
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <FormControl fullWidth>
-                  <InputLabel>הורים</InputLabel>
-                  <Select
-                    multiple
-                    value={currentChild.parents.map((p) => p.id)}
-                    label="הורים"
-                    onChange={(e) => {
-                      const selectedIds = e.target.value as string[];
-                      const selectedParents = parents.filter((parent) =>
-                        selectedIds.includes(parent.id)
+                <Autocomplete
+                  multiple
+                  disableCloseOnSelect
+                  clearOnBlur={false}
+                  clearOnEscape={false}
+                  disabled={readOnlyParents}
+                  inputValue={parentSearchInput}
+                  onInputChange={(event, newInputValue, reason) => {
+                    // Only update if it's a user input, not a programmatic clear
+                    if (reason === "input" || reason === "reset") {
+                      setParentSearchInput(newInputValue);
+                      setLastParentSearch(newInputValue);
+                    } else if (reason === "clear") {
+                      // Prevent clearing by restoring the last search
+                      setParentSearchInput(lastParentSearch);
+                    }
+                  }}
+                  options={parents.filter((parent) => parent.role === "Parent")}
+                  getOptionLabel={(option) =>
+                    option.firstName && option.lastName
+                      ? `${option.firstName} ${option.lastName}`
+                      : option.email
+                  }
+                  value={currentChild.parents.map((parent) => {
+                    const foundUser = parents.find((p) => p.id === parent.id);
+                    if (foundUser) {
+                      return foundUser;
+                    }
+                    // Fallback to a complete User object if not found
+                    return {
+                      id: parent.id,
+                      firstName: parent.firstName || "",
+                      lastName: parent.lastName || "",
+                      email: "",
+                      mobile: parent.mobile || "",
+                      accountId: "",
+                      organizationId: "",
+                      role: "Parent",
+                      created: "",
+                      updated: "",
+                    };
+                  })}
+                  onChange={(event, newValue) => {
+                    // Limit to maximum 2 parents
+                    if (newValue.length > 2) {
+                      showNotification("ניתן לבחור עד 2 הורים בלבד", "warning");
+                      return;
+                    }
+
+                    const parentObjects = newValue.map((user) => ({
+                      id: user.id,
+                      firstName: user.firstName,
+                      lastName: user.lastName,
+                      mobile: user.mobile,
+                    }));
+                    handleChildChange("parents", parentObjects);
+                    if (newValue.length === 1 && !currentChild.lastName) {
+                      handleChildChange("lastName", newValue[0].lastName);
+                    }
+                  }}
+                  filterOptions={(options, { inputValue }) => {
+                    const filtered = options.filter((option) => {
+                      const fullName = `${option.firstName || ""} ${
+                        option.lastName || ""
+                      }`.toLowerCase();
+                      const email = (option.email || "").toLowerCase();
+                      const searchLower = inputValue.toLowerCase();
+                      return (
+                        fullName.includes(searchLower) ||
+                        email.includes(searchLower)
                       );
-                      handleChildChange("parents", selectedParents);
-                      if (
-                        selectedParents.length === 1 &&
-                        !currentChild.lastName
-                      ) {
-                        handleChildChange(
-                          "lastName",
-                          selectedParents[0].lastName
-                        );
+                    });
+                    return filtered;
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={
+                        readOnlyParents
+                          ? "הורים (קריאה בלבד)"
+                          : `הורים (${currentChild.parents.length}/2)`
                       }
+                      placeholder={readOnlyParents ? "" : "חיפוש הורים..."}
+                      helperText={
+                        !readOnlyParents && currentChild.parents.length >= 2
+                          ? "הגעת למגבלת ההורים המקסימלית (2)"
+                          : ""
+                      }
+                      InputProps={{
+                        ...params.InputProps,
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchIcon fontSize="small" color="action" />
+                          </InputAdornment>
+                        ),
+                        endAdornment: parentSearchInput && !readOnlyParents && (
+                          <InputAdornment position="end">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setParentSearchInput("");
+                                setLastParentSearch("");
+                              }}
+                              edge="end"
+                            >
+                              <ClearIcon fontSize="small" />
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  )}
+                  renderOption={(props, option, { selected }) => (
+                    <ListItem {...props}>
+                      <ListItemIcon>
+                        {selected && (
+                          <CheckIcon
+                            sx={{
+                              fontSize: 20,
+                              color: "primary.main",
+                            }}
+                          />
+                        )}
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={
+                          option.firstName && option.lastName
+                            ? `${option.firstName} ${option.lastName}`
+                            : option.email
+                        }
+                      />
+                    </ListItem>
+                  )}
+                  renderTags={(value, getTagProps) =>
+                    value.map((option, index) => (
+                      <Chip
+                        label={
+                          option.firstName && option.lastName
+                            ? `${option.firstName} ${option.lastName}`
+                            : option.email
+                        }
+                        {...getTagProps({ index })}
+                        size="small"
+                        onDelete={readOnlyParents ? undefined : undefined}
+                        sx={{
+                          bgcolor: readOnlyParents
+                            ? "grey.400"
+                            : "primary.light",
+                          color: readOnlyParents
+                            ? "text.primary"
+                            : "primary.contrastText",
+                          opacity: readOnlyParents ? 0.8 : 1,
+                          "& .MuiChip-deleteIcon": {
+                            display: readOnlyParents ? "none" : "flex",
+                          },
+                          "&:hover": {
+                            bgcolor: readOnlyParents
+                              ? "grey.400"
+                              : "primary.main",
+                          },
+                        }}
+                      />
+                    ))
+                  }
+                  noOptionsText="לא נמצאו הורים התואמים לחיפוש"
+                  loadingText="טוען הורים..."
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+
+                {/* Read-only display of selected parents */}
+                {currentChild.parents.length > 0 && (
+                  <TextField
+                    fullWidth
+                    label="הורים נבחרים"
+                    value={currentChild.parents
+                      .map((parent) =>
+                        `${parent.firstName} ${parent.lastName}`.trim()
+                      )
+                      .join(", ")}
+                    InputProps={{
+                      readOnly: true,
                     }}
-                    input={<OutlinedInput label="הורים" />}
-                    renderValue={(selected) => {
-                      const selectedParents = parents
-                        .filter((parent) => selected.includes(parent.id))
-                        .map(
-                          (parent) => `${parent.firstName} ${parent.lastName}`
-                        )
-                        .join(", ");
-                      return selectedParents || "בחר הורים";
-                    }}
-                    MenuProps={{
-                      PaperProps: {
-                        style: {
-                          maxHeight: 300,
+                    sx={{
+                      "& .MuiInputBase-root": {
+                        bgcolor: "grey.100",
+                        "& fieldset": {
+                          borderColor: "grey.300",
                         },
                       },
+                      "& .MuiInputLabel-root": {
+                        color: "text.secondary",
+                      },
                     }}
-                  >
-                    {parents
-                      .filter((parent) => parent.role === "Parent")
-                      .map((parent) => (
-                        <MenuItem key={parent.id} value={parent.id}>
-                          <ListItemIcon>
-                            {currentChild.parents.some(
-                              (p) => p.id === parent.id
-                            ) && (
-                              <CheckIcon
-                                sx={{
-                                  fontSize: 20,
-                                  color: "primary.main",
-                                }}
-                              />
-                            )}
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={
-                              parent.firstName && parent.lastName
-                                ? `${parent.firstName} ${parent.lastName}`
-                                : parent.email
-                            }
-                          />
-                        </MenuItem>
-                      ))}
-                  </Select>
-                </FormControl>
+                  />
+                )}
 
                 <TextField
                   fullWidth
