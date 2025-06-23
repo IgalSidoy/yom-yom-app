@@ -302,6 +302,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [sortPopoverOpen, setSortPopoverOpen] = useState(false);
   const [sortAnchorEl, setSortAnchorEl] = useState<HTMLElement | null>(null);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   // Debounced search effect
   useEffect(() => {
@@ -678,6 +679,8 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
     selectedRoleFilter,
     selectedAccountFilter,
     selectedGroupFilter,
+    sortBy,
+    sortOrder,
   ]);
 
   // Memoized callback functions
@@ -705,6 +708,14 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
     },
     []
   );
+
+  const handleSearchFocus = () => {
+    setIsSearchFocused(true);
+  };
+
+  const handleSearchBlur = () => {
+    setIsSearchFocused(false);
+  };
 
   const clearSearch = useCallback(() => {
     setSearchTerm("");
@@ -758,113 +769,407 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
               mt: -1,
             }}
           >
-            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-              <TextField
-                fullWidth
-                label="חיפוש"
-                value={searchTerm}
-                onChange={handleSearchChange}
-                placeholder="חיפוש לפי שם..."
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
+                alignItems: { xs: "stretch", sm: "center" },
+              }}
+            >
+              {/* Top Row: Search, Sort, Refresh - Mobile only */}
+              <Box
                 sx={{
-                  "& .MuiInputLabel-root": {
-                    fontSize: "0.95rem",
-                  },
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                  endAdornment: searchTerm && (
-                    <InputAdornment position="end">
-                      <IconButton size="small" onClick={clearSearch} edge="end">
-                        <ClearIcon />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-
-              {/* Sort Controls */}
-              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    bgcolor: "background.paper",
-                    borderRadius: 2,
-                    border: 1,
-                    borderColor: "divider",
-                    px: 1,
-                    py: 0.5,
-                    cursor: "pointer",
-                    "&:hover": {
-                      bgcolor: "action.hover",
-                      borderColor: "primary.main",
-                    },
-                    transition: "all 0.2s ease-in-out",
-                  }}
-                  onClick={(event) => {
-                    setSortPopoverOpen(true);
-                    setSortAnchorEl(event.currentTarget);
-                  }}
-                >
-                  <SortIcon sx={{ fontSize: 18, color: "text.secondary" }} />
-                </Box>
-              </Box>
-
-              {/* Refresh Button */}
-              <Tooltip title="רענן רשימת משתמשים" placement="top">
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    bgcolor: "background.paper",
-                    borderRadius: 2,
-                    border: 1,
-                    borderColor: "divider",
-                    px: 1,
-                    py: 0.5,
-                    cursor: "pointer",
-                    "&:hover": {
-                      bgcolor: "action.hover",
-                      borderColor: "success.main",
-                    },
-                    transition: "all 0.2s ease-in-out",
-                  }}
-                  onClick={handleRefresh}
-                >
-                  {isLoading ? (
-                    <CircularProgress
-                      size={16}
-                      sx={{ color: "success.main" }}
-                    />
-                  ) : (
-                    <RefreshIcon sx={{ fontSize: 18, color: "success.main" }} />
-                  )}
-                </Box>
-              </Tooltip>
-
-              <Fab
-                color="primary"
-                aria-label="add user"
-                onClick={() => handleOpenDrawer()}
-                sx={{
-                  boxShadow: 3,
-                  flexShrink: 0,
-                  "&:hover": {
-                    boxShadow: 6,
-                    transform: "scale(1.05)",
-                  },
-                  transition: "all 0.2s ease-in-out",
+                  display: { xs: "flex", sm: "none" },
+                  gap: 2,
+                  alignItems: "center",
                 }}
               >
-                <AddIcon />
-              </Fab>
+                {/* Search Box */}
+                <TextField
+                  label="חיפוש"
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  onFocus={handleSearchFocus}
+                  onBlur={handleSearchBlur}
+                  placeholder="חיפוש לפי שם..."
+                  sx={{
+                    "& .MuiInputLabel-root": {
+                      fontSize: "0.95rem",
+                    },
+                    width: "100%",
+                    transition: "width 1s ease-in-out",
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                    endAdornment: searchTerm && (
+                      <InputAdornment position="end">
+                        <IconButton
+                          size="small"
+                          onClick={clearSearch}
+                          edge="end"
+                        >
+                          <ClearIcon />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+
+                {/* Sort Controls */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 1,
+                    alignItems: "center",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                      bgcolor: "background.paper",
+                      borderRadius: 2,
+                      border: 1,
+                      borderColor: "divider",
+                      px: 1,
+                      py: 0.5,
+                      cursor: "pointer",
+                      "&:hover": {
+                        bgcolor: "action.hover",
+                        borderColor: "primary.main",
+                      },
+                      transition: "all 0.2s ease-in-out",
+                    }}
+                    onClick={(event) => {
+                      setSortPopoverOpen(true);
+                      setSortAnchorEl(event.currentTarget);
+                    }}
+                  >
+                    <SortIcon sx={{ fontSize: 18, color: "text.secondary" }} />
+                  </Box>
+                </Box>
+
+                {/* Refresh Button */}
+                <Tooltip title="רענן רשימת משתמשים" placement="top">
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                      bgcolor: "background.paper",
+                      borderRadius: 2,
+                      border: 1,
+                      borderColor: "divider",
+                      px: 1,
+                      py: 0.5,
+                      cursor: "pointer",
+                      "&:hover": {
+                        bgcolor: "action.hover",
+                        borderColor: "success.main",
+                      },
+                      transition: "all 0.2s ease-in-out",
+                    }}
+                    onClick={handleRefresh}
+                  >
+                    {isLoading ? (
+                      <CircularProgress
+                        size={16}
+                        sx={{ color: "success.main" }}
+                      />
+                    ) : (
+                      <RefreshIcon
+                        sx={{ fontSize: 18, color: "success.main" }}
+                      />
+                    )}
+                  </Box>
+                </Tooltip>
+              </Box>
+
+              {/* Desktop Layout: Single line */}
+              <Box
+                sx={{
+                  display: { xs: "none", sm: "flex" },
+                  gap: 2,
+                  alignItems: "center",
+                  width: "100%",
+                }}
+              >
+                {/* Search Box */}
+                <TextField
+                  label="חיפוש"
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  onFocus={handleSearchFocus}
+                  onBlur={handleSearchBlur}
+                  placeholder="חיפוש לפי שם..."
+                  sx={{
+                    "& .MuiInputLabel-root": {
+                      fontSize: "0.95rem",
+                    },
+                    width: isSearchFocused ? "100%" : "calc(100% - 120px)",
+                    transition: "width 1s ease-in-out",
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                    endAdornment: searchTerm && (
+                      <InputAdornment position="end">
+                        <IconButton
+                          size="small"
+                          onClick={clearSearch}
+                          edge="end"
+                        >
+                          <ClearIcon />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+
+                {/* Sort Controls */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 1,
+                    alignItems: "center",
+                    opacity: isSearchFocused ? 0 : 1,
+                    transform: isSearchFocused
+                      ? "translateX(20px)"
+                      : "translateX(0)",
+                    transition:
+                      "opacity 1s ease-in-out, transform 1s ease-in-out",
+                    pointerEvents: isSearchFocused ? "none" : "auto",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                      bgcolor: "background.paper",
+                      borderRadius: 2,
+                      border: 1,
+                      borderColor: "divider",
+                      px: 1,
+                      py: 0.5,
+                      cursor: "pointer",
+                      "&:hover": {
+                        bgcolor: "action.hover",
+                        borderColor: "primary.main",
+                      },
+                      transition: "all 0.2s ease-in-out",
+                    }}
+                    onClick={(event) => {
+                      setSortPopoverOpen(true);
+                      setSortAnchorEl(event.currentTarget);
+                    }}
+                  >
+                    <SortIcon sx={{ fontSize: 18, color: "text.secondary" }} />
+                  </Box>
+                </Box>
+
+                {/* Refresh Button */}
+                <Tooltip title="רענן רשימת משתמשים" placement="top">
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                      bgcolor: "background.paper",
+                      borderRadius: 2,
+                      border: 1,
+                      borderColor: "divider",
+                      px: 1,
+                      py: 0.5,
+                      cursor: "pointer",
+                      opacity: isSearchFocused ? 0 : 1,
+                      transform: isSearchFocused
+                        ? "translateX(20px)"
+                        : "translateX(0)",
+                      transition:
+                        "all 0.2s ease-in-out, opacity 1s ease-in-out, transform 1s ease-in-out",
+                      pointerEvents: isSearchFocused ? "none" : "auto",
+                      "&:hover": {
+                        bgcolor: "action.hover",
+                        borderColor: "success.main",
+                      },
+                    }}
+                    onClick={handleRefresh}
+                  >
+                    {isLoading ? (
+                      <CircularProgress
+                        size={16}
+                        sx={{ color: "success.main" }}
+                      />
+                    ) : (
+                      <RefreshIcon
+                        sx={{ fontSize: 18, color: "success.main" }}
+                      />
+                    )}
+                  </Box>
+                </Tooltip>
+
+                <Fab
+                  color="primary"
+                  aria-label="add user"
+                  onClick={() => handleOpenDrawer()}
+                  sx={{
+                    boxShadow: 3,
+                    flexShrink: 0,
+                    "&:hover": {
+                      boxShadow: 6,
+                      transform: "scale(1.05)",
+                    },
+                    transition: "all 0.2s ease-in-out",
+                  }}
+                >
+                  <AddIcon />
+                </Fab>
+              </Box>
+
+              {/* Bottom Row: Create Button - Mobile only */}
+              <Box
+                sx={{
+                  display: { xs: "flex", sm: "none" },
+                  justifyContent: "flex-end",
+                }}
+              >
+                <Fab
+                  color="primary"
+                  aria-label="add user"
+                  onClick={() => handleOpenDrawer()}
+                  sx={{
+                    boxShadow: 3,
+                    flexShrink: 0,
+                    "&:hover": {
+                      boxShadow: 6,
+                      transform: "scale(1.05)",
+                    },
+                    transition: "all 0.2s ease-in-out",
+                  }}
+                >
+                  <AddIcon />
+                </Fab>
+              </Box>
             </Box>
+
+            {/* Active Account/Role/Group Filter Display */}
+            {(selectedAccountFilter ||
+              selectedRoleFilter ||
+              selectedGroupFilter ||
+              sortBy !== "name" ||
+              sortOrder !== "asc") && (
+              <Box
+                sx={{
+                  mt: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  flexWrap: "wrap",
+                }}
+              >
+                {selectedAccountFilter && (
+                  <Chip
+                    label={`סניף: ${
+                      accounts.find((acc) => acc.id === selectedAccountFilter)
+                        ?.branchName || "לא ידוע"
+                    }`}
+                    size="small"
+                    color="primary"
+                    onDelete={clearAccountFilter}
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                    }}
+                  />
+                )}
+                {selectedRoleFilter && (
+                  <Chip
+                    label={`תפקיד: ${
+                      selectedRoleFilter === "Admin"
+                        ? "מנהל"
+                        : selectedRoleFilter === "Parent"
+                        ? "הורה"
+                        : "צוות"
+                    }`}
+                    size="small"
+                    color="warning"
+                    onDelete={() => setSelectedRoleFilter("")}
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                    }}
+                  />
+                )}
+                {selectedGroupFilter && (
+                  <Chip
+                    label={`קבוצה: ${
+                      groups.find((group) => group.id === selectedGroupFilter)
+                        ?.name || "לא ידועה"
+                    }`}
+                    size="small"
+                    color="secondary"
+                    onDelete={() => setSelectedGroupFilter("")}
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                    }}
+                  />
+                )}
+                {(sortBy !== "name" || sortOrder !== "asc") && (
+                  <Chip
+                    label={`מיון: ${
+                      sortBy === "name"
+                        ? "שם"
+                        : sortBy === "account"
+                        ? "סניף"
+                        : sortBy === "role"
+                        ? "תפקיד"
+                        : "שם"
+                    } ${sortOrder === "asc" ? "עולה" : "יורד"}`}
+                    size="small"
+                    color="info"
+                    onDelete={() => {
+                      setSortBy("name");
+                      setSortOrder("asc");
+                    }}
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                    }}
+                  />
+                )}
+                <Typography variant="caption" color="text.secondary">
+                  {selectedAccountFilter ||
+                  selectedRoleFilter ||
+                  selectedGroupFilter ||
+                  sortBy !== "name" ||
+                  sortOrder !== "asc"
+                    ? `מציג משתמשים${selectedAccountFilter ? " מסניף זה" : ""}${
+                        selectedRoleFilter ? " בעלי תפקיד זה" : ""
+                      }${selectedGroupFilter ? " מקבוצה זו" : ""}${
+                        sortBy !== "name" || sortOrder !== "asc"
+                          ? " ממוינים"
+                          : ""
+                      } בלבד`
+                    : ""}
+                  {filteredUsers.length > 5 && (
+                    <span style={{ marginRight: "8px" }}>
+                      • מציג {filteredUsers.length} משתמשים (מצב ביצועים מיטבי)
+                    </span>
+                  )}
+                </Typography>
+              </Box>
+            )}
           </Box>
 
           {/* Scrollable Users List */}
