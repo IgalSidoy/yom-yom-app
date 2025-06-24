@@ -9,7 +9,6 @@ import React, {
 import { useNavigate, useLocation } from "react-router-dom";
 import api, { getNewAccessToken, updateAccessToken } from "../services/api";
 import { AxiosError } from "axios";
-import { useApp } from "./AppContext";
 
 interface User {
   id: string;
@@ -48,18 +47,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const location = useLocation();
   const isInitialMount = useRef(true);
   const initialPath = useRef(location.pathname);
-  const { setAccessToken: setAppAccessToken } = useApp();
 
-  // Sync token with AppContext
+  // Sync token with AppContext via custom event
   useEffect(() => {
     if (accessToken) {
-      setAppAccessToken(accessToken);
       updateAccessToken(accessToken);
+      // Dispatch event to notify AppContext
+      window.dispatchEvent(
+        new CustomEvent("updateAccessToken", { detail: accessToken })
+      );
     } else {
-      setAppAccessToken(null);
       updateAccessToken(null);
+      // Dispatch event to notify AppContext
+      window.dispatchEvent(
+        new CustomEvent("updateAccessToken", { detail: null })
+      );
     }
-  }, [accessToken, setAppAccessToken]);
+  }, [accessToken]);
 
   // Token refresh and validation logic
   useEffect(() => {

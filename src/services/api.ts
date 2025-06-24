@@ -292,7 +292,11 @@ export interface UsersResponse {
 export const userApi = {
   getUser: async () => {
     const response = await api.get("/api/v1/user");
-    return response;
+    return response as { data: User };
+  },
+  getUserChildren: async () => {
+    const response = await api.get("/api/v1/user/children");
+    return response as { data: UserChildrenResponse };
   },
   getUsers: async () => {
     const response = await api.get("/api/v1/user/all", {
@@ -591,5 +595,22 @@ export const childApi = {
     return response.data as ChildResponse;
   },
 };
+
+export interface UserChild {
+  id: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  accountId: string;
+  accountName?: string;
+  groupId?: string;
+  groupName?: string;
+  created?: string;
+  updated?: string;
+}
+
+export interface UserChildrenResponse {
+  children: UserChild[];
+}
 
 export default api;

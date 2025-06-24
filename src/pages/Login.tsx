@@ -23,8 +23,7 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
-  const { setUserId, setAccountId, setOrganizationId, setAccessToken } =
-    useApp();
+  const { setUserId, setAccountId, setOrganizationId } = useApp();
   const [notification, setNotification] = useState({
     open: false,
     message: "",
@@ -160,9 +159,6 @@ const Login: React.FC = () => {
       }
 
       const data = await response.json();
-
-      // Update AppContext with access token
-      setAccessToken(data.token);
 
       // Call login to update auth context
       await login({

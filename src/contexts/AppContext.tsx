@@ -5,7 +5,7 @@ import React, {
   ReactNode,
   useEffect,
 } from "react";
-import { User } from "../services/api";
+import { User, userApi } from "../services/api";
 
 interface AppContextType {
   user: User | null;
@@ -21,6 +21,7 @@ interface AppContextType {
   clearIds: () => void;
   users: User[];
   setUsers: (users: User[]) => void;
+  isLoadingUser: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -36,6 +37,27 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
+  const [isLoadingUser, setIsLoadingUser] = useState<boolean>(false);
+
+  // Fetch user data when access token is available
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (accessToken && !user) {
+        try {
+          setIsLoadingUser(true);
+          const response = await userApi.getUser();
+          setUser(response.data);
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          // Don't clear the token here, let the auth context handle auth errors
+        } finally {
+          setIsLoadingUser(false);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [accessToken]);
 
   // Listen for access token updates
   useEffect(() => {
@@ -104,6 +126,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         clearIds,
         users,
         setUsers,
+        isLoadingUser,
       }}
     >
       {children}
