@@ -182,20 +182,28 @@ const ParentSettings = () => {
 
     try {
       setIsLoading(true);
-      const response = await childApi.updateChild(selectedChild.id, childForm);
-      if (response.child) {
-        setChildren((prevChildren) =>
-          prevChildren.map((c) =>
-            c.id === response.child.id ? { ...c, ...response.child } : c
-          )
-        );
-        setSelectedChild(null);
-        setChildForm({});
-        setIsChildFormModified(false);
-        showNotification("הילד עודכן בהצלחה", "success");
-      }
+      await childApi.patchChild(selectedChild.id, childForm);
+
+      // Update local state with the changed properties
+      setChildren((prevChildren) =>
+        prevChildren.map((c) =>
+          c.id === selectedChild.id
+            ? {
+                ...c,
+                firstName: childForm.firstName || c.firstName,
+                lastName: childForm.lastName || c.lastName,
+              }
+            : c
+        )
+      );
+
+      setSelectedChild(null);
+      setChildForm({});
+      setIsChildFormModified(false);
+      showNotification("פרטי הילד עודכנו בהצלחה", "success");
     } catch (error) {
-      showNotification("שגיאה בעדכון הילד", "error");
+      console.error("Error updating child:", error);
+      showNotification("שגיאה בעדכון פרטי הילד", "error");
     } finally {
       setIsLoading(false);
       setDrawerOpen(false);

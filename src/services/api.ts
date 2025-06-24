@@ -573,6 +573,17 @@ export const childApi = {
     return response.data;
   },
 
+  patchChild: async (childId: string, child: Partial<Child>) => {
+    const response = await api.patch(`/api/v1/child/${childId}`, child, {
+      headers: {
+        Accept: "text/plain",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  },
+
   deleteChild: async (childId: string) => {
     const response = await api.delete(`/api/v1/child/${childId}`, {
       headers: {
