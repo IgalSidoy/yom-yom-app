@@ -544,8 +544,21 @@ export interface Child {
   updated?: string;
 }
 
+export interface ChildWithParents {
+  id?: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  accountId: string;
+  groupId?: string;
+  groupName?: string;
+  parents: Parent[]; // Array of full parent objects
+  created?: string;
+  updated?: string;
+}
+
 export interface ChildResponse {
-  children: Child[];
+  children: ChildWithParents[];
   total: number;
 }
 
@@ -603,6 +616,23 @@ export const childApi = {
       },
       withCredentials: true,
     });
+    return response.data as ChildResponse;
+  },
+
+  getChildrenByAccountWithGroupFilter: async (
+    accountId: string,
+    groupFilter: string
+  ) => {
+    const response = await api.get(
+      `/api/v1/account/${accountId}/children?groupFilter=${groupFilter}`,
+      {
+        headers: {
+          Accept: "text/plain",
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
     return response.data as ChildResponse;
   },
 };

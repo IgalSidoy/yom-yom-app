@@ -262,29 +262,6 @@ const StaffSettings = () => {
             </Box>
           </AccordionDetails>
         </Accordion>
-
-        <Accordion
-          expanded={expandedAccordion === "security"}
-          onChange={handleAccordionChange("security")}
-        >
-          <AccordionSummary
-            expandIcon={<ExpandMoreIcon />}
-            aria-controls="security-content"
-            id="security-header"
-          >
-            <Typography variant="h6">אבטחה</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Box sx={{ textAlign: "right" }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                הגדרות אבטחה יוצגו כאן
-              </Typography>
-              <Button variant="outlined" disabled>
-                שינוי סיסמה
-              </Button>
-            </Box>
-          </AccordionDetails>
-        </Accordion>
       </Box>
     </Box>
   );

@@ -276,6 +276,8 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
   const [isInitialized, setIsInitialized] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isRoleChangeDialogOpen, setIsRoleChangeDialogOpen] = useState(false);
+  const [originalUser, setOriginalUser] = useState<User | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [currentUser, setCurrentUser] = useState<Partial<User>>({
@@ -397,6 +399,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
 
   const handleOpenDrawer = (user?: User) => {
     if (user) {
+      setOriginalUser(user);
       setCurrentUser({
         ...user,
         accountId: user.accountId || "",
@@ -418,6 +421,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
         });
       }
     } else {
+      setOriginalUser(null);
       setCurrentUser({
         email: "",
         firstName: "",
@@ -434,6 +438,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
 
   const handleCloseDrawer = () => {
     setIsDrawerOpen(false);
+    setOriginalUser(null);
     setCurrentUser({
       email: "",
       firstName: "",
@@ -472,6 +477,15 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
   };
 
   const handleSaveUser = async () => {
+    // If editing an existing user and the role is being changed, show confirmation dialog
+    if (
+      currentUser.id &&
+      originalUser &&
+      currentUser.role !== originalUser.role
+    ) {
+      setIsRoleChangeDialogOpen(true);
+      return;
+    }
     try {
       // Validate that Staff users have a group assigned
       if (
@@ -540,6 +554,34 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Handler for confirming the role change
+  const handleConfirmRoleChange = async () => {
+    setIsRoleChangeDialogOpen(false);
+    setIsLoading(true);
+    try {
+      await userApi.updateUser(currentUser as User);
+      showNotification("משתמש עודכן בהצלחה");
+      handleCloseDrawer();
+      fetchUsers();
+      notifyUserChange();
+    } catch (error: any) {
+      let errorMessage = "שגיאה בשמירת המשתמש";
+      if (error.response?.data?.Message) {
+        errorMessage = error.response.data.Message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      showNotification(errorMessage, "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handler for cancelling the role change
+  const handleCancelRoleChange = () => {
+    setIsRoleChangeDialogOpen(false);
   };
 
   const handleDeleteClick = () => {
@@ -643,6 +685,9 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
   const filteredUsers = useMemo(() => {
     let filtered = users;
 
+    // Filter out the current admin user
+    filtered = filtered.filter((user) => user.id !== currentAppUser?.id);
+
     // Apply search filter
     if (debouncedSearchTerm) {
       const searchLower = debouncedSearchTerm.toLowerCase();
@@ -677,6 +722,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
     return sortUsers(filtered);
   }, [
     users,
+    currentAppUser?.id,
     debouncedSearchTerm,
     selectedRoleFilter,
     selectedAccountFilter,
@@ -1720,6 +1766,56 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
           </Box>
         </Box>
       </Popover>
+
+      <Dialog
+        open={isRoleChangeDialogOpen}
+        onClose={handleCancelRoleChange}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>אישור שינוי תפקיד</DialogTitle>
+        <DialogContent>
+          <Typography>
+            המשתמש{" "}
+            <b>
+              {originalUser?.firstName} {originalUser?.lastName}
+            </b>{" "}
+            הולך להשתנות מתפקיד{" "}
+            <b>
+              {originalUser?.role === "Admin"
+                ? "מנהל"
+                : originalUser?.role === "Parent"
+                ? "הורה"
+                : "צוות"}
+            </b>{" "}
+            לתפקיד{" "}
+            <b>
+              {currentUser.role === "Admin"
+                ? "מנהל"
+                : currentUser.role === "Parent"
+                ? "הורה"
+                : "צוות"}
+            </b>
+            .
+            <br />
+            האם להמשיך?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelRoleChange} color="inherit">
+            ביטול
+          </Button>
+          <Button
+            onClick={handleConfirmRoleChange}
+            color="primary"
+            variant="contained"
+            disabled={isLoading}
+            startIcon={isLoading ? <CircularProgress size={20} /> : null}
+          >
+            אשר שינוי
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

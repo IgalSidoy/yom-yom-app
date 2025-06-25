@@ -29,7 +29,7 @@ import {
   Group,
   childApi,
   Child,
-  Parent,
+  ChildWithParents,
 } from "../services/api";
 import Notification from "../components/Notification";
 import AccountCard from "../components/AccountCard";
@@ -37,9 +37,11 @@ import GroupCard from "../components/GroupCard";
 import UserManagementCard from "../components/UserManagementCard";
 import ChildManagementCard from "../components/ChildManagementCard";
 
-interface ChildResponse {
-  children: Child[];
-  total: number;
+interface UserProfile {
+  firstName: string;
+  lastName: string;
+  email: string;
+  mobile: string;
 }
 
 const AdminSettings = () => {
@@ -81,6 +83,14 @@ const AdminSettings = () => {
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
   const [children, setChildren] = useState<Child[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
+  const [userProfile, setUserProfile] = useState<UserProfile>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    mobile: "",
+  });
+  const [isProfileModified, setIsProfileModified] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const formatMobileNumber = (value: string) => {
     const digits = value.replace(/\D/g, "");
@@ -130,6 +140,33 @@ const AdminSettings = () => {
 
   const handleCloseNotification = () => {
     setNotification((prev) => ({ ...prev, open: false }));
+  };
+
+  const handleProfileChange = (field: keyof User, value: string) => {
+    setUserProfile((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+    setIsProfileModified(true);
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      setIsLoading(true);
+      if (user && userProfile) {
+        await userApi.updateUser({
+          ...user,
+          ...userProfile,
+        });
+        setUser({ ...user, ...userProfile });
+        setIsProfileModified(false);
+        showNotification("הפרופיל עודכן בהצלחה", "success");
+      }
+    } catch (error) {
+      showNotification("שגיאה בעדכון הפרופיל", "error");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const fetchOrganization = async (organizationId: string) => {
@@ -236,14 +273,24 @@ const AdminSettings = () => {
         // Fetch children for specific account only
         const data = await childApi.getChildrenByAccount(accountId);
         if (data.children) {
-          allChildren.push(...data.children);
+          // Convert ChildWithParents to Child by extracting parent IDs
+          const convertedChildren = data.children.map((child) => ({
+            ...child,
+            parents: child.parents.map((parent) => parent.id),
+          }));
+          allChildren.push(...convertedChildren);
         }
       } else {
         // Fetch children for all accounts (original behavior)
         for (const account of accounts) {
           const data = await childApi.getChildrenByAccount(account.id);
           if (data.children) {
-            allChildren.push(...data.children);
+            // Convert ChildWithParents to Child by extracting parent IDs
+            const convertedChildren = data.children.map((child) => ({
+              ...child,
+              parents: child.parents.map((parent) => parent.id),
+            }));
+            allChildren.push(...convertedChildren);
           }
         }
       }
@@ -365,6 +412,18 @@ const AdminSettings = () => {
     }
   }, [expandedAccordion, parents.length]);
 
+  // Initialize user profile when user data is available
+  useEffect(() => {
+    if (user) {
+      setUserProfile({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        mobile: user.mobile || "",
+      });
+    }
+  }, [user]);
+
   // Debug logging
   console.log("Settings component - groups state:", groups);
   console.log("Settings component - accounts state:", accounts);
@@ -396,6 +455,96 @@ const AdminSettings = () => {
       </Box>
 
       <Box sx={{ maxWidth: 600, mx: "auto" }}>
+        <Accordion
+          expanded={expandedAccordion === "profile"}
+          onChange={handleAccordionChange("profile")}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="profile-content"
+            id="profile-header"
+          >
+            <Typography variant="h6">פרופיל אישי</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Box sx={{ textAlign: "right" }}>
+              <Box sx={{ mb: 4 }}>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: {
+                      xs: "1fr",
+                      sm: "repeat(2, 1fr)",
+                    },
+                    gap: 2,
+                  }}
+                >
+                  <TextField
+                    fullWidth
+                    label="שם פרטי"
+                    value={userProfile.firstName}
+                    onChange={(e) =>
+                      handleProfileChange("firstName", e.target.value)
+                    }
+                    disabled={isLoading}
+                    sx={{ direction: "rtl" }}
+                  />
+                  <TextField
+                    fullWidth
+                    label="שם משפחה"
+                    value={userProfile.lastName}
+                    onChange={(e) =>
+                      handleProfileChange("lastName", e.target.value)
+                    }
+                    disabled={isLoading}
+                    sx={{ direction: "rtl" }}
+                  />
+                  <TextField
+                    name="email"
+                    label="אימייל"
+                    value={userProfile.email}
+                    onChange={(e) =>
+                      handleProfileChange("email", e.target.value)
+                    }
+                    disabled={isLoading}
+                    sx={{
+                      borderRadius: 2,
+                      "& .MuiInputBase-input": {
+                        direction: "ltr",
+                        textAlign: "left",
+                      },
+                    }}
+                  />
+                  <TextField
+                    fullWidth
+                    label="נייד"
+                    value={userProfile.mobile}
+                    onChange={(e) =>
+                      handleProfileChange("mobile", e.target.value)
+                    }
+                    disabled={isLoading}
+                    sx={{ direction: "rtl" }}
+                  />
+                </Box>
+                <Box
+                  sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}
+                >
+                  <Button
+                    variant="contained"
+                    onClick={handleSaveProfile}
+                    disabled={isLoading || !isProfileModified}
+                    startIcon={
+                      isLoading ? <CircularProgress size={20} /> : null
+                    }
+                  >
+                    שמירת שינויים
+                  </Button>
+                </Box>
+              </Box>
+            </Box>
+          </AccordionDetails>
+        </Accordion>
+
         <Accordion
           expanded={expandedAccordion === "organization"}
           onChange={handleAccordionChange("organization")}

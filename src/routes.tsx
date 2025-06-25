@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import Feed from "./pages/Feed";
 import BottomNav from "./components/BottomNav";
+import StaffDashboard from "./pages/StaffDashboard";
 
 const AppRoutes: React.FC = () => {
   const location = useLocation();
@@ -38,6 +39,14 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <Feed />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff-dashboard"
+          element={
+            <ProtectedRoute>
+              <StaffDashboard />
             </ProtectedRoute>
           }
         />
