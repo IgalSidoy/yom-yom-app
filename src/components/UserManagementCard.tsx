@@ -423,7 +423,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
         firstName: "",
         lastName: "",
         mobile: "",
-        role: "Staff",
+        role: "Parent",
         accountId: "",
         groupId: "",
       });
