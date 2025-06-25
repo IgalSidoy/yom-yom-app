@@ -22,6 +22,8 @@ interface AppContextType {
   users: User[];
   setUsers: (users: User[]) => void;
   isLoadingUser: boolean;
+  userChangeTimestamp: number;
+  notifyUserChange: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -38,6 +40,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [isLoadingUser, setIsLoadingUser] = useState<boolean>(false);
+  const [userChangeTimestamp, setUserChangeTimestamp] = useState<number>(0);
 
   // Fetch user data when access token is available
   useEffect(() => {
@@ -110,6 +113,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setAccessToken(null);
   };
 
+  const notifyUserChange = () => {
+    setUserChangeTimestamp(Date.now());
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -127,6 +134,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         users,
         setUsers,
         isLoadingUser,
+        userChangeTimestamp,
+        notifyUserChange,
       }}
     >
       {children}

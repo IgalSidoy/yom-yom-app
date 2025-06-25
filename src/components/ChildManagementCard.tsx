@@ -72,6 +72,7 @@ interface ChildManagementCardProps {
   readOnlyParents?: boolean;
   onAccountsChange: () => Promise<void>;
   onChildrenChange: (accountId?: string) => Promise<void>;
+  onParentsRefresh?: () => Promise<void>;
 }
 
 type ChildForm = Omit<Child, "parents"> & { parents: Parent[] };
@@ -242,8 +243,10 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   readOnlyParents,
   onAccountsChange,
   onChildrenChange,
+  onParentsRefresh,
 }) => {
   const { accessToken } = useAuth();
+  const { userChangeTimestamp } = useApp();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -323,6 +326,13 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
       setGroups([]);
     }
   }, [selectedAccountId]);
+
+  // Refresh parents when user changes occur and drawer is open
+  useEffect(() => {
+    if (isDrawerOpen && onParentsRefresh) {
+      onParentsRefresh();
+    }
+  }, [userChangeTimestamp, isDrawerOpen, onParentsRefresh]);
 
   // Debug: Log when children or parents change
   useEffect(() => {

@@ -271,7 +271,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
   isExpanded,
   onAccountsChange,
 }) => {
-  const { users, setUsers, user: currentAppUser } = useApp();
+  const { users, setUsers, user: currentAppUser, notifyUserChange } = useApp();
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -439,7 +439,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
       firstName: "",
       lastName: "",
       mobile: "",
-      role: "Staff",
+      role: "Parent",
       accountId: "",
       groupId: "",
     });
@@ -494,6 +494,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
       }
       handleCloseDrawer();
       fetchUsers();
+      notifyUserChange();
     } catch (error: any) {
       // Extract error message from API response
       let errorMessage = "שגיאה בשמירת המשתמש";
@@ -553,6 +554,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
       setIsDeleteDialogOpen(false);
       handleCloseDrawer();
       fetchUsers();
+      notifyUserChange();
     } catch (error) {
       showNotification("שגיאה במחיקת המשתמש", "error");
     } finally {

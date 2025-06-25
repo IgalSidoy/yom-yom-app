@@ -674,6 +674,7 @@ const AdminSettings = () => {
                   readOnlyParents={false}
                   onAccountsChange={handleAccountsChange}
                   onChildrenChange={handleChildrenChange}
+                  onParentsRefresh={fetchParents}
                 />
               </Box>
             )}
