@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Typography,
   Box,
@@ -209,7 +209,7 @@ const AdminSettings = () => {
     }
   };
 
-  const fetchParents = async () => {
+  const fetchParents = useCallback(async () => {
     try {
       console.log("Fetching parents...");
       const response = await userApi.getUsers();
@@ -225,7 +225,7 @@ const AdminSettings = () => {
       console.error("Error fetching parents:", error);
       showNotification("שגיאה בטעינת ההורים", "error");
     }
-  };
+  }, []);
 
   const fetchChildren = async (accountId?: string) => {
     try {

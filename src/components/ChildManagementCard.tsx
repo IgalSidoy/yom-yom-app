@@ -261,6 +261,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   const [sortAnchorEl, setSortAnchorEl] = useState<HTMLElement | null>(null);
   const [parentSearchInput, setParentSearchInput] = useState("");
   const [lastParentSearch, setLastParentSearch] = useState("");
+  const [lastProcessedTimestamp, setLastProcessedTimestamp] = useState(0);
   const [currentChild, setCurrentChild] = useState<ChildForm>({
     firstName: "",
     lastName: "",
@@ -329,10 +330,21 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
 
   // Refresh parents when user changes occur and drawer is open
   useEffect(() => {
-    if (isDrawerOpen && onParentsRefresh) {
+    if (
+      isDrawerOpen &&
+      onParentsRefresh &&
+      userChangeTimestamp > 0 &&
+      userChangeTimestamp !== lastProcessedTimestamp
+    ) {
+      setLastProcessedTimestamp(userChangeTimestamp);
       onParentsRefresh();
     }
-  }, [userChangeTimestamp, isDrawerOpen, onParentsRefresh]);
+  }, [
+    userChangeTimestamp,
+    isDrawerOpen,
+    onParentsRefresh,
+    lastProcessedTimestamp,
+  ]);
 
   // Debug: Log when children or parents change
   useEffect(() => {
