@@ -54,19 +54,25 @@ const attendanceStatusOptions = [
   { value: "other", label: "אחר", color: MILD_GRAY, textColor: "#888" },
 ];
 
+const STATUS_COLORS: Record<
+  AttendanceStatus,
+  { bg: string; text: string; border: string }
+> = {
+  arrived: { bg: "#FF9F43", text: "#fff", border: "#FF9F43" },
+  missing: { bg: "#FFE3E3", text: "#B85C5C", border: "#F5B5B5" },
+  sick: { bg: "#FFF7C2", text: "#B88B2A", border: "#FFE6A7" },
+  late: { bg: "#E3F0FF", text: "#3A6EA5", border: "#B3D4F7" },
+  vacation: { bg: "#E3FFE3", text: "#3A9A5A", border: "#B3E6B3" },
+  other: { bg: "#F5F5F5", text: "#888", border: "#E0E0E0" },
+};
+
 // Memoized Child List Item Component for Daily Attendance
-const AttendanceChildListItem = memo<{
+const AttendanceChildListItem: React.FC<{
   child: ChildWithParents;
   attendanceStatus: AttendanceStatus;
+  updateTime?: string;
   onStatusChange: (childId: string, status: AttendanceStatus) => void;
-}>(({ child, attendanceStatus, onStatusChange }) => {
-  const updateTime = child.updated
-    ? new Date(child.updated).toLocaleTimeString("he-IL", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : "08:30";
-
+}> = memo(({ child, attendanceStatus, updateTime, onStatusChange }) => {
   const rareStatuses = attendanceStatusOptions.filter(
     (opt) => opt.value !== "arrived"
   );
@@ -74,6 +80,14 @@ const AttendanceChildListItem = memo<{
     attendanceStatusOptions.find((o) => o.value === val);
   const arrivedOption = getStatusOption("arrived");
   const currentOption = getStatusOption(attendanceStatus);
+
+  const formatUpdateTime = (timestamp?: string) => {
+    if (!timestamp) return "לא עודכן";
+    return new Date(timestamp).toLocaleTimeString("he-IL", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   return (
     <Box
@@ -115,9 +129,15 @@ const AttendanceChildListItem = memo<{
             variant={attendanceStatus === "arrived" ? "contained" : "outlined"}
             onClick={() => onStatusChange(child.id!, "arrived")}
             sx={{
-              bgcolor: attendanceStatus === "arrived" ? "#FF9F43" : "#fff",
-              color: attendanceStatus === "arrived" ? "#fff" : "#FF9F43",
-              borderColor: "#FF9F43",
+              bgcolor:
+                attendanceStatus === "arrived"
+                  ? STATUS_COLORS.arrived.bg
+                  : "#fff",
+              color:
+                attendanceStatus === "arrived"
+                  ? STATUS_COLORS.arrived.text
+                  : STATUS_COLORS.arrived.bg,
+              borderColor: STATUS_COLORS.arrived.border,
               borderRadius: 3,
               fontWeight: 700,
               fontSize: 16,
@@ -126,9 +146,15 @@ const AttendanceChildListItem = memo<{
               minWidth: 80,
               boxShadow: "none",
               "&:hover, &:focus, &:active": {
-                bgcolor: attendanceStatus === "arrived" ? "#FF9F43" : "#fff",
-                color: attendanceStatus === "arrived" ? "#fff" : "#FF9F43",
-                borderColor: "#FF9F43",
+                bgcolor:
+                  attendanceStatus === "arrived"
+                    ? STATUS_COLORS.arrived.bg
+                    : "#fff",
+                color:
+                  attendanceStatus === "arrived"
+                    ? STATUS_COLORS.arrived.text
+                    : STATUS_COLORS.arrived.bg,
+                borderColor: STATUS_COLORS.arrived.border,
               },
             }}
           >
@@ -146,9 +172,18 @@ const AttendanceChildListItem = memo<{
               onStatusChange(child.id!, next as AttendanceStatus);
             }}
             sx={{
-              bgcolor: attendanceStatus !== "arrived" ? "#FFF7ED" : "#fff",
-              color: attendanceStatus !== "arrived" ? "#FF9F43" : "#FF9F43",
-              borderColor: "#FF9F43",
+              bgcolor:
+                attendanceStatus !== "arrived"
+                  ? STATUS_COLORS[attendanceStatus].bg
+                  : "#fff",
+              color:
+                attendanceStatus !== "arrived"
+                  ? STATUS_COLORS[attendanceStatus].text
+                  : STATUS_COLORS.missing.text,
+              borderColor:
+                attendanceStatus !== "arrived"
+                  ? STATUS_COLORS[attendanceStatus].border
+                  : STATUS_COLORS.missing.border,
               borderRadius: 3,
               fontWeight: 700,
               fontSize: 16,
@@ -157,9 +192,18 @@ const AttendanceChildListItem = memo<{
               minWidth: 80,
               boxShadow: "none",
               "&:hover, &:focus, &:active": {
-                bgcolor: attendanceStatus !== "arrived" ? "#FFF7ED" : "#fff",
-                color: "#FF9F43",
-                borderColor: "#FF9F43",
+                bgcolor:
+                  attendanceStatus !== "arrived"
+                    ? STATUS_COLORS[attendanceStatus].bg
+                    : "#fff",
+                color:
+                  attendanceStatus !== "arrived"
+                    ? STATUS_COLORS[attendanceStatus].text
+                    : STATUS_COLORS.missing.text,
+                borderColor:
+                  attendanceStatus !== "arrived"
+                    ? STATUS_COLORS[attendanceStatus].border
+                    : STATUS_COLORS.missing.border,
               },
             }}
           >
@@ -179,7 +223,7 @@ const AttendanceChildListItem = memo<{
           fontSize: { xs: "0.95rem", sm: "1rem" },
         }}
       >
-        עדכון: {updateTime}
+        עודכן {formatUpdateTime(updateTime)}
       </Typography>
     </Box>
   );
@@ -191,8 +235,14 @@ const DailyAttendance: React.FC = () => {
   const { user } = useApp();
   const [children, setChildren] = useState<ChildWithParents[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<
+    AttendanceStatus | ""
+  >("");
   const [attendanceRecords, setAttendanceRecords] = useState<
     Record<string, AttendanceStatus>
+  >({});
+  const [attendanceTimestamps, setAttendanceTimestamps] = useState<
+    Record<string, string>
   >({});
 
   useEffect(() => {
@@ -240,9 +290,14 @@ const DailyAttendance: React.FC = () => {
   };
 
   const handleStatusChange = (childId: string, status: AttendanceStatus) => {
+    const now = new Date().toISOString();
     setAttendanceRecords((prev) => ({
       ...prev,
       [childId]: status,
+    }));
+    setAttendanceTimestamps((prev) => ({
+      ...prev,
+      [childId]: now,
     }));
   };
 
@@ -265,6 +320,22 @@ const DailyAttendance: React.FC = () => {
 
   const summary = getAttendanceSummary();
 
+  // Filter children based on selected status
+  const filteredChildren = useMemo(() => {
+    if (!selectedStatusFilter) return children;
+    return children.filter(
+      (child) => attendanceRecords[child.id!] === selectedStatusFilter
+    );
+  }, [children, attendanceRecords, selectedStatusFilter]);
+
+  const handleStatusFilterClick = (status: AttendanceStatus) => {
+    setSelectedStatusFilter(selectedStatusFilter === status ? "" : status);
+  };
+
+  const clearStatusFilter = () => {
+    setSelectedStatusFilter("");
+  };
+
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       {/* Header with Group Info and Date */}
@@ -284,21 +355,84 @@ const DailyAttendance: React.FC = () => {
         {/* Attendance Summary */}
         {children.length > 0 && (
           <Box sx={{ mt: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
-            {attendanceStatusOptions.map((option) => (
-              <Chip
-                key={option.value}
-                label={`${option.label}: ${
-                  summary[option.value as keyof typeof summary]
-                }`}
-                size="small"
-                color={option.color as any}
-                variant={
-                  summary[option.value as keyof typeof summary] > 0
-                    ? "filled"
-                    : "outlined"
-                }
-              />
-            ))}
+            {attendanceStatusOptions.map((option) => {
+              const isArrived = option.value === "arrived";
+              return (
+                <Box
+                  key={option.value}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      bgcolor: isArrived
+                        ? STATUS_COLORS[option.value as AttendanceStatus].bg
+                        : "rgba(255, 255, 255, 0.8)",
+                      color: isArrived
+                        ? STATUS_COLORS[option.value as AttendanceStatus].text
+                        : STATUS_COLORS[option.value as AttendanceStatus].text,
+                      border: `1px solid ${
+                        STATUS_COLORS[option.value as AttendanceStatus].border
+                      }`,
+                      borderRadius: isArrived ? 3 : 2,
+                      fontWeight: isArrived ? 700 : 500,
+                      fontSize: isArrived ? 16 : 14,
+                      px: isArrived ? 2 : 1.5,
+                      py: isArrived ? 1 : 0.8,
+                      width: isArrived ? 90 : 85,
+                      height: isArrived ? 36 : 28,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      mr: 0.5,
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      cursor: "pointer",
+                      "&:hover": {
+                        transform: "scale(1.02)",
+                        boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+                      },
+                      transition: "all 0.2s ease-in-out",
+                    }}
+                    onClick={() =>
+                      handleStatusFilterClick(option.value as AttendanceStatus)
+                    }
+                  >
+                    {option.label}:{" "}
+                    {summary[option.value as keyof typeof summary]}
+                  </Box>
+                </Box>
+              );
+            })}
+          </Box>
+        )}
+
+        {/* Active Filter Display */}
+        {selectedStatusFilter && (
+          <Box
+            sx={{ mt: 2, mb: 1, display: "flex", alignItems: "center", gap: 1 }}
+          >
+            <Chip
+              label={`סטטוס: ${
+                attendanceStatusOptions.find(
+                  (opt) => opt.value === selectedStatusFilter
+                )?.label || ""
+              }`}
+              size="small"
+              color="primary"
+              onDelete={clearStatusFilter}
+              sx={{
+                fontSize: "0.75rem",
+                fontWeight: 500,
+              }}
+            />
+            <Typography variant="caption" color="text.secondary">
+              מציג {filteredChildren.length} מתוך {children.length} ילדים
+            </Typography>
           </Box>
         )}
       </Box>
@@ -309,17 +443,23 @@ const DailyAttendance: React.FC = () => {
           <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
             <CircularProgress />
           </Box>
-        ) : children.length === 0 ? (
+        ) : filteredChildren.length === 0 ? (
           <Box sx={{ textAlign: "center", py: 3 }}>
             <Typography color="text.secondary">
-              לא נמצאו ילדים לקבוצה זו
+              {selectedStatusFilter
+                ? `לא נמצאו ילדים עם סטטוס "${
+                    attendanceStatusOptions.find(
+                      (opt) => opt.value === selectedStatusFilter
+                    )?.label
+                  }"`
+                : "לא נמצאו ילדים לקבוצה זו"}
             </Typography>
           </Box>
-        ) : children.length > 5 ? (
+        ) : filteredChildren.length > 5 ? (
           // Use virtualization for larger lists
           <VirtualList
             height={500}
-            itemCount={children.length}
+            itemCount={filteredChildren.length}
             itemSize={160}
             width="100%"
             overscanCount={8}
@@ -327,8 +467,9 @@ const DailyAttendance: React.FC = () => {
               data.children[index]?.id || `child-${index}`
             }
             itemData={{
-              children,
+              children: filteredChildren,
               attendanceRecords,
+              attendanceTimestamps,
               onStatusChange: handleStatusChange,
             }}
           >
@@ -341,6 +482,9 @@ const DailyAttendance: React.FC = () => {
                     data.attendanceRecords[data.children[index].id!] ||
                     "missing"
                   }
+                  updateTime={
+                    data.attendanceTimestamps[data.children[index].id!]
+                  }
                   onStatusChange={data.onStatusChange}
                 />
               </div>
@@ -348,11 +492,12 @@ const DailyAttendance: React.FC = () => {
           </VirtualList>
         ) : (
           // Use regular rendering for smaller lists
-          children.map((child) => (
+          filteredChildren.map((child) => (
             <AttendanceChildListItem
               key={child.id}
               child={child}
               attendanceStatus={attendanceRecords[child.id!] || "missing"}
+              updateTime={attendanceTimestamps[child.id!]}
               onStatusChange={handleStatusChange}
             />
           ))
