@@ -5,7 +5,7 @@ import React, {
   ReactNode,
   useEffect,
 } from "react";
-import { User } from "../services/api";
+import { User, userApi } from "../services/api";
 
 interface AppContextType {
   user: User | null;
@@ -21,6 +21,9 @@ interface AppContextType {
   clearIds: () => void;
   users: User[];
   setUsers: (users: User[]) => void;
+  isLoadingUser: boolean;
+  userChangeTimestamp: number;
+  notifyUserChange: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -36,22 +39,35 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
+  const [isLoadingUser, setIsLoadingUser] = useState<boolean>(false);
+  const [userChangeTimestamp, setUserChangeTimestamp] = useState<number>(0);
+
+  // Fetch user data when access token is available
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (accessToken && !user) {
+        try {
+          setIsLoadingUser(true);
+          const response = await userApi.getUser();
+          setUser(response.data);
+        } catch (error) {
+          // Don't clear the token here, let the auth context handle auth errors
+        } finally {
+          setIsLoadingUser(false);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [accessToken]);
 
   // Listen for access token updates
   useEffect(() => {
     const handleAccessTokenUpdate = (event: CustomEvent) => {
-      console.log(
-        "AppContext: Received token update:",
-        event.detail ? "Token exists" : "No token"
-      );
       setAccessToken(event.detail);
     };
 
     const handleGetAccessToken = () => {
-      console.log(
-        "AppContext: Sending current token:",
-        accessToken ? "Token exists" : "No token"
-      );
       // Dispatch an event with the current access token
       const event = new CustomEvent("accessTokenResponse", {
         detail: accessToken,
@@ -88,6 +104,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setAccessToken(null);
   };
 
+  const notifyUserChange = () => {
+    setUserChangeTimestamp(Date.now());
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -104,6 +124,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         clearIds,
         users,
         setUsers,
+        isLoadingUser,
+        userChangeTimestamp,
+        notifyUserChange,
       }}
     >
       {children}

@@ -9,7 +9,6 @@ import React, {
 import { useNavigate, useLocation } from "react-router-dom";
 import api, { getNewAccessToken, updateAccessToken } from "../services/api";
 import { AxiosError } from "axios";
-import { useApp } from "./AppContext";
 
 interface User {
   id: string;
@@ -48,18 +47,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const location = useLocation();
   const isInitialMount = useRef(true);
   const initialPath = useRef(location.pathname);
-  const { setAccessToken: setAppAccessToken } = useApp();
 
-  // Sync token with AppContext
+  // Sync token with AppContext via custom event
   useEffect(() => {
     if (accessToken) {
-      setAppAccessToken(accessToken);
       updateAccessToken(accessToken);
+      // Dispatch event to notify AppContext
+      window.dispatchEvent(
+        new CustomEvent("updateAccessToken", { detail: accessToken })
+      );
     } else {
-      setAppAccessToken(null);
       updateAccessToken(null);
+      // Dispatch event to notify AppContext
+      window.dispatchEvent(
+        new CustomEvent("updateAccessToken", { detail: null })
+      );
     }
-  }, [accessToken, setAppAccessToken]);
+  }, [accessToken]);
 
   // Token refresh and validation logic
   useEffect(() => {
@@ -71,7 +75,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const checkAuth = async () => {
       try {
-        console.log("Starting auth check...");
         // Check if we have a refresh token
         const cookies = document.cookie.split(";");
         const refreshTokenCookie = cookies.find((cookie) =>
@@ -84,13 +87,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (refreshToken) {
           // Use the getNewAccessToken function which handles the refresh token from cookies
           const token = await getNewAccessToken();
-          console.log("Got new token:", token ? "Token received" : "No token");
 
           if (token) {
-            console.log(
-              "Setting access token and staying on route:",
-              location.pathname
-            );
             setAccessToken(token);
           } else {
             setAccessToken(null);
@@ -101,11 +99,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           navigate("/login", { replace: true });
         }
       } catch (error) {
-        console.error("Auth check failed:", error);
         setAccessToken(null);
         navigate("/login", { replace: true });
       } finally {
-        console.log("Auth check complete, setting isLoading to false");
         setIsLoading(false);
       }
     };
@@ -115,14 +111,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Show loading state while checking auth
   if (isLoading) {
-    console.log("Still loading, showing nothing");
     return null; // or return a loading spinner component
   }
 
-  console.log(
-    "Rendering with token:",
-    accessToken ? "Token exists" : "No token"
-  );
   const login = (data: LoginData) => {
     setAccessToken(data.token);
     navigate("/dashboard");

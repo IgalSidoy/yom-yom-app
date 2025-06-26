@@ -8,10 +8,12 @@ import {
 import HomeIcon from "@mui/icons-material/Home";
 import DynamicFeedIcon from "@mui/icons-material/DynamicFeed";
 import SettingsIcon from "@mui/icons-material/Settings";
+import PeopleIcon from "@mui/icons-material/People";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
+import { useApp } from "../contexts/AppContext";
 
-type NavLabel = "Home" | "Feed" | "Settings";
+type NavLabel = "Home" | "Feed" | "Settings" | "StaffDashboard";
 
 type NavLabelsMap = {
   heb: Record<NavLabel, string>;
@@ -20,21 +22,58 @@ type NavLabelsMap = {
 };
 
 const navLabels: NavLabelsMap = {
-  heb: { Home: "בית", Feed: "פיד", Settings: "הגדרות" },
-  rus: { Home: "Главная", Feed: "Лента", Settings: "Настройки" },
-  eng: { Home: "Home", Feed: "Feed", Settings: "Settings" },
+  heb: {
+    Home: "בית",
+    Feed: "פיד",
+    Settings: "הגדרות",
+    StaffDashboard: "נוכחות",
+  },
+  rus: {
+    Home: "Главная",
+    Feed: "Лента",
+    Settings: "Настройки",
+    StaffDashboard: "Посещаемость",
+  },
+  eng: {
+    Home: "Home",
+    Feed: "Feed",
+    Settings: "Settings",
+    StaffDashboard: "Attendance",
+  },
 };
-
-const navItems: { label: NavLabel; icon: React.ReactNode; path: string }[] = [
-  { label: "Home", icon: <HomeIcon />, path: "/dashboard" },
-  { label: "Feed", icon: <DynamicFeedIcon />, path: "/feed" },
-  { label: "Settings", icon: <SettingsIcon />, path: "/settings" },
-];
 
 const BottomNav: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { user } = useApp();
+
+  // Define navigation items based on user role
+  const getNavItems = () => {
+    const baseItems = [
+      { label: "Home" as NavLabel, icon: <HomeIcon />, path: "/dashboard" },
+      { label: "Feed" as NavLabel, icon: <DynamicFeedIcon />, path: "/feed" },
+    ];
+
+    // Add staff dashboard for staff users
+    if (user?.role === "Staff") {
+      baseItems.push({
+        label: "StaffDashboard" as NavLabel,
+        icon: <PeopleIcon />,
+        path: "/staff-dashboard",
+      });
+    }
+
+    baseItems.push({
+      label: "Settings" as NavLabel,
+      icon: <SettingsIcon />,
+      path: "/settings",
+    });
+
+    return baseItems;
+  };
+
+  const navItems = getNavItems();
   const currentIndex = navItems.findIndex((item) =>
     location.pathname.startsWith(item.path)
   );

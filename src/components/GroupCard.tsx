@@ -68,7 +68,6 @@ const GroupCard: React.FC<GroupCardProps> = ({
         setGroups([]);
       }
     } catch (error) {
-      console.error("Error fetching groups:", error);
       setGroups([]);
     } finally {
       setIsLoadingGroups(false);

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { FixedSizeList as VirtualList } from "react-window";
 import {
   Typography,
   Box,
@@ -20,20 +21,18 @@ import {
   Chip,
   Fab,
   InputAdornment,
+  Tooltip,
   Popover,
-  List,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText as MuiListItemText,
 } from "@mui/material";
 import {
   Add as AddIcon,
   Clear as ClearIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
-  KeyboardArrowDown as KeyboardArrowDownIcon,
   Search as SearchIcon,
+  Refresh as RefreshIcon,
   Sort as SortIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon,
 } from "@mui/icons-material";
 import { userApi, User, Account, Group, groupApi } from "../services/api";
 import Notification from "./Notification";
@@ -45,16 +44,240 @@ interface UserManagementCardProps {
   onAccountsChange: () => Promise<void>;
 }
 
+// Memoized User List Item Component
+const UserListItem = memo<{
+  user: User;
+  accounts: Account[];
+  groups: Group[];
+  selectedRoleFilter: string;
+  selectedAccountFilter: string;
+  selectedGroupFilter: string;
+  onRoleFilterClick: (role: string) => void;
+  onAccountFilterClick: (accountId: string) => void;
+  onGroupFilterClick: (groupId: string) => void;
+  onEditClick: (user: User) => void;
+  formatMobileNumber: (value: string) => string;
+}>(
+  ({
+    user,
+    accounts,
+    groups,
+    selectedRoleFilter,
+    selectedAccountFilter,
+    selectedGroupFilter,
+    onRoleFilterClick,
+    onAccountFilterClick,
+    onGroupFilterClick,
+    onEditClick,
+    formatMobileNumber,
+  }) => {
+    const account = useMemo(
+      () => accounts.find((acc) => acc.id === user.accountId),
+      [accounts, user.accountId]
+    );
+
+    const group = useMemo(
+      () => groups.find((g) => g.id === user.groupId),
+      [groups, user.groupId]
+    );
+
+    return (
+      <ListItem
+        sx={{
+          bgcolor: "background.paper",
+          borderRadius: 2,
+          mb: 1,
+          border: "1px solid",
+          borderColor: "divider",
+          "&:hover": {
+            borderColor: "primary.main",
+            boxShadow: 1,
+          },
+        }}
+      >
+        <ListItemText
+          primary={
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 1,
+              }}
+            >
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 500,
+                  color: user.firstName ? "text.primary" : "text.secondary",
+                  fontStyle: user.firstName ? "normal" : "italic",
+                }}
+              >
+                {user.firstName && user.lastName
+                  ? `${user.firstName} ${user.lastName}`
+                  : user.email}
+              </Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Chip
+                  label={
+                    user.role === "Admin"
+                      ? "מנהל"
+                      : user.role === "Parent"
+                      ? "הורה"
+                      : "צוות"
+                  }
+                  size="small"
+                  color={
+                    user.role === "Admin"
+                      ? "primary"
+                      : user.role === "Parent"
+                      ? "success"
+                      : "info"
+                  }
+                  onClick={() => onRoleFilterClick(user.role)}
+                  sx={{
+                    height: 20,
+                    fontSize: "0.75rem",
+                    fontWeight: selectedRoleFilter === user.role ? 700 : 500,
+                    cursor: "pointer",
+                    bgcolor:
+                      selectedRoleFilter === user.role ? "#FF914D" : undefined,
+                    color:
+                      selectedRoleFilter === user.role ? "#4E342E" : undefined,
+                    "&:hover": {
+                      bgcolor:
+                        selectedRoleFilter === user.role
+                          ? "#FF7A1A"
+                          : undefined,
+                      transform: "scale(1.05)",
+                    },
+                    transition: "all 0.2s ease-in-out",
+                    "& .MuiChip-label": {
+                      color:
+                        selectedRoleFilter === user.role
+                          ? "#4E342E"
+                          : undefined,
+                      fontWeight: selectedRoleFilter === user.role ? 700 : 500,
+                    },
+                  }}
+                />
+                {user.accountId && (
+                  <Chip
+                    label={`סניף: ${account?.branchName || "לא ידוע"}`}
+                    size="small"
+                    onClick={() => onAccountFilterClick(user.accountId)}
+                    sx={{
+                      height: 20,
+                      fontSize: "0.75rem",
+                      fontWeight:
+                        selectedAccountFilter === user.accountId ? 700 : 500,
+                      bgcolor:
+                        selectedAccountFilter === user.accountId
+                          ? "#FF914D"
+                          : "#009688",
+                      color: "white",
+                      cursor: "pointer",
+                      "&:hover": {
+                        bgcolor:
+                          selectedAccountFilter === user.accountId
+                            ? "#FF7A1A"
+                            : "#00796b",
+                        transform: "scale(1.05)",
+                      },
+                      transition: "all 0.2s ease-in-out",
+                      "& .MuiChip-label": {
+                        color: "white",
+                        fontWeight:
+                          selectedAccountFilter === user.accountId ? 700 : 500,
+                      },
+                    }}
+                  />
+                )}
+                {user.groupId && (
+                  <Chip
+                    label={`קבוצה: ${group?.name || "לא ידועה"}`}
+                    size="small"
+                    onClick={() => onGroupFilterClick(user.groupId!)}
+                    sx={{
+                      height: 20,
+                      fontSize: "0.75rem",
+                      fontWeight:
+                        selectedGroupFilter === user.groupId ? 700 : 500,
+                      bgcolor:
+                        selectedGroupFilter === user.groupId
+                          ? "#FF914D"
+                          : "#9c27b0",
+                      color:
+                        selectedGroupFilter === user.groupId
+                          ? "#4E342E"
+                          : "white",
+                      cursor: "pointer",
+                      "&:hover": {
+                        bgcolor:
+                          selectedGroupFilter === user.groupId
+                            ? "#FF7A1A"
+                            : "#7b1fa2",
+                        transform: "scale(1.05)",
+                      },
+                      transition: "all 0.2s ease-in-out",
+                      "& .MuiChip-label": {
+                        color:
+                          selectedGroupFilter === user.groupId
+                            ? "#4E342E"
+                            : "white",
+                        fontWeight:
+                          selectedGroupFilter === user.groupId ? 700 : 500,
+                      },
+                    }}
+                  />
+                )}
+              </Box>
+            </Box>
+          }
+          secondary={
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {formatMobileNumber(user.mobile)}
+            </Typography>
+          }
+        />
+        <IconButton
+          edge="end"
+          aria-label="edit"
+          onClick={() => onEditClick(user)}
+          sx={{
+            color: "primary.main",
+            "&:hover": {
+              bgcolor: "primary.lighter",
+            },
+          }}
+        >
+          <EditIcon />
+        </IconButton>
+      </ListItem>
+    );
+  }
+);
+
+UserListItem.displayName = "UserListItem";
+
 const UserManagementCard: React.FC<UserManagementCardProps> = ({
   accounts,
   isExpanded,
   onAccountsChange,
 }) => {
-  const { users, setUsers, user: currentAppUser } = useApp();
+  const { users, setUsers, user: currentAppUser, notifyUserChange } = useApp();
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isRoleChangeDialogOpen, setIsRoleChangeDialogOpen] = useState(false);
+  const [originalUser, setOriginalUser] = useState<User | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [currentUser, setCurrentUser] = useState<Partial<User>>({
@@ -71,7 +294,8 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
     message: "",
     severity: "success" as "success" | "error" | "info" | "warning",
   });
-  const [search, setSearch] = useState("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
   const [selectedAccountFilter, setSelectedAccountFilter] =
     useState<string>("");
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>("");
@@ -80,6 +304,16 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [sortPopoverOpen, setSortPopoverOpen] = useState(false);
   const [sortAnchorEl, setSortAnchorEl] = useState<HTMLElement | null>(null);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -100,10 +334,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                 allGroups.push(...response.data.groups);
               }
             } catch (error) {
-              console.error(
-                `Error fetching groups for account ${account.id}:`,
-                error
-              );
+              // Error handling removed
             }
           }
           setGroups(allGroups);
@@ -165,6 +396,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
 
   const handleOpenDrawer = (user?: User) => {
     if (user) {
+      setOriginalUser(user);
       setCurrentUser({
         ...user,
         accountId: user.accountId || "",
@@ -186,12 +418,13 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
         });
       }
     } else {
+      setOriginalUser(null);
       setCurrentUser({
         email: "",
         firstName: "",
         lastName: "",
         mobile: "",
-        role: "Staff",
+        role: "Parent",
         accountId: "",
         groupId: "",
       });
@@ -202,12 +435,13 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
 
   const handleCloseDrawer = () => {
     setIsDrawerOpen(false);
+    setOriginalUser(null);
     setCurrentUser({
       email: "",
       firstName: "",
       lastName: "",
       mobile: "",
-      role: "Staff",
+      role: "Parent",
       accountId: "",
       groupId: "",
     });
@@ -240,6 +474,15 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
   };
 
   const handleSaveUser = async () => {
+    // If editing an existing user and the role is being changed, show confirmation dialog
+    if (
+      currentUser.id &&
+      originalUser &&
+      currentUser.role !== originalUser.role
+    ) {
+      setIsRoleChangeDialogOpen(true);
+      return;
+    }
     try {
       // Validate that Staff users have a group assigned
       if (
@@ -262,6 +505,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
       }
       handleCloseDrawer();
       fetchUsers();
+      notifyUserChange();
     } catch (error: any) {
       // Extract error message from API response
       let errorMessage = "שגיאה בשמירת המשתמש";
@@ -309,6 +553,34 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
     }
   };
 
+  // Handler for confirming the role change
+  const handleConfirmRoleChange = async () => {
+    setIsRoleChangeDialogOpen(false);
+    setIsLoading(true);
+    try {
+      await userApi.updateUser(currentUser as User);
+      showNotification("משתמש עודכן בהצלחה");
+      handleCloseDrawer();
+      fetchUsers();
+      notifyUserChange();
+    } catch (error: any) {
+      let errorMessage = "שגיאה בשמירת המשתמש";
+      if (error.response?.data?.Message) {
+        errorMessage = error.response.data.Message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      showNotification(errorMessage, "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handler for cancelling the role change
+  const handleCancelRoleChange = () => {
+    setIsRoleChangeDialogOpen(false);
+  };
+
   const handleDeleteClick = () => {
     setIsDeleteDialogOpen(true);
   };
@@ -321,6 +593,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
       setIsDeleteDialogOpen(false);
       handleCloseDrawer();
       fetchUsers();
+      notifyUserChange();
     } catch (error) {
       showNotification("שגיאה במחיקת המשתמש", "error");
     } finally {
@@ -332,15 +605,14 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
     setIsDeleteDialogOpen(false);
   };
 
-  const handleAccountFilterClick = (accountId: string) => {
-    if (selectedAccountFilter === accountId) {
-      // If clicking the same account, clear the filter
-      setSelectedAccountFilter("");
-    } else {
-      // Set the new account filter
-      setSelectedAccountFilter(accountId);
-    }
-  };
+  const handleAccountFilterClick = useCallback(
+    (accountId: string) => {
+      setSelectedAccountFilter(
+        selectedAccountFilter === accountId ? "" : accountId
+      );
+    },
+    [selectedAccountFilter]
+  );
 
   const clearAccountFilter = () => {
     setSelectedAccountFilter("");
@@ -406,32 +678,112 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
     });
   };
 
-  const filteredUsers = sortUsers(
-    users.filter((user: User) => {
-      // Filter by account if selected
-      if (selectedAccountFilter && user.accountId !== selectedAccountFilter) {
-        return false;
-      }
-      // Filter by role if selected
-      if (selectedRoleFilter && user.role !== selectedRoleFilter) {
-        return false;
-      }
-      // Filter by group if selected
-      if (selectedGroupFilter && user.groupId !== selectedGroupFilter) {
-        return false;
-      }
-      // Filter by search query
-      if (search) {
-        const searchLower = search.toLowerCase();
-        return (
-          user.firstName.toLowerCase().includes(searchLower) ||
-          user.lastName.toLowerCase().includes(searchLower) ||
-          user.email.toLowerCase().includes(searchLower)
-        );
-      }
-      return true;
-    })
+  // Memoized filtered users
+  const filteredUsers = useMemo(() => {
+    let filtered = users;
+
+    // Filter out the current admin user
+    filtered = filtered.filter((user) => user.id !== currentAppUser?.id);
+
+    // Apply search filter
+    if (debouncedSearchTerm) {
+      const searchLower = debouncedSearchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (user) =>
+          user.firstName?.toLowerCase().includes(searchLower) ||
+          user.lastName?.toLowerCase().includes(searchLower) ||
+          user.email.toLowerCase().includes(searchLower) ||
+          user.mobile?.includes(searchLower)
+      );
+    }
+
+    // Apply role filter
+    if (selectedRoleFilter) {
+      filtered = filtered.filter((user) => user.role === selectedRoleFilter);
+    }
+
+    // Apply account filter
+    if (selectedAccountFilter) {
+      filtered = filtered.filter(
+        (user) => user.accountId === selectedAccountFilter
+      );
+    }
+
+    // Apply group filter
+    if (selectedGroupFilter) {
+      filtered = filtered.filter(
+        (user) => user.groupId === selectedGroupFilter
+      );
+    }
+
+    return sortUsers(filtered);
+  }, [
+    users,
+    currentAppUser?.id,
+    debouncedSearchTerm,
+    selectedRoleFilter,
+    selectedAccountFilter,
+    selectedGroupFilter,
+    sortBy,
+    sortOrder,
+  ]);
+
+  // Memoized callback functions
+  const handleRoleFilterClick = useCallback(
+    (role: string) => {
+      setSelectedRoleFilter(selectedRoleFilter === role ? "" : role);
+    },
+    [selectedRoleFilter]
   );
+
+  const handleGroupFilterClick = useCallback(
+    (groupId: string) => {
+      setSelectedGroupFilter(selectedGroupFilter === groupId ? "" : groupId);
+    },
+    [selectedGroupFilter]
+  );
+
+  const handleEditClick = useCallback((user: User) => {
+    handleOpenDrawer(user);
+  }, []);
+
+  const handleSearchChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setSearchTerm(event.target.value);
+    },
+    []
+  );
+
+  const handleSearchFocus = () => {
+    setIsSearchFocused(true);
+  };
+
+  const handleSearchBlur = () => {
+    setIsSearchFocused(false);
+  };
+
+  const clearSearch = useCallback(() => {
+    setSearchTerm("");
+  }, []);
+
+  const clearAllFilters = useCallback(() => {
+    setSelectedRoleFilter("");
+    setSelectedAccountFilter("");
+    setSelectedGroupFilter("");
+    setSearchTerm("");
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      await fetchUsers();
+      showNotification("רשימת המשתמשים עודכנה בהצלחה", "success");
+    } catch (error) {
+      showNotification("שגיאה בעדכון רשימת המשתמשים", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   return (
     <Box
@@ -462,94 +814,313 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
               mt: -1,
             }}
           >
-            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-              <TextField
-                fullWidth
-                label="חיפוש"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="חיפוש לפי שם..."
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
+                alignItems: { xs: "stretch", sm: "center" },
+              }}
+            >
+              {/* Top Row: Search, Sort, Refresh - Mobile only */}
+              <Box
                 sx={{
-                  "& .MuiInputLabel-root": {
-                    fontSize: "0.95rem",
-                  },
+                  display: { xs: "flex", sm: "none" },
+                  gap: 2,
+                  alignItems: "center",
                 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (search || selectedAccountFilter) && (
-                    <InputAdornment position="end">
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          setSearch("");
-                          clearAccountFilter();
-                        }}
-                        edge="end"
-                      >
-                        <ClearIcon />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
+              >
+                {/* Search Box */}
+                <TextField
+                  label="חיפוש"
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  onFocus={handleSearchFocus}
+                  onBlur={handleSearchBlur}
+                  placeholder="חיפוש לפי שם..."
+                  sx={{
+                    "& .MuiInputLabel-root": {
+                      fontSize: "0.95rem",
+                    },
+                    width: "100%",
+                    transition: "width 1s ease-in-out",
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                    endAdornment: searchTerm && (
+                      <InputAdornment position="end">
+                        <IconButton
+                          size="small"
+                          onClick={clearSearch}
+                          edge="end"
+                        >
+                          <ClearIcon />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
 
-              {/* Sort Controls */}
-              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                {/* Sort Controls */}
                 <Box
                   sx={{
                     display: "flex",
+                    gap: 1,
                     alignItems: "center",
-                    gap: 0.5,
-                    bgcolor: "background.paper",
-                    borderRadius: 2,
-                    border: 1,
-                    borderColor: "divider",
-                    px: 1,
-                    py: 0.5,
-                    cursor: "pointer",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                      bgcolor: "background.paper",
+                      borderRadius: 2,
+                      border: 1,
+                      borderColor: "divider",
+                      px: 1,
+                      py: 0.5,
+                      cursor: "pointer",
+                      "&:hover": {
+                        bgcolor: "action.hover",
+                        borderColor: "primary.main",
+                      },
+                      transition: "all 0.2s ease-in-out",
+                    }}
+                    onClick={(event) => {
+                      setSortPopoverOpen(true);
+                      setSortAnchorEl(event.currentTarget);
+                    }}
+                  >
+                    <SortIcon sx={{ fontSize: 18, color: "text.secondary" }} />
+                  </Box>
+                </Box>
+
+                {/* Refresh Button */}
+                <Tooltip title="רענן רשימת משתמשים" placement="top">
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                      bgcolor: "background.paper",
+                      borderRadius: 2,
+                      border: 1,
+                      borderColor: "divider",
+                      px: 1,
+                      py: 0.5,
+                      cursor: "pointer",
+                      "&:hover": {
+                        bgcolor: "action.hover",
+                        borderColor: "success.main",
+                      },
+                      transition: "all 0.2s ease-in-out",
+                    }}
+                    onClick={handleRefresh}
+                  >
+                    {isLoading ? (
+                      <CircularProgress
+                        size={16}
+                        sx={{ color: "success.main" }}
+                      />
+                    ) : (
+                      <RefreshIcon
+                        sx={{ fontSize: 18, color: "success.main" }}
+                      />
+                    )}
+                  </Box>
+                </Tooltip>
+              </Box>
+
+              {/* Desktop Layout: Single line */}
+              <Box
+                sx={{
+                  display: { xs: "none", sm: "flex" },
+                  gap: 2,
+                  alignItems: "center",
+                  width: "100%",
+                }}
+              >
+                {/* Search Box */}
+                <TextField
+                  label="חיפוש"
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  onFocus={handleSearchFocus}
+                  onBlur={handleSearchBlur}
+                  placeholder="חיפוש לפי שם..."
+                  sx={{
+                    "& .MuiInputLabel-root": {
+                      fontSize: "0.95rem",
+                    },
+                    width: isSearchFocused ? "100%" : "calc(100% - 120px)",
+                    transition: "width 1s ease-in-out",
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                    endAdornment: searchTerm && (
+                      <InputAdornment position="end">
+                        <IconButton
+                          size="small"
+                          onClick={clearSearch}
+                          edge="end"
+                        >
+                          <ClearIcon />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+
+                {/* Sort Controls */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 1,
+                    alignItems: "center",
+                    opacity: isSearchFocused ? 0 : 1,
+                    transform: isSearchFocused
+                      ? "translateX(20px)"
+                      : "translateX(0)",
+                    transition:
+                      "opacity 1s ease-in-out, transform 1s ease-in-out",
+                    pointerEvents: isSearchFocused ? "none" : "auto",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                      bgcolor: "background.paper",
+                      borderRadius: 2,
+                      border: 1,
+                      borderColor: "divider",
+                      px: 1,
+                      py: 0.5,
+                      cursor: "pointer",
+                      "&:hover": {
+                        bgcolor: "action.hover",
+                        borderColor: "primary.main",
+                      },
+                      transition: "all 0.2s ease-in-out",
+                    }}
+                    onClick={(event) => {
+                      setSortPopoverOpen(true);
+                      setSortAnchorEl(event.currentTarget);
+                    }}
+                  >
+                    <SortIcon sx={{ fontSize: 18, color: "text.secondary" }} />
+                  </Box>
+                </Box>
+
+                {/* Refresh Button */}
+                <Tooltip title="רענן רשימת משתמשים" placement="top">
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                      bgcolor: "background.paper",
+                      borderRadius: 2,
+                      border: 1,
+                      borderColor: "divider",
+                      px: 1,
+                      py: 0.5,
+                      cursor: "pointer",
+                      opacity: isSearchFocused ? 0 : 1,
+                      transform: isSearchFocused
+                        ? "translateX(20px)"
+                        : "translateX(0)",
+                      transition:
+                        "all 0.2s ease-in-out, opacity 1s ease-in-out, transform 1s ease-in-out",
+                      pointerEvents: isSearchFocused ? "none" : "auto",
+                      "&:hover": {
+                        bgcolor: "action.hover",
+                        borderColor: "success.main",
+                      },
+                    }}
+                    onClick={handleRefresh}
+                  >
+                    {isLoading ? (
+                      <CircularProgress
+                        size={16}
+                        sx={{ color: "success.main" }}
+                      />
+                    ) : (
+                      <RefreshIcon
+                        sx={{ fontSize: 18, color: "success.main" }}
+                      />
+                    )}
+                  </Box>
+                </Tooltip>
+
+                <Fab
+                  color="primary"
+                  aria-label="add user"
+                  onClick={() => handleOpenDrawer()}
+                  sx={{
+                    boxShadow: 3,
+                    flexShrink: 0,
                     "&:hover": {
-                      bgcolor: "action.hover",
-                      borderColor: "primary.main",
+                      boxShadow: 6,
+                      transform: "scale(1.05)",
                     },
                     transition: "all 0.2s ease-in-out",
                   }}
-                  onClick={(event) => {
-                    setSortPopoverOpen(true);
-                    setSortAnchorEl(event.currentTarget);
-                  }}
                 >
-                  <SortIcon sx={{ fontSize: 18, color: "text.secondary" }} />
-                </Box>
+                  <AddIcon />
+                </Fab>
               </Box>
 
-              <Fab
-                color="primary"
-                aria-label="add user"
-                onClick={() => handleOpenDrawer()}
+              {/* Bottom Row: Create Button - Mobile only */}
+              <Box
                 sx={{
-                  boxShadow: 3,
-                  flexShrink: 0,
-                  "&:hover": {
-                    boxShadow: 6,
-                    transform: "scale(1.05)",
-                  },
-                  transition: "all 0.2s ease-in-out",
+                  display: { xs: "flex", sm: "none" },
+                  justifyContent: "flex-end",
                 }}
               >
-                <AddIcon />
-              </Fab>
+                <Fab
+                  color="primary"
+                  aria-label="add user"
+                  onClick={() => handleOpenDrawer()}
+                  sx={{
+                    boxShadow: 3,
+                    flexShrink: 0,
+                    "&:hover": {
+                      boxShadow: 6,
+                      transform: "scale(1.05)",
+                    },
+                    transition: "all 0.2s ease-in-out",
+                  }}
+                >
+                  <AddIcon />
+                </Fab>
+              </Box>
             </Box>
 
             {/* Active Account/Role/Group Filter Display */}
             {(selectedAccountFilter ||
               selectedRoleFilter ||
-              selectedGroupFilter) && (
+              selectedGroupFilter ||
+              sortBy !== "name" ||
+              sortOrder !== "asc") && (
               <Box
-                sx={{ mt: 1, display: "flex", alignItems: "center", gap: 1 }}
+                sx={{
+                  mt: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  flexWrap: "wrap",
+                }}
               >
                 {selectedAccountFilter && (
                   <Chip
@@ -599,248 +1170,121 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                     }}
                   />
                 )}
+                {(sortBy !== "name" || sortOrder !== "asc") && (
+                  <Chip
+                    label={`מיון: ${
+                      sortBy === "name"
+                        ? "שם"
+                        : sortBy === "account"
+                        ? "סניף"
+                        : sortBy === "role"
+                        ? "תפקיד"
+                        : "שם"
+                    } ${sortOrder === "asc" ? "עולה" : "יורד"}`}
+                    size="small"
+                    color="info"
+                    onDelete={() => {
+                      setSortBy("name");
+                      setSortOrder("asc");
+                    }}
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                    }}
+                  />
+                )}
                 <Typography variant="caption" color="text.secondary">
                   {selectedAccountFilter ||
                   selectedRoleFilter ||
-                  selectedGroupFilter
+                  selectedGroupFilter ||
+                  sortBy !== "name" ||
+                  sortOrder !== "asc"
                     ? `מציג משתמשים${selectedAccountFilter ? " מסניף זה" : ""}${
                         selectedRoleFilter ? " בעלי תפקיד זה" : ""
-                      }${selectedGroupFilter ? " מקבוצה זו" : ""} בלבד`
+                      }${selectedGroupFilter ? " מקבוצה זו" : ""}${
+                        sortBy !== "name" || sortOrder !== "asc"
+                          ? " ממוינים"
+                          : ""
+                      } בלבד`
                     : ""}
+                  {filteredUsers.length > 5 && (
+                    <span style={{ marginRight: "8px" }}>
+                      • מציג {filteredUsers.length} משתמשים (מצב ביצועים מיטבי)
+                    </span>
+                  )}
                 </Typography>
               </Box>
             )}
           </Box>
 
           {/* Scrollable Users List */}
-          <Box sx={{ flex: 1, overflow: "auto", px: 2 }}>
+          <Box
+            data-testid="users-list-container"
+            sx={{ flex: 1, overflow: "auto", px: 2, pt: 2 }}
+          >
             {filteredUsers.length > 0 ? (
               <>
-                {filteredUsers.map((user: User) => (
-                  <ListItem
-                    key={user.id}
-                    sx={{
-                      bgcolor: "background.paper",
-                      borderRadius: 2,
-                      mb: 1,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      "&:hover": {
-                        borderColor: "primary.main",
-                        boxShadow: 1,
-                      },
+                {filteredUsers.length > 5 ? (
+                  // Use virtualization for larger lists
+                  <VirtualList
+                    height={500}
+                    itemCount={filteredUsers.length}
+                    itemSize={120}
+                    width="100%"
+                    overscanCount={8}
+                    itemKey={(index, data) => data.users[index].id}
+                    itemData={{
+                      users: filteredUsers,
+                      accounts,
+                      groups,
+                      selectedRoleFilter,
+                      selectedAccountFilter,
+                      selectedGroupFilter,
+                      onRoleFilterClick: handleRoleFilterClick,
+                      onAccountFilterClick: handleAccountFilterClick,
+                      onGroupFilterClick: handleGroupFilterClick,
+                      onEditClick: handleEditClick,
+                      formatMobileNumber,
                     }}
                   >
-                    <ListItemText
-                      primary={
-                        <Box
-                          sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 1,
-                          }}
-                        >
-                          <Typography
-                            variant="subtitle1"
-                            sx={{
-                              fontWeight: 500,
-                              color: user.firstName
-                                ? "text.primary"
-                                : "text.secondary",
-                              fontStyle: user.firstName ? "normal" : "italic",
-                            }}
-                          >
-                            {user.firstName && user.lastName
-                              ? `${user.firstName} ${user.lastName}`
-                              : user.email}
-                          </Typography>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            <Chip
-                              label={
-                                user.role === "Admin"
-                                  ? "מנהל"
-                                  : user.role === "Parent"
-                                  ? "הורה"
-                                  : "צוות"
-                              }
-                              size="small"
-                              color={
-                                user.role === "Admin"
-                                  ? "primary"
-                                  : user.role === "Parent"
-                                  ? "success"
-                                  : "info"
-                              }
-                              onClick={() =>
-                                setSelectedRoleFilter(
-                                  selectedRoleFilter === user.role
-                                    ? ""
-                                    : user.role
-                                )
-                              }
-                              sx={{
-                                height: 20,
-                                fontSize: "0.75rem",
-                                fontWeight:
-                                  selectedRoleFilter === user.role ? 700 : 500,
-                                cursor: "pointer",
-                                bgcolor:
-                                  selectedRoleFilter === user.role
-                                    ? "#FF914D"
-                                    : undefined,
-                                color:
-                                  selectedRoleFilter === user.role
-                                    ? "#4E342E"
-                                    : undefined,
-                                "&:hover": {
-                                  bgcolor:
-                                    selectedRoleFilter === user.role
-                                      ? "#FF7A1A"
-                                      : undefined,
-                                  transform: "scale(1.05)",
-                                },
-                                transition: "all 0.2s ease-in-out",
-                                "& .MuiChip-label": {
-                                  color:
-                                    selectedRoleFilter === user.role
-                                      ? "#4E342E"
-                                      : undefined,
-                                  fontWeight:
-                                    selectedRoleFilter === user.role
-                                      ? 700
-                                      : 500,
-                                },
-                              }}
-                            />
-                            {user.accountId && (
-                              <Chip
-                                label={`סניף: ${
-                                  accounts.find(
-                                    (account) => account.id === user.accountId
-                                  )?.branchName || "לא ידוע"
-                                }`}
-                                size="small"
-                                onClick={() =>
-                                  handleAccountFilterClick(user.accountId)
-                                }
-                                sx={{
-                                  height: 20,
-                                  fontSize: "0.75rem",
-                                  fontWeight:
-                                    selectedAccountFilter === user.accountId
-                                      ? 700
-                                      : 500,
-                                  bgcolor:
-                                    selectedAccountFilter === user.accountId
-                                      ? "#FF914D"
-                                      : "#009688",
-                                  color: "white",
-                                  cursor: "pointer",
-                                  "&:hover": {
-                                    bgcolor:
-                                      selectedAccountFilter === user.accountId
-                                        ? "#FF7A1A"
-                                        : "#00796b",
-                                    transform: "scale(1.05)",
-                                  },
-                                  transition: "all 0.2s ease-in-out",
-                                  "& .MuiChip-label": {
-                                    color: "white",
-                                    fontWeight:
-                                      selectedAccountFilter === user.accountId
-                                        ? 700
-                                        : 500,
-                                  },
-                                }}
-                              />
-                            )}
-                            {user.groupId && (
-                              <Chip
-                                label={`קבוצה: ${
-                                  groups.find(
-                                    (group) => group.id === user.groupId
-                                  )?.name || "לא ידועה"
-                                }`}
-                                size="small"
-                                onClick={() =>
-                                  setSelectedGroupFilter(
-                                    selectedGroupFilter === (user.groupId ?? "")
-                                      ? ""
-                                      : user.groupId ?? ""
-                                  )
-                                }
-                                sx={{
-                                  height: 20,
-                                  fontSize: "0.75rem",
-                                  fontWeight:
-                                    selectedGroupFilter === user.groupId
-                                      ? 700
-                                      : 500,
-                                  bgcolor:
-                                    selectedGroupFilter === user.groupId
-                                      ? "#FF914D"
-                                      : "#9c27b0",
-                                  color:
-                                    selectedGroupFilter === user.groupId
-                                      ? "#4E342E"
-                                      : "white",
-                                  cursor: "pointer",
-                                  "&:hover": {
-                                    bgcolor:
-                                      selectedGroupFilter === user.groupId
-                                        ? "#FF7A1A"
-                                        : "#7b1fa2",
-                                    transform: "scale(1.05)",
-                                  },
-                                  transition: "all 0.2s ease-in-out",
-                                  "& .MuiChip-label": {
-                                    color:
-                                      selectedGroupFilter === user.groupId
-                                        ? "#4E342E"
-                                        : "white",
-                                    fontWeight:
-                                      selectedGroupFilter === user.groupId
-                                        ? 700
-                                        : 500,
-                                  },
-                                }}
-                              />
-                            )}
-                          </Box>
-                        </Box>
-                      }
-                      secondary={
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ mt: 0.5 }}
-                        >
-                          {formatMobileNumber(user.mobile)}
-                        </Typography>
-                      }
+                    {({ index, style, data }) => (
+                      <div style={style}>
+                        <UserListItem
+                          key={data.users[index].id}
+                          user={data.users[index]}
+                          accounts={data.accounts}
+                          groups={data.groups}
+                          selectedRoleFilter={data.selectedRoleFilter}
+                          selectedAccountFilter={data.selectedAccountFilter}
+                          selectedGroupFilter={data.selectedGroupFilter}
+                          onRoleFilterClick={data.onRoleFilterClick}
+                          onAccountFilterClick={data.onAccountFilterClick}
+                          onGroupFilterClick={data.onGroupFilterClick}
+                          onEditClick={data.onEditClick}
+                          formatMobileNumber={data.formatMobileNumber}
+                        />
+                      </div>
+                    )}
+                  </VirtualList>
+                ) : (
+                  // Use regular rendering for smaller lists
+                  filteredUsers.map((user: User) => (
+                    <UserListItem
+                      key={user.id}
+                      user={user}
+                      accounts={accounts}
+                      groups={groups}
+                      selectedRoleFilter={selectedRoleFilter}
+                      selectedAccountFilter={selectedAccountFilter}
+                      selectedGroupFilter={selectedGroupFilter}
+                      onRoleFilterClick={handleRoleFilterClick}
+                      onAccountFilterClick={handleAccountFilterClick}
+                      onGroupFilterClick={handleGroupFilterClick}
+                      onEditClick={handleEditClick}
+                      formatMobileNumber={formatMobileNumber}
                     />
-                    <IconButton
-                      edge="end"
-                      aria-label="edit"
-                      onClick={() => handleOpenDrawer(user)}
-                      sx={{
-                        color: "primary.main",
-                        "&:hover": {
-                          bgcolor: "primary.lighter",
-                        },
-                      }}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                  </ListItem>
-                ))}
+                  ))
+                )}
               </>
             ) : (
               <Box sx={{ textAlign: "center", py: 3 }}>
@@ -1319,6 +1763,56 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
           </Box>
         </Box>
       </Popover>
+
+      <Dialog
+        open={isRoleChangeDialogOpen}
+        onClose={handleCancelRoleChange}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>אישור שינוי תפקיד</DialogTitle>
+        <DialogContent>
+          <Typography>
+            המשתמש{" "}
+            <b>
+              {originalUser?.firstName} {originalUser?.lastName}
+            </b>{" "}
+            הולך להשתנות מתפקיד{" "}
+            <b>
+              {originalUser?.role === "Admin"
+                ? "מנהל"
+                : originalUser?.role === "Parent"
+                ? "הורה"
+                : "צוות"}
+            </b>{" "}
+            לתפקיד{" "}
+            <b>
+              {currentUser.role === "Admin"
+                ? "מנהל"
+                : currentUser.role === "Parent"
+                ? "הורה"
+                : "צוות"}
+            </b>
+            .
+            <br />
+            האם להמשיך?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelRoleChange} color="inherit">
+            ביטול
+          </Button>
+          <Button
+            onClick={handleConfirmRoleChange}
+            color="primary"
+            variant="contained"
+            disabled={isLoading}
+            startIcon={isLoading ? <CircularProgress size={20} /> : null}
+          >
+            אשר שינוי
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

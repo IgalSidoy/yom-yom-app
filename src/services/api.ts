@@ -292,7 +292,11 @@ export interface UsersResponse {
 export const userApi = {
   getUser: async () => {
     const response = await api.get("/api/v1/user");
-    return response;
+    return response as { data: User };
+  },
+  getUserChildren: async () => {
+    const response = await api.get("/api/v1/user/children");
+    return response as { data: UserChildrenResponse };
   },
   getUsers: async () => {
     const response = await api.get("/api/v1/user/all", {
@@ -540,8 +544,21 @@ export interface Child {
   updated?: string;
 }
 
+export interface ChildWithParents {
+  id?: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  accountId: string;
+  groupId?: string;
+  groupName?: string;
+  parents: Parent[]; // Array of full parent objects
+  created?: string;
+  updated?: string;
+}
+
 export interface ChildResponse {
-  children: Child[];
+  children: ChildWithParents[];
   total: number;
 }
 
@@ -562,6 +579,17 @@ export const childApi = {
     const response = await api.put(`/api/v1/child/${childId}`, child, {
       headers: {
         Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  },
+
+  patchChild: async (childId: string, child: Partial<Child>) => {
+    const response = await api.patch(`/api/v1/child/${childId}`, child, {
+      headers: {
+        Accept: "text/plain",
         "Content-Type": "application/json",
       },
       withCredentials: true,
@@ -590,6 +618,40 @@ export const childApi = {
     });
     return response.data as ChildResponse;
   },
+
+  getChildrenByAccountWithGroupFilter: async (
+    accountId: string,
+    groupFilter: string
+  ) => {
+    const response = await api.get(
+      `/api/v1/account/${accountId}/children?groupFilter=${groupFilter}`,
+      {
+        headers: {
+          Accept: "text/plain",
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
+    return response.data as ChildResponse;
+  },
 };
+
+export interface UserChild {
+  id: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  accountId: string;
+  accountName?: string;
+  groupId?: string;
+  groupName?: string;
+  created?: string;
+  updated?: string;
+}
+
+export interface UserChildrenResponse {
+  children: UserChild[];
+}
 
 export default api;

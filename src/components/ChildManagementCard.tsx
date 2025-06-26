@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { FixedSizeList as VirtualList } from "react-window";
 import {
   Typography,
   Box,
@@ -30,6 +31,7 @@ import {
   Chip,
   InputAdornment,
   Popover,
+  Autocomplete,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs, { Dayjs } from "dayjs";
@@ -67,11 +69,169 @@ interface ChildManagementCardProps {
   selectedAccountId: string;
   isLoading: boolean;
   isExpanded: boolean;
+  readOnlyParents?: boolean;
   onAccountsChange: () => Promise<void>;
   onChildrenChange: (accountId?: string) => Promise<void>;
+  onParentsRefresh?: () => Promise<void>;
 }
 
 type ChildForm = Omit<Child, "parents"> & { parents: Parent[] };
+
+// Memoized Child List Item Component
+const ChildListItem = memo<{
+  child: Child;
+  parents: User[];
+  selectedGroupFilter: string;
+  onGroupFilterClick: (groupId: string) => void;
+  onEditClick: (child: Child) => void;
+  calculateAge: (dateStr: string) => string;
+  formatDate: (dateStr: string) => string;
+}>(
+  ({
+    child,
+    parents,
+    selectedGroupFilter,
+    onGroupFilterClick,
+    onEditClick,
+    calculateAge,
+    formatDate,
+  }) => {
+    const parentNames = useMemo(() => {
+      if (child.parents && child.parents.length > 0) {
+        return child.parents
+          .map((parent: string | { id: string }) => {
+            const parentId = typeof parent === "string" ? parent : parent.id;
+            const parentObj = parents.find((p) => p.id === parentId);
+            return parentObj && parentObj.firstName && parentObj.lastName
+              ? `${parentObj.firstName} ${parentObj.lastName}`
+              : "הורה לא ידוע";
+          })
+          .join(", ");
+      }
+      return "אין הורים מוגדרים";
+    }, [child.parents, parents]);
+
+    return (
+      <ListItem
+        sx={{
+          bgcolor: "background.paper",
+          borderRadius: 2,
+          mb: 1,
+          border: "1px solid",
+          borderColor: "divider",
+          "&:hover": {
+            borderColor: "primary.main",
+            boxShadow: 1,
+          },
+        }}
+      >
+        <ListItemText
+          primary={
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 500,
+                    color: child.firstName ? "text.primary" : "text.secondary",
+                    fontStyle: child.firstName ? "normal" : "italic",
+                  }}
+                >
+                  {child.firstName && child.lastName
+                    ? `${child.firstName} ${child.lastName}`
+                    : "שם חסר"}
+                </Typography>
+                <IconButton
+                  size="small"
+                  aria-label="edit"
+                  onClick={() => onEditClick(child)}
+                  sx={{
+                    color: "primary.main",
+                    "&:hover": {
+                      bgcolor: "primary.lighter",
+                    },
+                  }}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Chip
+                  label={formatDate(child.dateOfBirth)}
+                  size="small"
+                  color="info"
+                  sx={{
+                    height: 20,
+                    fontSize: "0.75rem",
+                    fontWeight: 500,
+                  }}
+                />
+                <Chip
+                  label={`גיל: ${calculateAge(child.dateOfBirth)}`}
+                  size="small"
+                  sx={{
+                    height: 20,
+                    fontSize: "0.75rem",
+                    fontWeight: 500,
+                    bgcolor: "green",
+                    color: "white",
+                    "& .MuiChip-label": {
+                      color: "white",
+                    },
+                  }}
+                />
+                {child.groupId && (
+                  <Chip
+                    label={`קבוצה: ${child.groupName || "לא ידועה"}`}
+                    size="small"
+                    onClick={() =>
+                      child.groupId && onGroupFilterClick(child.groupId)
+                    }
+                    sx={{
+                      height: 20,
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                      bgcolor:
+                        selectedGroupFilter === child.groupId
+                          ? "primary.main"
+                          : "#9c27b0",
+                      color: "white",
+                      cursor: "pointer",
+                      "&:hover": {
+                        bgcolor:
+                          selectedGroupFilter === child.groupId
+                            ? "primary.dark"
+                            : "#7b1fa2",
+                        transform: "scale(1.05)",
+                      },
+                      transition: "all 0.2s ease-in-out",
+                      "& .MuiChip-label": {
+                        color: "white",
+                      },
+                    }}
+                  />
+                )}
+              </Box>
+            </Box>
+          }
+          secondary={
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {`הורים: ${parentNames}`}
+            </Typography>
+          }
+        />
+      </ListItem>
+    );
+  }
+);
+
+ChildListItem.displayName = "ChildListItem";
 
 const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   accounts,
@@ -80,10 +240,13 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   selectedAccountId,
   isLoading,
   isExpanded,
+  readOnlyParents,
   onAccountsChange,
   onChildrenChange,
+  onParentsRefresh,
 }) => {
   const { accessToken } = useAuth();
+  const { userChangeTimestamp } = useApp();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -96,6 +259,9 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [sortPopoverOpen, setSortPopoverOpen] = useState(false);
   const [sortAnchorEl, setSortAnchorEl] = useState<HTMLElement | null>(null);
+  const [parentSearchInput, setParentSearchInput] = useState("");
+  const [lastParentSearch, setLastParentSearch] = useState("");
+  const [lastProcessedTimestamp, setLastProcessedTimestamp] = useState(0);
   const [currentChild, setCurrentChild] = useState<ChildForm>({
     firstName: "",
     lastName: "",
@@ -162,10 +328,27 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     }
   }, [selectedAccountId]);
 
+  // Refresh parents when user changes occur and drawer is open
+  useEffect(() => {
+    if (
+      isDrawerOpen &&
+      onParentsRefresh &&
+      userChangeTimestamp > 0 &&
+      userChangeTimestamp !== lastProcessedTimestamp
+    ) {
+      setLastProcessedTimestamp(userChangeTimestamp);
+      onParentsRefresh();
+    }
+  }, [
+    userChangeTimestamp,
+    isDrawerOpen,
+    onParentsRefresh,
+    lastProcessedTimestamp,
+  ]);
+
   // Debug: Log when children or parents change
   useEffect(() => {
-    console.log("ChildManagementCard - Parents updated:", parents);
-    console.log("ChildManagementCard - Children updated:", children);
+    // Debug logging removed
   }, [parents, children]);
 
   const sortChildren = (children: Child[]) => {
@@ -201,28 +384,63 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   };
 
   // Filter children based on selected account, group, and search query
-  const filteredChildren = sortChildren(
-    children
-      .filter((child) =>
-        selectedAccountId ? child.accountId === selectedAccountId : true
-      )
-      .filter((child) =>
-        selectedGroupFilter ? child.groupId === selectedGroupFilter : true
-      )
-      .filter((child) => {
-        if (!searchQuery.trim()) return true;
-        const fullName = `${child.firstName || ""} ${
-          child.lastName || ""
-        }`.toLowerCase();
-        const query = searchQuery.toLowerCase();
-        return fullName.includes(query);
-      })
-  );
+  const filteredChildren = useMemo(() => {
+    return sortChildren(
+      children
+        .filter((child) =>
+          selectedAccountId ? child.accountId === selectedAccountId : true
+        )
+        .filter((child) =>
+          selectedGroupFilter ? child.groupId === selectedGroupFilter : true
+        )
+        .filter((child) => {
+          if (!searchQuery.trim()) return true;
+          const fullName = `${child.firstName || ""} ${
+            child.lastName || ""
+          }`.toLowerCase();
+          const query = searchQuery.toLowerCase();
+          return fullName.includes(query);
+        })
+    );
+  }, [
+    children,
+    selectedAccountId,
+    selectedGroupFilter,
+    searchQuery,
+    sortBy,
+    sortOrder,
+  ]);
 
   // Filter groups based on selected account
-  const filteredGroups = selectedAccountId
-    ? groups.filter((group) => group.accountId === selectedAccountId)
-    : groups;
+  const filteredGroups = useMemo(() => {
+    return selectedAccountId
+      ? groups.filter((group) => group.accountId === selectedAccountId)
+      : groups;
+  }, [groups, selectedAccountId]);
+
+  // Memoized callback functions
+  const handleGroupFilterClick = useCallback(
+    (groupId: string) => {
+      setSelectedGroupFilter(selectedGroupFilter === groupId ? "" : groupId);
+    },
+    [selectedGroupFilter]
+  );
+
+  const handleEditClick = useCallback((child: Child) => {
+    handleEditChild(child);
+  }, []);
+
+  const handleSearchChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setSearchQuery(event.target.value);
+    },
+    []
+  );
+
+  const clearAllFilters = useCallback(() => {
+    setSelectedGroupFilter("");
+    setSearchQuery("");
+  }, []);
 
   const showNotification = (
     message: string,
@@ -261,6 +479,8 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
       groupId: "",
       parents: [],
     });
+    setParentSearchInput("");
+    setLastParentSearch("");
   };
 
   const handleChildChange = (field: keyof ChildForm, value: any) => {
@@ -307,14 +527,12 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
         throw new Error("No child ID provided");
       }
 
-      console.log("Deleting child:", currentChild.id);
       await childApi.deleteChild(currentChild.id);
       showNotification("ילד נמחק בהצלחה");
       setIsDeleteDialogOpen(false);
       handleCloseDrawer();
       await onChildrenChange(currentChild.accountId);
     } catch (error) {
-      console.error("Error deleting child:", error);
       showNotification("שגיאה במחיקת הילד", "error");
     }
   };
@@ -437,24 +655,6 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     setIsDrawerOpen(true);
   };
 
-  const handleClearSearch = () => {
-    setSearchQuery("");
-  };
-
-  const handleGroupFilterClick = (groupId: string) => {
-    if (selectedGroupFilter === groupId) {
-      // If clicking the same group, clear the filter
-      setSelectedGroupFilter("");
-    } else {
-      // Set the new group filter
-      setSelectedGroupFilter(groupId);
-    }
-  };
-
-  const clearGroupFilter = () => {
-    setSelectedGroupFilter("");
-  };
-
   return (
     <Box
       sx={{
@@ -484,7 +684,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
               fullWidth
               placeholder="חיפוש לפי שם..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -495,10 +695,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                   <InputAdornment position="end">
                     <IconButton
                       size="small"
-                      onClick={() => {
-                        setSearchQuery("");
-                        clearGroupFilter();
-                      }}
+                      onClick={clearAllFilters}
                       edge="end"
                     >
                       <ClearIcon />
@@ -577,7 +774,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                 }`}
                 size="small"
                 color="primary"
-                onDelete={clearGroupFilter}
+                onDelete={clearAllFilters}
                 sx={{
                   fontSize: "0.75rem",
                   fontWeight: 500,
@@ -585,6 +782,18 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
               />
               <Typography variant="caption" color="text.secondary">
                 מציג ילדים מקבוצה זו בלבד
+                {filteredChildren.length > 5 && (
+                  <span style={{ marginRight: "8px" }}>
+                    • מציג {filteredChildren.length} ילדים (מצב ביצועים מיטבי)
+                  </span>
+                )}
+              </Typography>
+            </Box>
+          )}
+          {!selectedGroupFilter && filteredChildren.length > 5 && (
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                מציג {filteredChildren.length} ילדים (מצב ביצועים מיטבי)
               </Typography>
             </Box>
           )}
@@ -592,7 +801,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
       )}
 
       {/* Scrollable Children List */}
-      <Box sx={{ flex: 1, overflow: "auto", px: 2, pb: 8 }}>
+      <Box sx={{ flex: 1, overflow: "auto", px: 2, pb: 8, pt: 2 }}>
         {isLoading ? (
           <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
             <CircularProgress />
@@ -603,158 +812,57 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
           </Box>
         ) : filteredChildren.length > 0 ? (
           <>
-            {filteredChildren.map((child: Child) => (
-              <ListItem
-                key={child.id}
-                sx={{
-                  bgcolor: "background.paper",
-                  borderRadius: 2,
-                  mb: 1,
-                  border: "1px solid",
-                  borderColor: "divider",
-                  "&:hover": {
-                    borderColor: "primary.main",
-                    boxShadow: 1,
-                  },
+            {filteredChildren.length > 5 ? (
+              // Use virtualization for larger lists
+              <VirtualList
+                height={500}
+                itemCount={filteredChildren.length}
+                itemSize={140}
+                width="100%"
+                overscanCount={8}
+                itemKey={(index, data) =>
+                  data.children[index]?.id || `child-${index}`
+                }
+                itemData={{
+                  children: filteredChildren,
+                  parents,
+                  selectedGroupFilter,
+                  onGroupFilterClick: handleGroupFilterClick,
+                  onEditClick: handleEditClick,
+                  calculateAge,
+                  formatDate,
                 }}
               >
-                <ListItemText
-                  primary={
-                    <Box
-                      sx={{ display: "flex", flexDirection: "column", gap: 1 }}
-                    >
-                      <Typography
-                        variant="subtitle1"
-                        sx={{
-                          fontWeight: 500,
-                          color: child.firstName
-                            ? "text.primary"
-                            : "text.secondary",
-                          fontStyle: child.firstName ? "normal" : "italic",
-                        }}
-                      >
-                        {child.firstName && child.lastName
-                          ? `${child.firstName} ${child.lastName}`
-                          : "שם חסר"}
-                      </Typography>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <Chip
-                          label={formatDate(child.dateOfBirth)}
-                          size="small"
-                          color="info"
-                          sx={{
-                            height: 20,
-                            fontSize: "0.75rem",
-                            fontWeight: 500,
-                          }}
-                        />
-                        <Chip
-                          label={`גיל: ${calculateAge(child.dateOfBirth)}`}
-                          size="small"
-                          sx={{
-                            height: 20,
-                            fontSize: "0.75rem",
-                            fontWeight: 500,
-                            bgcolor: "green",
-                            color: "white",
-                            "& .MuiChip-label": {
-                              color: "white",
-                            },
-                          }}
-                        />
-                        {child.groupId && (
-                          <Chip
-                            label={`קבוצה: ${child.groupName || "לא ידועה"}`}
-                            size="small"
-                            onClick={() =>
-                              child.groupId &&
-                              handleGroupFilterClick(child.groupId)
-                            }
-                            sx={{
-                              height: 20,
-                              fontSize: "0.75rem",
-                              fontWeight: 500,
-                              bgcolor:
-                                selectedGroupFilter === child.groupId
-                                  ? "primary.main"
-                                  : "#9c27b0",
-                              color: "white",
-                              cursor: "pointer",
-                              "&:hover": {
-                                bgcolor:
-                                  selectedGroupFilter === child.groupId
-                                    ? "primary.dark"
-                                    : "#7b1fa2",
-                                transform: "scale(1.05)",
-                              },
-                              transition: "all 0.2s ease-in-out",
-                              "& .MuiChip-label": {
-                                color: "white",
-                              },
-                            }}
-                          />
-                        )}
-                      </Box>
-                    </Box>
-                  }
-                  secondary={
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mt: 0.5 }}
-                    >
-                      {(() => {
-                        console.log(
-                          `Displaying parents for child ${child.id}:`,
-                          child.parents
-                        );
-                        console.log("Available parents for lookup:", parents);
-
-                        if (child.parents && child.parents.length > 0) {
-                          const parentNames = child.parents
-                            .map((parent: string | { id: string }) => {
-                              const parentId =
-                                typeof parent === "string" ? parent : parent.id;
-                              const parentObj = parents.find(
-                                (p) => p.id === parentId
-                              );
-                              console.log(
-                                `Looking for parent ID ${parentId}:`,
-                                parentObj
-                              );
-                              return parentObj &&
-                                parentObj.firstName &&
-                                parentObj.lastName
-                                ? `${parentObj.firstName} ${parentObj.lastName}`
-                                : "הורה לא ידוע";
-                            })
-                            .join(", ");
-                          console.log("Final parent names:", parentNames);
-                          return `הורים: ${parentNames}`;
-                        } else {
-                          return "אין הורים מוגדרים";
-                        }
-                      })()}
-                    </Typography>
-                  }
+                {({ index, style, data }) => (
+                  <div style={style}>
+                    <ChildListItem
+                      key={data.children[index].id}
+                      child={data.children[index]}
+                      parents={data.parents}
+                      selectedGroupFilter={data.selectedGroupFilter}
+                      onGroupFilterClick={data.onGroupFilterClick}
+                      onEditClick={data.onEditClick}
+                      calculateAge={data.calculateAge}
+                      formatDate={data.formatDate}
+                    />
+                  </div>
+                )}
+              </VirtualList>
+            ) : (
+              // Use regular rendering for smaller lists
+              filteredChildren.map((child: Child) => (
+                <ChildListItem
+                  key={child.id}
+                  child={child}
+                  parents={parents}
+                  selectedGroupFilter={selectedGroupFilter}
+                  onGroupFilterClick={handleGroupFilterClick}
+                  onEditClick={handleEditClick}
+                  calculateAge={calculateAge}
+                  formatDate={formatDate}
                 />
-                <IconButton
-                  edge="end"
-                  aria-label="edit"
-                  onClick={() => handleEditChild(child)}
-                  sx={{
-                    color: "primary.main",
-                    "&:hover": {
-                      bgcolor: "primary.lighter",
-                    },
-                  }}
-                >
-                  <EditIcon />
-                </IconButton>
-              </ListItem>
-            ))}
+              ))
+            )}
           </>
         ) : (
           <Box sx={{ textAlign: "center", py: 3 }}>
@@ -809,73 +917,206 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
               }}
             >
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <FormControl fullWidth>
-                  <InputLabel>הורים</InputLabel>
-                  <Select
-                    multiple
-                    value={currentChild.parents.map((p) => p.id)}
-                    label="הורים"
-                    onChange={(e) => {
-                      const selectedIds = e.target.value as string[];
-                      const selectedParents = parents.filter((parent) =>
-                        selectedIds.includes(parent.id)
+                <Autocomplete
+                  multiple
+                  disableCloseOnSelect
+                  clearOnBlur={false}
+                  clearOnEscape={false}
+                  disabled={readOnlyParents}
+                  inputValue={parentSearchInput}
+                  onInputChange={(event, newInputValue, reason) => {
+                    // Only update if it's a user input, not a programmatic clear
+                    if (reason === "input" || reason === "reset") {
+                      setParentSearchInput(newInputValue);
+                      setLastParentSearch(newInputValue);
+                    } else if (reason === "clear") {
+                      // Prevent clearing by restoring the last search
+                      setParentSearchInput(lastParentSearch);
+                    }
+                  }}
+                  options={parents.filter((parent) => parent.role === "Parent")}
+                  getOptionLabel={(option) =>
+                    option.firstName && option.lastName
+                      ? `${option.firstName} ${option.lastName}`
+                      : option.email
+                  }
+                  value={currentChild.parents.map((parent) => {
+                    const foundUser = parents.find((p) => p.id === parent.id);
+                    if (foundUser) {
+                      return foundUser;
+                    }
+                    // Fallback to a complete User object if not found
+                    return {
+                      id: parent.id,
+                      firstName: parent.firstName || "",
+                      lastName: parent.lastName || "",
+                      email: "",
+                      mobile: parent.mobile || "",
+                      accountId: "",
+                      organizationId: "",
+                      role: "Parent",
+                      created: "",
+                      updated: "",
+                    };
+                  })}
+                  onChange={(event, newValue) => {
+                    // Limit to maximum 2 parents
+                    if (newValue.length > 2) {
+                      showNotification("ניתן לבחור עד 2 הורים בלבד", "warning");
+                      return;
+                    }
+
+                    const parentObjects = newValue.map((user) => ({
+                      id: user.id,
+                      firstName: user.firstName,
+                      lastName: user.lastName,
+                      mobile: user.mobile,
+                    }));
+                    handleChildChange("parents", parentObjects);
+                    if (newValue.length === 1 && !currentChild.lastName) {
+                      handleChildChange("lastName", newValue[0].lastName);
+                    }
+                  }}
+                  filterOptions={(options, { inputValue }) => {
+                    const filtered = options.filter((option) => {
+                      const fullName = `${option.firstName || ""} ${
+                        option.lastName || ""
+                      }`.toLowerCase();
+                      const email = (option.email || "").toLowerCase();
+                      const searchLower = inputValue.toLowerCase();
+                      return (
+                        fullName.includes(searchLower) ||
+                        email.includes(searchLower)
                       );
-                      handleChildChange("parents", selectedParents);
-                      if (
-                        selectedParents.length === 1 &&
-                        !currentChild.lastName
-                      ) {
-                        handleChildChange(
-                          "lastName",
-                          selectedParents[0].lastName
-                        );
+                    });
+                    return filtered;
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={
+                        readOnlyParents
+                          ? "הורים (קריאה בלבד)"
+                          : `הורים (${currentChild.parents.length}/2)`
                       }
+                      placeholder={readOnlyParents ? "" : "חיפוש הורים..."}
+                      helperText={
+                        !readOnlyParents && currentChild.parents.length >= 2
+                          ? "הגעת למגבלת ההורים המקסימלית (2)"
+                          : ""
+                      }
+                      InputProps={{
+                        ...params.InputProps,
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchIcon fontSize="small" color="action" />
+                          </InputAdornment>
+                        ),
+                        endAdornment: parentSearchInput && !readOnlyParents && (
+                          <InputAdornment position="end">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setParentSearchInput("");
+                                setLastParentSearch("");
+                              }}
+                              edge="end"
+                            >
+                              <ClearIcon fontSize="small" />
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  )}
+                  renderOption={(props, option, { selected }) => (
+                    <ListItem {...props}>
+                      <ListItemIcon>
+                        {selected && (
+                          <CheckIcon
+                            sx={{
+                              fontSize: 20,
+                              color: "primary.main",
+                            }}
+                          />
+                        )}
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={
+                          option.firstName && option.lastName
+                            ? `${option.firstName} ${option.lastName}`
+                            : option.email
+                        }
+                      />
+                    </ListItem>
+                  )}
+                  renderTags={(value, getTagProps) =>
+                    value.map((option, index) => (
+                      <Chip
+                        label={
+                          option.firstName && option.lastName
+                            ? `${option.firstName} ${option.lastName}`
+                            : option.email
+                        }
+                        {...getTagProps({ index })}
+                        size="small"
+                        onDelete={readOnlyParents ? undefined : undefined}
+                        sx={{
+                          bgcolor: readOnlyParents
+                            ? "grey.400"
+                            : "primary.light",
+                          color: readOnlyParents
+                            ? "text.primary"
+                            : "primary.contrastText",
+                          opacity: readOnlyParents ? 0.8 : 1,
+                          "& .MuiChip-deleteIcon": {
+                            display: readOnlyParents ? "none" : "flex",
+                          },
+                          "&:hover": {
+                            bgcolor: readOnlyParents
+                              ? "grey.400"
+                              : "primary.main",
+                          },
+                        }}
+                      />
+                    ))
+                  }
+                  noOptionsText="לא נמצאו הורים התואמים לחיפוש"
+                  loadingText="טוען הורים..."
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+
+                {/* Read-only display of selected parents */}
+                {currentChild.parents.length > 0 && (
+                  <TextField
+                    fullWidth
+                    label="הורים נבחרים"
+                    value={currentChild.parents
+                      .map((parent) =>
+                        `${parent.firstName} ${parent.lastName}`.trim()
+                      )
+                      .join(", ")}
+                    InputProps={{
+                      readOnly: true,
                     }}
-                    input={<OutlinedInput label="הורים" />}
-                    renderValue={(selected) => {
-                      const selectedParents = parents
-                        .filter((parent) => selected.includes(parent.id))
-                        .map(
-                          (parent) => `${parent.firstName} ${parent.lastName}`
-                        )
-                        .join(", ");
-                      return selectedParents || "בחר הורים";
-                    }}
-                    MenuProps={{
-                      PaperProps: {
-                        style: {
-                          maxHeight: 300,
+                    sx={{
+                      "& .MuiInputBase-root": {
+                        bgcolor: "grey.100",
+                        "& fieldset": {
+                          borderColor: "grey.300",
                         },
                       },
+                      "& .MuiInputLabel-root": {
+                        color: "text.secondary",
+                      },
                     }}
-                  >
-                    {parents
-                      .filter((parent) => parent.role === "Parent")
-                      .map((parent) => (
-                        <MenuItem key={parent.id} value={parent.id}>
-                          <ListItemIcon>
-                            {currentChild.parents.some(
-                              (p) => p.id === parent.id
-                            ) && (
-                              <CheckIcon
-                                sx={{
-                                  fontSize: 20,
-                                  color: "primary.main",
-                                }}
-                              />
-                            )}
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={
-                              parent.firstName && parent.lastName
-                                ? `${parent.firstName} ${parent.lastName}`
-                                : parent.email
-                            }
-                          />
-                        </MenuItem>
-                      ))}
-                  </Select>
-                </FormControl>
+                  />
+                )}
 
                 <TextField
                   fullWidth
