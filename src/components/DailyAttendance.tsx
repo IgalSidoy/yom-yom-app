@@ -26,7 +26,7 @@ export type AttendanceStatus =
   | "sick"
   | "late"
   | "vacation"
-  | "other";
+  | "unreported";
 
 export interface AttendanceRecord {
   childId: string;
@@ -53,7 +53,12 @@ const attendanceStatusOptions = [
     color: MILD_BEIGE,
     textColor: "#B88B2A",
   },
-  { value: "other", label: "אחר", color: MILD_GRAY, textColor: "#888" },
+  {
+    value: "unreported",
+    label: "לא דווח",
+    color: MILD_GRAY,
+    textColor: "#888",
+  },
 ];
 
 const STATUS_COLORS: Record<
@@ -65,7 +70,7 @@ const STATUS_COLORS: Record<
   sick: { bg: "#FFF7C2", text: "#B88B2A", border: "#FFE6A7" },
   late: { bg: "#E3F0FF", text: "#3A6EA5", border: "#B3D4F7" },
   vacation: { bg: "#E3FFE3", text: "#3A9A5A", border: "#B3E6B3" },
-  other: { bg: "#F5F5F5", text: "#888", border: "#E0E0E0" },
+  unreported: { bg: "#F5F5F5", text: "#888", border: "#E0E0E0" },
 };
 
 // Memoized Child List Item Component for Daily Attendance
@@ -100,19 +105,6 @@ const AttendanceChildListItem: React.FC<{
           px: { xs: 0.5, sm: 3 },
           borderBottom: { xs: "none", sm: "1px solid" },
           borderColor: "divider",
-          opacity: 0,
-          animation: "fadeInUp 0.5s ease-out forwards",
-          animationDelay: `${index * 50}ms`, // Staggered animation
-          "@keyframes fadeInUp": {
-            "0%": {
-              opacity: 0,
-              transform: "translateY(20px)",
-            },
-            "100%": {
-              opacity: 1,
-              transform: "translateY(0)",
-            },
-          },
         }}
       >
         {/* Mobile Layout: Stacked vertically */}
@@ -330,6 +322,18 @@ const AttendanceSkeleton: React.FC = () => (
           sx={{
             borderRadius: 1,
             bgcolor: "rgba(0, 0, 0, 0.08)",
+            animation: "pulse 2s ease-in-out infinite",
+            "@keyframes pulse": {
+              "0%": {
+                opacity: 1,
+              },
+              "50%": {
+                opacity: 0.4,
+              },
+              "100%": {
+                opacity: 1,
+              },
+            },
           }}
         />
         <Skeleton
@@ -339,6 +343,18 @@ const AttendanceSkeleton: React.FC = () => (
           sx={{
             borderRadius: 1,
             bgcolor: "rgba(0, 0, 0, 0.06)",
+            animation: "pulse 2s ease-in-out infinite",
+            "@keyframes pulse": {
+              "0%": {
+                opacity: 1,
+              },
+              "50%": {
+                opacity: 0.4,
+              },
+              "100%": {
+                opacity: 1,
+              },
+            },
           }}
         />
       </Box>
@@ -360,6 +376,18 @@ const AttendanceSkeleton: React.FC = () => (
           sx={{
             borderRadius: 3,
             bgcolor: "rgba(0, 0, 0, 0.08)",
+            animation: "pulse 2s ease-in-out infinite",
+            "@keyframes pulse": {
+              "0%": {
+                opacity: 1,
+              },
+              "50%": {
+                opacity: 0.4,
+              },
+              "100%": {
+                opacity: 1,
+              },
+            },
           }}
         />
         <Skeleton
@@ -369,6 +397,18 @@ const AttendanceSkeleton: React.FC = () => (
           sx={{
             borderRadius: 3,
             bgcolor: "rgba(0, 0, 0, 0.08)",
+            animation: "pulse 2s ease-in-out infinite",
+            "@keyframes pulse": {
+              "0%": {
+                opacity: 1,
+              },
+              "50%": {
+                opacity: 0.4,
+              },
+              "100%": {
+                opacity: 1,
+              },
+            },
           }}
         />
         <Skeleton
@@ -378,6 +418,18 @@ const AttendanceSkeleton: React.FC = () => (
           sx={{
             borderRadius: 3,
             bgcolor: "rgba(0, 0, 0, 0.08)",
+            animation: "pulse 2s ease-in-out infinite",
+            "@keyframes pulse": {
+              "0%": {
+                opacity: 1,
+              },
+              "50%": {
+                opacity: 0.4,
+              },
+              "100%": {
+                opacity: 1,
+              },
+            },
           }}
         />
       </Box>
@@ -388,23 +440,23 @@ const AttendanceSkeleton: React.FC = () => (
 const DailyAttendance: React.FC = () => {
   const { user } = useApp();
   const [children, setChildren] = useState<ChildWithParents[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState<
-    AttendanceStatus | ""
-  >("missing");
   const [attendanceRecords, setAttendanceRecords] = useState<
     Record<string, AttendanceStatus>
   >({});
   const [attendanceTimestamps, setAttendanceTimestamps] = useState<
     Record<string, string>
   >({});
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<
+    AttendanceStatus | ""
+  >("unreported");
+  const [isInitialLoading, setIsInitialLoading] = useState(true); // Separate state for initial loading
   const [listHeight, setListHeight] = useState(400);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchChildren = async () => {
       if (!user?.accountId || !user?.groupId) return;
-      setIsLoading(true);
+      setIsInitialLoading(true); // Use initial loading for first data fetch
       try {
         const response = await childApi.getChildrenByAccountWithGroupFilter(
           user.accountId,
@@ -415,13 +467,13 @@ const DailyAttendance: React.FC = () => {
         // Initialize attendance records for all children
         const initialRecords: Record<string, AttendanceStatus> = {};
         response.children?.forEach((child) => {
-          initialRecords[child.id!] = "missing"; // Default status
+          initialRecords[child.id!] = "unreported"; // Default status
         });
         setAttendanceRecords(initialRecords);
       } catch (error) {
         setChildren([]);
       } finally {
-        setIsLoading(false);
+        setIsInitialLoading(false);
       }
     };
     fetchChildren();
@@ -499,13 +551,13 @@ const DailyAttendance: React.FC = () => {
   };
 
   const getAttendanceSummary = () => {
-    const summary = {
+    const summary: Record<AttendanceStatus, number> = {
       arrived: 0,
       missing: 0,
       sick: 0,
       late: 0,
       vacation: 0,
-      other: 0,
+      unreported: 0,
     };
 
     Object.values(attendanceRecords).forEach((status) => {
@@ -547,14 +599,23 @@ const DailyAttendance: React.FC = () => {
         borderColor: { xs: "transparent", sm: "divider" },
         boxShadow: { xs: "none", sm: "0 2px 8px rgba(0, 0, 0, 0.1)" },
         overflow: "hidden",
+        px: { xs: 0, sm: 2 },
       }}
       ref={containerRef}
     >
       <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
         {/* Header with Group Info and Date - Compact for mobile */}
-        <Fade in={!isLoading} timeout={400}>
+        <Fade in={!isInitialLoading} timeout={400}>
           <Box
-            sx={{ px: { xs: 1, sm: 2 }, pt: 2, pb: 1, flexShrink: 0 }}
+            sx={{
+              px: { xs: 1, sm: 2 },
+              pt: 2,
+              pb: 1,
+              flexShrink: 0,
+              borderBottom: { xs: "1px solid", sm: "none" },
+              borderColor: { xs: "divider", sm: "transparent" },
+              mb: { xs: 1, sm: 0 },
+            }}
             data-header
           >
             <Box
@@ -590,7 +651,7 @@ const DailyAttendance: React.FC = () => {
 
             {/* Attendance Summary - Compact mobile design */}
             {children.length > 0 && (
-              <Fade in={!isLoading && children.length > 0} timeout={600}>
+              <Fade in={!isInitialLoading && children.length > 0} timeout={400}>
                 <Box
                   sx={{
                     mt: { xs: 1.5, sm: 2 },
@@ -607,7 +668,10 @@ const DailyAttendance: React.FC = () => {
                       gap: 1,
                       pb: 0.5,
                       justifyContent: "space-evenly",
-                      px: 2,
+                      px: 0,
+                      border: "2px solid #ff0000",
+                      borderRadius: 2,
+                      py: 1,
                     }}
                   >
                     {attendanceStatusOptions.map((option, index) => {
@@ -628,8 +692,8 @@ const DailyAttendance: React.FC = () => {
                             alignItems: "center",
                             minWidth: 0,
                             flex: 1,
-                            py: 1.2,
-                            px: 1,
+                            py: 1.5,
+                            px: 1.5,
                             bgcolor: isArrived
                               ? STATUS_COLORS[option.value as AttendanceStatus]
                                   .bg
@@ -645,20 +709,7 @@ const DailyAttendance: React.FC = () => {
                             }`,
                             borderRadius: 2,
                             cursor: "pointer",
-                            transition: "all 0.2s ease",
-                            opacity: 0,
-                            animation: "fadeInScale 0.4s ease-out forwards",
-                            animationDelay: `${index * 100}ms`, // Staggered animation for badges
-                            "@keyframes fadeInScale": {
-                              "0%": {
-                                opacity: 0,
-                                transform: "scale(0.8)",
-                              },
-                              "100%": {
-                                opacity: 1,
-                                transform: "scale(1)",
-                              },
-                            },
+                            minHeight: 60,
                             "&:hover": {
                               transform: "scale(1.05)",
                               boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
@@ -668,9 +719,10 @@ const DailyAttendance: React.FC = () => {
                           <Typography
                             variant="caption"
                             sx={{
-                              fontSize: "0.75rem",
+                              fontSize: "0.9rem",
                               fontWeight: 600,
                               lineHeight: 1,
+                              textAlign: "center",
                             }}
                           >
                             {option.label}
@@ -678,10 +730,10 @@ const DailyAttendance: React.FC = () => {
                           <Typography
                             variant="h6"
                             sx={{
-                              fontSize: "1.1rem",
+                              fontSize: "1.4rem",
                               fontWeight: 700,
                               lineHeight: 1,
-                              mt: 0.4,
+                              mt: 0.5,
                             }}
                           >
                             {count}
@@ -707,19 +759,6 @@ const DailyAttendance: React.FC = () => {
                           sx={{
                             display: "flex",
                             alignItems: "center",
-                            opacity: 0,
-                            animation: "fadeInScale 0.4s ease-out forwards",
-                            animationDelay: `${index * 100}ms`, // Staggered animation for badges
-                            "@keyframes fadeInScale": {
-                              "0%": {
-                                opacity: 0,
-                                transform: "scale(0.8)",
-                              },
-                              "100%": {
-                                opacity: 1,
-                                transform: "scale(1)",
-                              },
-                            },
                           }}
                         >
                           <Box
@@ -760,7 +799,6 @@ const DailyAttendance: React.FC = () => {
                                 transform: "scale(1.02)",
                                 boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
                               },
-                              transition: "all 0.2s ease-in-out",
                             }}
                             onClick={() =>
                               handleStatusFilterClick(
@@ -833,7 +871,7 @@ const DailyAttendance: React.FC = () => {
             mt: { xs: 0.5, sm: 0 },
           }}
         >
-          {isLoading ? (
+          {isInitialLoading ? (
             <Box sx={{ height: "100%", pb: 2 }}>
               {/* Show multiple skeleton items while loading */}
               {Array.from({ length: 8 }).map((_, index) => (
@@ -841,7 +879,7 @@ const DailyAttendance: React.FC = () => {
               ))}
             </Box>
           ) : filteredChildren.length === 0 ? (
-            <Fade in={!isLoading} timeout={700}>
+            <Fade in={!isInitialLoading} timeout={700}>
               <Box sx={{ textAlign: "center", py: 3 }}>
                 <Typography color="text.secondary">
                   {selectedStatusFilter
@@ -856,8 +894,12 @@ const DailyAttendance: React.FC = () => {
             </Fade>
           ) : filteredChildren.length > 5 ? (
             // Use virtualization for larger lists
-            <Fade in={!isLoading} timeout={700}>
-              <Box sx={{ height: "100%", pb: 2 }}>
+            <Fade
+              key={`list-${selectedStatusFilter}`}
+              in={!isInitialLoading}
+              timeout={500}
+            >
+              <Box sx={{ height: "100%", pb: 2, px: { xs: 2, sm: 2 } }}>
                 <VirtualList
                   height={listHeight - 16} // Subtract padding to account for bottom space
                   itemCount={filteredChildren.length}
@@ -896,7 +938,11 @@ const DailyAttendance: React.FC = () => {
             </Fade>
           ) : (
             // Use regular rendering for smaller lists
-            <Fade in={!isLoading} timeout={700}>
+            <Fade
+              key={`list-${selectedStatusFilter}`}
+              in={!isInitialLoading}
+              timeout={500}
+            >
               <Box>
                 {filteredChildren.map((child, index) => (
                   <AttendanceChildListItem
