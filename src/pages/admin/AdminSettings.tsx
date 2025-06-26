@@ -13,11 +13,16 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Divider,
+  Snackbar,
+  Alert,
+  IconButton,
+  InputAdornment,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { useLanguage } from "../contexts/LanguageContext";
-import { useApp } from "../contexts/AppContext";
-import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { useApp } from "../../contexts/AppContext";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   organizationApi,
   Organization,
@@ -30,12 +35,12 @@ import {
   childApi,
   Child,
   ChildWithParents,
-} from "../services/api";
-import Notification from "../components/Notification";
-import AccountCard from "../components/AccountCard";
-import GroupCard from "../components/GroupCard";
-import UserManagementCard from "../components/UserManagementCard";
-import ChildManagementCard from "../components/ChildManagementCard";
+} from "../../services/api";
+import Notification from "../../components/Notification";
+import AccountCard from "../../components/AccountCard";
+import GroupCard from "../../components/GroupCard";
+import UserManagementCard from "../../components/UserManagementCard";
+import ChildManagementCard from "../../components/ChildManagementCard";
 
 interface UserProfile {
   firstName: string;

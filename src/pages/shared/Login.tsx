@@ -10,9 +10,9 @@ import {
   Fade,
   CircularProgress,
 } from "@mui/material";
-import { useAuth } from "../contexts/AuthContext";
-import { useApp } from "../contexts/AppContext";
-import Notification from "../components/Notification";
+import { useAuth } from "../../contexts/AuthContext";
+import { useApp } from "../../contexts/AppContext";
+import Notification from "../../components/Notification";
 
 const Login: React.FC = () => {
   const [mobile, setMobile] = useState("054-1111111");

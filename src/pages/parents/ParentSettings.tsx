@@ -27,11 +27,11 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import EditIcon from "@mui/icons-material/Edit";
 import CloseIcon from "@mui/icons-material/Close";
-import { useLanguage } from "../contexts/LanguageContext";
-import { useApp } from "../contexts/AppContext";
-import { useAuth } from "../contexts/AuthContext";
-import { userApi, childApi, User, UserChild } from "../services/api";
-import Notification from "../components/Notification";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { useApp } from "../../contexts/AppContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { userApi, childApi, User, UserChild } from "../../services/api";
+import Notification from "../../components/Notification";
 
 const ParentSettings = () => {
   const { language, setLanguage } = useLanguage();

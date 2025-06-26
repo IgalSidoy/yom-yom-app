@@ -1,13 +1,14 @@
 import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Login from "./pages/Login";
-import Onboarding from "./pages/Onboarding";
-import Dashboard from "./pages/Dashboard";
-import Settings from "./pages/Settings";
-import Feed from "./pages/Feed";
+import Login from "./pages/shared/Login";
+import Onboarding from "./pages/shared/Onboarding";
+import Dashboard from "./pages/shared/Dashboard";
+import Settings from "./pages/shared/Settings";
+import Feed from "./pages/shared/Feed";
 import BottomNav from "./components/BottomNav";
-import StaffDashboard from "./pages/StaffDashboard";
+import StaffDashboard from "./pages/staff/StaffDashboard";
+import Attendance from "./pages/staff/Attendance";
 
 const AppRoutes: React.FC = () => {
   const location = useLocation();
@@ -47,6 +48,14 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <StaffDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/attendance"
+          element={
+            <ProtectedRoute>
+              <Attendance />
             </ProtectedRoute>
           }
         />
