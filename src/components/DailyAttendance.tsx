@@ -103,8 +103,8 @@ const AttendanceChildListItem: React.FC<{
         sx={{
           py: { xs: 1.5, sm: 2 },
           px: { xs: 0.5, sm: 3 },
-          borderBottom: { xs: "none", sm: "1px solid" },
-          borderColor: "divider",
+          borderBottom: "1px solid",
+          borderColor: "rgba(0, 0, 0, 0.04)",
         }}
       >
         {/* Mobile Layout: Stacked vertically */}
@@ -193,16 +193,47 @@ const AttendanceChildListItem: React.FC<{
                 minWidth: { xs: 70, sm: 80 },
                 flex: { xs: 1, sm: "none" },
                 boxShadow: "none",
-                "&:hover, &:focus, &:active": {
-                  bgcolor:
-                    attendanceStatus === "arrived"
-                      ? STATUS_COLORS.arrived.bg
-                      : "#fff",
-                  color:
-                    attendanceStatus === "arrived"
-                      ? STATUS_COLORS.arrived.text
-                      : STATUS_COLORS.arrived.bg,
-                  borderColor: STATUS_COLORS.arrived.border,
+                outline: "none",
+                WebkitTapHighlightColor: "transparent",
+                WebkitTouchCallout: "none",
+                WebkitUserSelect: "none",
+                userSelect: "none",
+                "& *": {
+                  outline: "none",
+                  WebkitTapHighlightColor: "transparent",
+                },
+                "&:focus": {
+                  outline: "none",
+                  borderRadius: 3,
+                  WebkitTapHighlightColor: "transparent",
+                  "& *": {
+                    outline: "none",
+                  },
+                },
+                "&:focus-visible": {
+                  outline: "none",
+                  borderRadius: 3,
+                  WebkitTapHighlightColor: "transparent",
+                  "& *": {
+                    outline: "none",
+                  },
+                },
+                "&:active": {
+                  borderRadius: 3,
+                  WebkitTapHighlightColor: "transparent",
+                  outline: "none",
+                  "& *": {
+                    outline: "none",
+                  },
+                },
+                "&:hover": {
+                  transform: "scale(1.05)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                  borderRadius: 3,
+                  outline: "none",
+                  "& *": {
+                    outline: "none",
+                  },
                 },
               }}
             >
@@ -242,19 +273,47 @@ const AttendanceChildListItem: React.FC<{
                 minWidth: { xs: 70, sm: 80 },
                 flex: { xs: 1, sm: "none" },
                 boxShadow: "none",
-                "&:hover, &:focus, &:active": {
-                  bgcolor:
-                    attendanceStatus !== "arrived"
-                      ? STATUS_COLORS[attendanceStatus].bg
-                      : "#fff",
-                  color:
-                    attendanceStatus !== "arrived"
-                      ? STATUS_COLORS[attendanceStatus].text
-                      : STATUS_COLORS.missing.text,
-                  borderColor:
-                    attendanceStatus !== "arrived"
-                      ? STATUS_COLORS[attendanceStatus].border
-                      : STATUS_COLORS.missing.border,
+                outline: "none",
+                WebkitTapHighlightColor: "transparent",
+                WebkitTouchCallout: "none",
+                WebkitUserSelect: "none",
+                userSelect: "none",
+                "& *": {
+                  outline: "none",
+                  WebkitTapHighlightColor: "transparent",
+                },
+                "&:focus": {
+                  outline: "none",
+                  borderRadius: 3,
+                  WebkitTapHighlightColor: "transparent",
+                  "& *": {
+                    outline: "none",
+                  },
+                },
+                "&:focus-visible": {
+                  outline: "none",
+                  borderRadius: 3,
+                  WebkitTapHighlightColor: "transparent",
+                  "& *": {
+                    outline: "none",
+                  },
+                },
+                "&:active": {
+                  borderRadius: 3,
+                  WebkitTapHighlightColor: "transparent",
+                  outline: "none",
+                  "& *": {
+                    outline: "none",
+                  },
+                },
+                "&:hover": {
+                  transform: "scale(1.05)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                  borderRadius: 3,
+                  outline: "none",
+                  "& *": {
+                    outline: "none",
+                  },
                 },
               }}
             >
@@ -483,10 +542,10 @@ const DailyAttendance: React.FC = () => {
   useEffect(() => {
     const calculateHeights = () => {
       const viewportHeight = window.innerHeight;
-      const navbarHeight = 50; // Approximate navbar height
-      const bottomNavHeight = 100; // Approximate bottom nav height
-      const topMargin = 0; // Removed top margin to eliminate gap
-      const bottomMargin = 8; // Reduced bottom margin to eliminate space
+      const navbarHeight = 0; // No navbar anymore
+      const bottomNavHeight = 72; // Fixed bottom nav height
+      const topMargin = 0; // No top margin
+      const bottomMargin = 0; // No bottom margin needed
 
       // Calculate available height for container
       const availableHeight =
@@ -578,7 +637,15 @@ const DailyAttendance: React.FC = () => {
   }, [children, attendanceRecords, selectedStatusFilter]);
 
   const handleStatusFilterClick = (status: AttendanceStatus) => {
-    setSelectedStatusFilter(selectedStatusFilter === status ? "" : status);
+    // Prevent any race conditions by using a callback
+    setSelectedStatusFilter((prevFilter) => {
+      // If clicking the same filter, clear it
+      if (prevFilter === status) {
+        return "";
+      }
+      // Otherwise, set the new filter
+      return status;
+    });
   };
 
   const clearStatusFilter = () => {
@@ -589,9 +656,9 @@ const DailyAttendance: React.FC = () => {
     <Container
       maxWidth="sm"
       sx={{
-        mt: 2,
-        mb: { xs: 10, sm: 8 },
-        pb: { xs: 2, sm: 0 },
+        mt: 0,
+        mb: 0,
+        pb: 0,
         position: "relative",
         bgcolor: "background.paper",
         borderRadius: { xs: 0, sm: 2 },
@@ -665,12 +732,10 @@ const DailyAttendance: React.FC = () => {
                   <Box
                     sx={{
                       display: { xs: "flex", sm: "none" },
-                      gap: 1,
+                      gap: 1.5,
                       pb: 0.5,
                       justifyContent: "space-evenly",
                       px: 0,
-                      border: "2px solid #ff0000",
-                      borderRadius: 2,
                       py: 1,
                     }}
                   >
@@ -690,53 +755,158 @@ const DailyAttendance: React.FC = () => {
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
+                            justifyContent: "center",
                             minWidth: 0,
                             flex: 1,
-                            py: 1.5,
-                            px: 1.5,
-                            bgcolor: isArrived
-                              ? STATUS_COLORS[option.value as AttendanceStatus]
-                                  .bg
-                              : "rgba(255, 255, 255, 0.8)",
-                            color: isArrived
-                              ? STATUS_COLORS[option.value as AttendanceStatus]
-                                  .text
-                              : STATUS_COLORS[option.value as AttendanceStatus]
-                                  .text,
-                            border: `1px solid ${
+                            py: 2,
+                            px: 1,
+                            bgcolor:
+                              selectedStatusFilter === option.value
+                                ? STATUS_COLORS[
+                                    option.value as AttendanceStatus
+                                  ].bg
+                                : isArrived
+                                ? STATUS_COLORS[
+                                    option.value as AttendanceStatus
+                                  ].bg
+                                : "rgba(255, 255, 255, 0.9)",
+                            color:
+                              selectedStatusFilter === option.value
+                                ? "#fff"
+                                : isArrived
+                                ? STATUS_COLORS[
+                                    option.value as AttendanceStatus
+                                  ].text
+                                : STATUS_COLORS[
+                                    option.value as AttendanceStatus
+                                  ].text,
+                            border: `2px solid ${
                               STATUS_COLORS[option.value as AttendanceStatus]
                                 .border
                             }`,
-                            borderRadius: 2,
+                            borderRadius: 3,
                             cursor: "pointer",
-                            minHeight: 60,
+                            minHeight: 70,
+                            position: "relative",
+                            overflow: "hidden",
+                            transform:
+                              selectedStatusFilter === option.value
+                                ? "scale(1.02)"
+                                : "scale(1)",
+                            boxShadow:
+                              selectedStatusFilter === option.value
+                                ? "0 4px 12px rgba(0,0,0,0.25)"
+                                : "none",
+                            outline: "none",
+                            WebkitTapHighlightColor: "transparent",
+                            WebkitTouchCallout: "none",
+                            WebkitUserSelect: "none",
+                            "& *": {
+                              outline: "none",
+                              WebkitTapHighlightColor: "transparent",
+                            },
+                            "&:focus": {
+                              outline: "none",
+                              borderRadius: 3,
+                              WebkitTapHighlightColor: "transparent",
+                              "& *": {
+                                outline: "none",
+                              },
+                            },
+                            "&:focus-visible": {
+                              outline: "none",
+                              borderRadius: 3,
+                              WebkitTapHighlightColor: "transparent",
+                              "& *": {
+                                outline: "none",
+                              },
+                            },
+                            "&:active": {
+                              borderRadius: 3,
+                              WebkitTapHighlightColor: "transparent",
+                              outline: "none",
+                              "& *": {
+                                outline: "none",
+                              },
+                            },
                             "&:hover": {
                               transform: "scale(1.05)",
-                              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                              borderRadius: 3,
+                              outline: "none",
+                              "& *": {
+                                outline: "none",
+                              },
+                            },
+                            "&::before": {
+                              content: '""',
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              height: "3px",
+                              bgcolor:
+                                STATUS_COLORS[option.value as AttendanceStatus]
+                                  .border,
                             },
                           }}
                         >
-                          <Typography
-                            variant="caption"
+                          {/* Status Icon/Indicator */}
+                          <Box
                             sx={{
-                              fontSize: "0.9rem",
-                              fontWeight: 600,
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              bgcolor: isArrived
+                                ? "rgba(255, 255, 255, 0.8)"
+                                : STATUS_COLORS[
+                                    option.value as AttendanceStatus
+                                  ].bg,
+                              mb: 1,
+                              border: `1px solid ${
+                                STATUS_COLORS[option.value as AttendanceStatus]
+                                  .border
+                              }`,
+                            }}
+                          />
+
+                          {/* Count Number */}
+                          <Typography
+                            variant="h4"
+                            sx={{
+                              fontSize: "1.8rem",
+                              fontWeight: 800,
                               lineHeight: 1,
                               textAlign: "center",
-                            }}
-                          >
-                            {option.label}
-                          </Typography>
-                          <Typography
-                            variant="h6"
-                            sx={{
-                              fontSize: "1.4rem",
-                              fontWeight: 700,
-                              lineHeight: 1,
-                              mt: 0.5,
+                              mb: 0.5,
+                              color: isArrived
+                                ? "#fff"
+                                : STATUS_COLORS[
+                                    option.value as AttendanceStatus
+                                  ].text,
                             }}
                           >
                             {count}
+                          </Typography>
+
+                          {/* Status Label */}
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                              lineHeight: 1,
+                              textAlign: "center",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              color: isArrived
+                                ? "rgba(255, 255, 255, 0.9)"
+                                : STATUS_COLORS[
+                                    option.value as AttendanceStatus
+                                  ].text,
+                            }}
+                          >
+                            {option.label}
                           </Typography>
                         </Box>
                       );
@@ -795,6 +965,11 @@ const DailyAttendance: React.FC = () => {
                               textOverflow: "ellipsis",
                               whiteSpace: "nowrap",
                               cursor: "pointer",
+                              outline: "none",
+                              WebkitTapHighlightColor: "transparent",
+                              WebkitTouchCallout: "none",
+                              WebkitUserSelect: "none",
+                              userSelect: "none",
                               "&:hover": {
                                 transform: "scale(1.02)",
                                 boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
@@ -867,7 +1042,7 @@ const DailyAttendance: React.FC = () => {
             flex: 1,
             overflow: "hidden",
             px: { xs: 0, sm: 2 },
-            pb: { xs: 1, sm: 2 },
+            pb: 0,
             mt: { xs: 0.5, sm: 0 },
           }}
         >
@@ -894,14 +1069,10 @@ const DailyAttendance: React.FC = () => {
             </Fade>
           ) : filteredChildren.length > 5 ? (
             // Use virtualization for larger lists
-            <Fade
-              key={`list-${selectedStatusFilter}`}
-              in={!isInitialLoading}
-              timeout={500}
-            >
-              <Box sx={{ height: "100%", pb: 2, px: { xs: 2, sm: 2 } }}>
+            <Fade in={!isInitialLoading} timeout={500}>
+              <Box sx={{ height: "100%", px: { xs: 2, sm: 2 }, pb: 4 }}>
                 <VirtualList
-                  height={listHeight - 16} // Subtract padding to account for bottom space
+                  height={listHeight}
                   itemCount={filteredChildren.length}
                   itemSize={100} // Reduced item size for smaller gaps
                   width="100%"
@@ -934,15 +1105,13 @@ const DailyAttendance: React.FC = () => {
                     </div>
                   )}
                 </VirtualList>
+                {/* Small spacer for extra scroll space */}
+                <Box sx={{ height: 20 }} />
               </Box>
             </Fade>
           ) : (
             // Use regular rendering for smaller lists
-            <Fade
-              key={`list-${selectedStatusFilter}`}
-              in={!isInitialLoading}
-              timeout={500}
-            >
+            <Fade in={!isInitialLoading} timeout={500}>
               <Box>
                 {filteredChildren.map((child, index) => (
                   <AttendanceChildListItem
