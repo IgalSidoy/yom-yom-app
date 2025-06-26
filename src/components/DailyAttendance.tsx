@@ -263,7 +263,6 @@ const DailyAttendance: React.FC = () => {
         });
         setAttendanceRecords(initialRecords);
       } catch (error) {
-        console.error("Error fetching children:", error);
         setChildren([]);
       } finally {
         setIsLoading(false);

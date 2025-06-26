@@ -214,18 +214,10 @@ const AdminSettings = () => {
 
   const fetchGroups = async () => {
     try {
-      console.log("fetchGroups called - accounts:", accounts);
       setIsLoadingGroups(true);
       const allGroups: Group[] = [];
       for (const account of accounts) {
-        console.log("Fetching groups for account:", account.id);
         const response = await groupApi.getGroups(account.id);
-        console.log(
-          "Group response for account",
-          account.id,
-          ":",
-          response.data
-        );
         if (response.data && Array.isArray(response.data)) {
           allGroups.push(...response.data);
         } else if (
@@ -236,10 +228,8 @@ const AdminSettings = () => {
           allGroups.push(...response.data.groups);
         }
       }
-      console.log("All groups fetched:", allGroups);
       setGroups(allGroups);
     } catch (error) {
-      console.error("Error fetching groups:", error);
       showNotification("שגיאה בטעינת הקבוצות", "error");
     } finally {
       setIsLoadingGroups(false);
@@ -248,18 +238,14 @@ const AdminSettings = () => {
 
   const fetchParents = useCallback(async () => {
     try {
-      console.log("Fetching parents...");
       const response = await userApi.getUsers();
       if (response.data.users) {
         const parentUsers = response.data.users.filter(
           (user: User) => user.role === "Parent"
         );
-        console.log("All users:", response.data.users);
-        console.log("Parent users:", parentUsers);
         setParents(parentUsers);
       }
     } catch (error) {
-      console.error("Error fetching parents:", error);
       showNotification("שגיאה בטעינת ההורים", "error");
     }
   }, []);
@@ -297,7 +283,6 @@ const AdminSettings = () => {
 
       setChildren(allChildren);
     } catch (error) {
-      console.error("Error fetching children:", error);
       showNotification("שגיאה בטעינת הילדים", "error");
       setChildren([]);
     } finally {
@@ -330,17 +315,11 @@ const AdminSettings = () => {
       }
 
       if (isExpanded && panel === "children") {
-        console.log("Children accordion expanded");
-        console.log("Current groups length:", groups.length);
-        console.log("Current accounts length:", accounts.length);
-
         if (accounts.length === 0) {
-          console.log("No accounts, fetching accounts first");
           fetchAccounts();
         }
         // Always ensure groups are loaded when accessing children section
         if (groups.length === 0) {
-          console.log("No groups, fetching groups");
           fetchGroups();
         }
         // Parents will be fetched by the useEffect hook when needed
@@ -423,12 +402,6 @@ const AdminSettings = () => {
       });
     }
   }, [user]);
-
-  // Debug logging
-  console.log("Settings component - groups state:", groups);
-  console.log("Settings component - accounts state:", accounts);
-  console.log("Settings component - parents state:", parents);
-  console.log("Settings component - children state:", children);
 
   return (
     <Box sx={{ mt: 4, textAlign: "center", px: 2 }}>

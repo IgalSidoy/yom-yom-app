@@ -151,7 +151,6 @@ const ParentSettings = () => {
         setChildren(response.data.children);
       }
     } catch (error) {
-      console.error("Error fetching children:", error);
       showNotification("שגיאה בטעינת הילדים", "error");
     } finally {
       setIsLoadingChildren(false);
@@ -202,7 +201,6 @@ const ParentSettings = () => {
       setIsChildFormModified(false);
       showNotification("פרטי הילד עודכנו בהצלחה", "success");
     } catch (error) {
-      console.error("Error updating child:", error);
       showNotification("שגיאה בעדכון פרטי הילד", "error");
     } finally {
       setIsLoading(false);

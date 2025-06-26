@@ -334,10 +334,7 @@ const UserManagementCard: React.FC<UserManagementCardProps> = ({
                 allGroups.push(...response.data.groups);
               }
             } catch (error) {
-              console.error(
-                `Error fetching groups for account ${account.id}:`,
-                error
-              );
+              // Error handling removed
             }
           }
           setGroups(allGroups);

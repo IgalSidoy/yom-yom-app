@@ -348,8 +348,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
 
   // Debug: Log when children or parents change
   useEffect(() => {
-    console.log("ChildManagementCard - Parents updated:", parents);
-    console.log("ChildManagementCard - Children updated:", children);
+    // Debug logging removed
   }, [parents, children]);
 
   const sortChildren = (children: Child[]) => {
@@ -528,14 +527,12 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
         throw new Error("No child ID provided");
       }
 
-      console.log("Deleting child:", currentChild.id);
       await childApi.deleteChild(currentChild.id);
       showNotification("ילד נמחק בהצלחה");
       setIsDeleteDialogOpen(false);
       handleCloseDrawer();
       await onChildrenChange(currentChild.accountId);
     } catch (error) {
-      console.error("Error deleting child:", error);
       showNotification("שגיאה במחיקת הילד", "error");
     }
   };

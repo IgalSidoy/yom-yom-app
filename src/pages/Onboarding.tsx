@@ -166,7 +166,6 @@ const Onboarding: React.FC = () => {
       });
       navigate("/dashboard");
     } catch (error) {
-      console.error("Error submitting form:", error);
       setErrors({
         email: "שגיאה בשליחת הטופס. אנא נסה שוב.",
         mobile: "שגיאה בשליחת הטופס. אנא נסה שוב.",
