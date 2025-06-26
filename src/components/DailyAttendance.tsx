@@ -3,7 +3,8 @@ import { FixedSizeList as VirtualList } from "react-window";
 import {
   Box,
   Typography,
-  CircularProgress,
+  Skeleton,
+  Fade,
   ListItem,
   ListItemText,
   Chip,
@@ -73,117 +74,116 @@ const AttendanceChildListItem: React.FC<{
   attendanceStatus: AttendanceStatus;
   updateTime?: string;
   onStatusChange: (childId: string, status: AttendanceStatus) => void;
-}> = memo(({ child, attendanceStatus, updateTime, onStatusChange }) => {
-  const rareStatuses = attendanceStatusOptions.filter(
-    (opt) => opt.value !== "arrived"
-  );
-  const getStatusOption = (val: string) =>
-    attendanceStatusOptions.find((o) => o.value === val);
-  const arrivedOption = getStatusOption("arrived");
-  const currentOption = getStatusOption(attendanceStatus);
+  index?: number; // Add index for staggered animation
+}> = memo(
+  ({ child, attendanceStatus, updateTime, onStatusChange, index = 0 }) => {
+    const rareStatuses = attendanceStatusOptions.filter(
+      (opt) => opt.value !== "arrived"
+    );
+    const getStatusOption = (val: string) =>
+      attendanceStatusOptions.find((o) => o.value === val);
+    const arrivedOption = getStatusOption("arrived");
+    const currentOption = getStatusOption(attendanceStatus);
 
-  const formatUpdateTime = (timestamp?: string) => {
-    if (!timestamp) return "לא עודכן";
-    return new Date(timestamp).toLocaleTimeString("he-IL", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+    const formatUpdateTime = (timestamp?: string) => {
+      if (!timestamp) return "לא עודכן";
+      return new Date(timestamp).toLocaleTimeString("he-IL", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    };
 
-  return (
-    <Box
-      sx={{
-        py: { xs: 1.5, sm: 2 },
-        px: { xs: 0.5, sm: 3 },
-        borderBottom: { xs: "none", sm: "1px solid" },
-        borderColor: "divider",
-      }}
-    >
-      {/* Mobile Layout: Stacked vertically */}
+    return (
       <Box
         sx={{
-          display: { xs: "flex", sm: "flex" },
-          flexDirection: { xs: "column", sm: "row-reverse" },
-          alignItems: { xs: "stretch", sm: "center" },
-          justifyContent: { xs: "flex-start", sm: "space-between" },
-          gap: { xs: 1.5, sm: 1.5 },
+          py: { xs: 1.5, sm: 2 },
+          px: { xs: 0.5, sm: 3 },
+          borderBottom: { xs: "none", sm: "1px solid" },
+          borderColor: "divider",
+          opacity: 0,
+          animation: "fadeInUp 0.5s ease-out forwards",
+          animationDelay: `${index * 50}ms`, // Staggered animation
+          "@keyframes fadeInUp": {
+            "0%": {
+              opacity: 0,
+              transform: "translateY(20px)",
+            },
+            "100%": {
+              opacity: 1,
+              transform: "translateY(0)",
+            },
+          },
         }}
       >
-        {/* Child Name and Time - Mobile: same line, Desktop: separate */}
+        {/* Mobile Layout: Stacked vertically */}
         <Box
           sx={{
-            display: { xs: "flex", sm: "block" },
-            flexDirection: { xs: "row", sm: "column" },
-            alignItems: { xs: "center", sm: "stretch" },
-            justifyContent: { xs: "space-between", sm: "flex-start" },
-            order: { xs: 1, sm: 2 },
-            width: { xs: "100%", sm: "auto" },
+            display: { xs: "flex", sm: "flex" },
+            flexDirection: { xs: "column", sm: "row-reverse" },
+            alignItems: { xs: "stretch", sm: "center" },
+            justifyContent: { xs: "flex-start", sm: "space-between" },
+            gap: { xs: 1.5, sm: 1.5 },
           }}
         >
-          <Typography
-            variant="h6"
+          {/* Child Name and Time - Mobile: same line, Desktop: separate */}
+          <Box
             sx={{
-              fontWeight: 700,
-              color: "text.primary",
-              textAlign: { xs: "right", sm: "right" },
-              minWidth: 0,
-              flexShrink: 1,
-              fontSize: { xs: "1.1rem", sm: "1.25rem" },
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-            noWrap
-          >
-            {child.firstName} {child.lastName}
-          </Typography>
-
-          <Typography
-            variant="body2"
-            sx={{
-              color: "text.secondary",
-              textAlign: { xs: "left", sm: "right" },
-              fontSize: { xs: "0.85rem", sm: "1rem" },
-              order: { xs: -1, sm: 0 },
+              display: { xs: "flex", sm: "block" },
+              flexDirection: { xs: "row", sm: "column" },
+              alignItems: { xs: "center", sm: "stretch" },
+              justifyContent: { xs: "space-between", sm: "flex-start" },
+              order: { xs: 1, sm: 2 },
+              width: { xs: "100%", sm: "auto" },
             }}
           >
-            עודכן {formatUpdateTime(updateTime)}
-          </Typography>
-        </Box>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                color: "text.primary",
+                textAlign: { xs: "right", sm: "right" },
+                minWidth: 0,
+                flexShrink: 1,
+                fontSize: { xs: "1.1rem", sm: "1.25rem" },
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+              noWrap
+            >
+              {child.firstName} {child.lastName}
+            </Typography>
 
-        {/* Buttons */}
-        <ButtonGroup
-          variant="text"
-          sx={{
-            boxShadow: "none",
-            flexShrink: 0,
-            order: { xs: 2, sm: 1 }, // Buttons second on mobile, first on desktop
-            justifyContent: { xs: "center", sm: "flex-start" },
-            width: { xs: "100%", sm: "auto" },
-          }}
-        >
-          <Button
-            variant={attendanceStatus === "arrived" ? "contained" : "outlined"}
-            onClick={() => onStatusChange(child.id!, "arrived")}
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                textAlign: { xs: "left", sm: "right" },
+                fontSize: { xs: "0.85rem", sm: "1rem" },
+                order: { xs: -1, sm: 0 },
+              }}
+            >
+              עודכן {formatUpdateTime(updateTime)}
+            </Typography>
+          </Box>
+
+          {/* Buttons */}
+          <ButtonGroup
+            variant="text"
             sx={{
-              bgcolor:
-                attendanceStatus === "arrived"
-                  ? STATUS_COLORS.arrived.bg
-                  : "#fff",
-              color:
-                attendanceStatus === "arrived"
-                  ? STATUS_COLORS.arrived.text
-                  : STATUS_COLORS.arrived.bg,
-              borderColor: STATUS_COLORS.arrived.border,
-              borderRadius: 3,
-              fontWeight: 700,
-              fontSize: { xs: 14, sm: 16 },
-              py: { xs: 1, sm: 1.2 },
-              px: { xs: 2, sm: 3 },
-              minWidth: { xs: 70, sm: 80 },
-              flex: { xs: 1, sm: "none" },
               boxShadow: "none",
-              "&:hover, &:focus, &:active": {
+              flexShrink: 0,
+              order: { xs: 2, sm: 1 }, // Buttons second on mobile, first on desktop
+              justifyContent: { xs: "center", sm: "flex-start" },
+              width: { xs: "100%", sm: "auto" },
+            }}
+          >
+            <Button
+              variant={
+                attendanceStatus === "arrived" ? "contained" : "outlined"
+              }
+              onClick={() => onStatusChange(child.id!, "arrived")}
+              sx={{
                 bgcolor:
                   attendanceStatus === "arrived"
                     ? STATUS_COLORS.arrived.bg
@@ -193,44 +193,43 @@ const AttendanceChildListItem: React.FC<{
                     ? STATUS_COLORS.arrived.text
                     : STATUS_COLORS.arrived.bg,
                 borderColor: STATUS_COLORS.arrived.border,
-              },
-            }}
-          >
-            {arrivedOption?.label}
-          </Button>
-          <Button
-            variant={attendanceStatus !== "arrived" ? "contained" : "outlined"}
-            onClick={() => {
-              const idx = rareStatuses.findIndex(
-                (s) => s.value === attendanceStatus
-              );
-              const next =
-                rareStatuses[(idx + 1) % rareStatuses.length]?.value ||
-                rareStatuses[0].value;
-              onStatusChange(child.id!, next as AttendanceStatus);
-            }}
-            sx={{
-              bgcolor:
-                attendanceStatus !== "arrived"
-                  ? STATUS_COLORS[attendanceStatus].bg
-                  : "#fff",
-              color:
-                attendanceStatus !== "arrived"
-                  ? STATUS_COLORS[attendanceStatus].text
-                  : STATUS_COLORS.missing.text,
-              borderColor:
-                attendanceStatus !== "arrived"
-                  ? STATUS_COLORS[attendanceStatus].border
-                  : STATUS_COLORS.missing.border,
-              borderRadius: 3,
-              fontWeight: 700,
-              fontSize: { xs: 14, sm: 16 },
-              py: { xs: 1, sm: 1.2 },
-              px: { xs: 2, sm: 2 },
-              minWidth: { xs: 70, sm: 80 },
-              flex: { xs: 1, sm: "none" },
-              boxShadow: "none",
-              "&:hover, &:focus, &:active": {
+                borderRadius: 3,
+                fontWeight: 700,
+                fontSize: { xs: 14, sm: 16 },
+                py: { xs: 1, sm: 1.2 },
+                px: { xs: 2, sm: 3 },
+                minWidth: { xs: 70, sm: 80 },
+                flex: { xs: 1, sm: "none" },
+                boxShadow: "none",
+                "&:hover, &:focus, &:active": {
+                  bgcolor:
+                    attendanceStatus === "arrived"
+                      ? STATUS_COLORS.arrived.bg
+                      : "#fff",
+                  color:
+                    attendanceStatus === "arrived"
+                      ? STATUS_COLORS.arrived.text
+                      : STATUS_COLORS.arrived.bg,
+                  borderColor: STATUS_COLORS.arrived.border,
+                },
+              }}
+            >
+              {arrivedOption?.label}
+            </Button>
+            <Button
+              variant={
+                attendanceStatus !== "arrived" ? "contained" : "outlined"
+              }
+              onClick={() => {
+                const idx = rareStatuses.findIndex(
+                  (s) => s.value === attendanceStatus
+                );
+                const next =
+                  rareStatuses[(idx + 1) % rareStatuses.length]?.value ||
+                  rareStatuses[0].value;
+                onStatusChange(child.id!, next as AttendanceStatus);
+              }}
+              sx={{
                 bgcolor:
                   attendanceStatus !== "arrived"
                     ? STATUS_COLORS[attendanceStatus].bg
@@ -243,34 +242,148 @@ const AttendanceChildListItem: React.FC<{
                   attendanceStatus !== "arrived"
                     ? STATUS_COLORS[attendanceStatus].border
                     : STATUS_COLORS.missing.border,
-              },
-            }}
-          >
-            {attendanceStatus !== "arrived"
-              ? currentOption?.label
-              : "סטטוס נוסף"}
-          </Button>
-        </ButtonGroup>
-      </Box>
+                borderRadius: 3,
+                fontWeight: 700,
+                fontSize: { xs: 14, sm: 16 },
+                py: { xs: 1, sm: 1.2 },
+                px: { xs: 2, sm: 2 },
+                minWidth: { xs: 70, sm: 80 },
+                flex: { xs: 1, sm: "none" },
+                boxShadow: "none",
+                "&:hover, &:focus, &:active": {
+                  bgcolor:
+                    attendanceStatus !== "arrived"
+                      ? STATUS_COLORS[attendanceStatus].bg
+                      : "#fff",
+                  color:
+                    attendanceStatus !== "arrived"
+                      ? STATUS_COLORS[attendanceStatus].text
+                      : STATUS_COLORS.missing.text,
+                  borderColor:
+                    attendanceStatus !== "arrived"
+                      ? STATUS_COLORS[attendanceStatus].border
+                      : STATUS_COLORS.missing.border,
+                },
+              }}
+            >
+              {attendanceStatus !== "arrived"
+                ? currentOption?.label
+                : "סטטוס נוסף"}
+            </Button>
+          </ButtonGroup>
+        </Box>
 
-      {/* Second row: update time - Desktop only */}
-      <Typography
-        variant="body2"
-        sx={{
-          color: "text.secondary",
-          textAlign: { xs: "center", sm: "right" },
-          mt: 0.5,
-          fontSize: { xs: "0.95rem", sm: "1rem" },
-          display: { xs: "none", sm: "block" },
-        }}
-      >
-        עודכן {formatUpdateTime(updateTime)}
-      </Typography>
-    </Box>
-  );
-});
+        {/* Second row: update time - Desktop only */}
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            textAlign: { xs: "center", sm: "right" },
+            mt: 0.5,
+            fontSize: { xs: "0.95rem", sm: "1rem" },
+            display: { xs: "none", sm: "block" },
+          }}
+        >
+          עודכן {formatUpdateTime(updateTime)}
+        </Typography>
+      </Box>
+    );
+  }
+);
 
 AttendanceChildListItem.displayName = "AttendanceChildListItem";
+
+// Skeleton component for attendance list items
+const AttendanceSkeleton: React.FC = () => (
+  <Box
+    sx={{
+      py: { xs: 1.5, sm: 2 },
+      px: { xs: 0.5, sm: 3 },
+      borderBottom: { xs: "none", sm: "1px solid" },
+      borderColor: "divider",
+    }}
+  >
+    <Box
+      sx={{
+        display: { xs: "flex", sm: "flex" },
+        flexDirection: { xs: "column", sm: "row-reverse" },
+        alignItems: { xs: "stretch", sm: "center" },
+        justifyContent: { xs: "flex-start", sm: "space-between" },
+        gap: { xs: 1.5, sm: 1.5 },
+      }}
+    >
+      {/* Child Name and Time skeleton */}
+      <Box
+        sx={{
+          display: { xs: "flex", sm: "block" },
+          flexDirection: { xs: "row", sm: "column" },
+          alignItems: { xs: "center", sm: "stretch" },
+          justifyContent: { xs: "space-between", sm: "flex-start" },
+          order: { xs: 1, sm: 2 },
+          width: { xs: "100%", sm: "auto" },
+        }}
+      >
+        <Skeleton
+          variant="text"
+          width="60%"
+          height={32}
+          sx={{
+            borderRadius: 1,
+            bgcolor: "rgba(0, 0, 0, 0.08)",
+          }}
+        />
+        <Skeleton
+          variant="text"
+          width="40%"
+          height={20}
+          sx={{
+            borderRadius: 1,
+            bgcolor: "rgba(0, 0, 0, 0.06)",
+          }}
+        />
+      </Box>
+
+      {/* Buttons skeleton */}
+      <Box
+        sx={{
+          display: "flex",
+          gap: 1,
+          order: { xs: 2, sm: 1 },
+          justifyContent: { xs: "center", sm: "flex-start" },
+          width: { xs: "100%", sm: "auto" },
+        }}
+      >
+        <Skeleton
+          variant="rounded"
+          width={80}
+          height={36}
+          sx={{
+            borderRadius: 3,
+            bgcolor: "rgba(0, 0, 0, 0.08)",
+          }}
+        />
+        <Skeleton
+          variant="rounded"
+          width={70}
+          height={36}
+          sx={{
+            borderRadius: 3,
+            bgcolor: "rgba(0, 0, 0, 0.08)",
+          }}
+        />
+        <Skeleton
+          variant="rounded"
+          width={70}
+          height={36}
+          sx={{
+            borderRadius: 3,
+            bgcolor: "rgba(0, 0, 0, 0.08)",
+          }}
+        />
+      </Box>
+    </Box>
+  </Box>
+);
 
 const DailyAttendance: React.FC = () => {
   const { user } = useApp();
@@ -439,236 +552,276 @@ const DailyAttendance: React.FC = () => {
     >
       <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
         {/* Header with Group Info and Date - Compact for mobile */}
-        <Box
-          sx={{ px: { xs: 1, sm: 2 }, pt: 2, pb: 1, flexShrink: 0 }}
-          data-header
-        >
+        <Fade in={!isLoading} timeout={400}>
           <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              mb: 1,
-            }}
+            sx={{ px: { xs: 1, sm: 2 }, pt: 2, pb: 1, flexShrink: 0 }}
+            data-header
           >
-            <Typography
-              variant="h6"
-              sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
-            >
-              נוכחות יומית
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
-            >
-              {formatCurrentDate()}
-            </Typography>
-          </Box>
-
-          <Typography
-            variant="body2"
-            color="primary"
-            sx={{ fontWeight: 500, fontSize: { xs: "0.9rem", sm: "1rem" } }}
-          >
-            {getGroupName()}
-          </Typography>
-
-          {/* Attendance Summary - Compact mobile design */}
-          {children.length > 0 && (
             <Box
               sx={{
-                mt: { xs: 1.5, sm: 2 },
                 display: "flex",
-                flexDirection: { xs: "column", sm: "row" },
-                gap: { xs: 1, sm: 1 },
-                flexWrap: { xs: "nowrap", sm: "wrap" },
+                alignItems: "center",
+                justifyContent: "space-between",
+                mb: 1,
               }}
             >
-              {/* Mobile: Compact horizontal scroll */}
-              <Box
-                sx={{
-                  display: { xs: "flex", sm: "none" },
-                  gap: 1,
-                  pb: 0.5,
-                  justifyContent: "space-evenly",
-                  px: 2,
-                }}
+              <Typography
+                variant="h6"
+                sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
               >
-                {attendanceStatusOptions.map((option) => {
-                  const isArrived = option.value === "arrived";
-                  const count = summary[option.value as keyof typeof summary];
-                  return (
-                    <Box
-                      key={option.value}
-                      onClick={() =>
-                        handleStatusFilterClick(
-                          option.value as AttendanceStatus
-                        )
-                      }
-                      sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        minWidth: 0,
-                        flex: 1,
-                        py: 1.2,
-                        px: 1,
-                        bgcolor: isArrived
-                          ? STATUS_COLORS[option.value as AttendanceStatus].bg
-                          : "rgba(255, 255, 255, 0.8)",
-                        color: isArrived
-                          ? STATUS_COLORS[option.value as AttendanceStatus].text
-                          : STATUS_COLORS[option.value as AttendanceStatus]
-                              .text,
-                        border: `1px solid ${
-                          STATUS_COLORS[option.value as AttendanceStatus].border
-                        }`,
-                        borderRadius: 2,
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                        "&:hover": {
-                          transform: "scale(1.05)",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                        },
-                      }}
-                    >
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          fontSize: "0.75rem",
-                          fontWeight: 600,
-                          lineHeight: 1,
-                        }}
-                      >
-                        {option.label}
-                      </Typography>
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          fontSize: "1.1rem",
-                          fontWeight: 700,
-                          lineHeight: 1,
-                          mt: 0.4,
-                        }}
-                      >
-                        {count}
-                      </Typography>
-                    </Box>
-                  );
-                })}
-              </Box>
-
-              {/* Desktop: Original design */}
-              <Box
-                sx={{
-                  display: { xs: "none", sm: "flex" },
-                  flexWrap: "wrap",
-                  gap: 1,
-                }}
-              >
-                {attendanceStatusOptions.map((option) => {
-                  const isArrived = option.value === "arrived";
-                  return (
-                    <Box
-                      key={option.value}
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          bgcolor: isArrived
-                            ? STATUS_COLORS[option.value as AttendanceStatus].bg
-                            : "rgba(255, 255, 255, 0.8)",
-                          color: isArrived
-                            ? STATUS_COLORS[option.value as AttendanceStatus]
-                                .text
-                            : STATUS_COLORS[option.value as AttendanceStatus]
-                                .text,
-                          border: `1px solid ${
-                            STATUS_COLORS[option.value as AttendanceStatus]
-                              .border
-                          }`,
-                          borderRadius: isArrived ? 3 : 2,
-                          fontWeight: isArrived ? 700 : 500,
-                          fontSize: isArrived ? 16 : 14,
-                          px: isArrived ? 2 : 1.5,
-                          py: isArrived ? 1 : 0.8,
-                          width: isArrived ? 90 : 85,
-                          height: isArrived ? 36 : 28,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          mr: 0.5,
-                          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          cursor: "pointer",
-                          "&:hover": {
-                            transform: "scale(1.02)",
-                            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-                          },
-                          transition: "all 0.2s ease-in-out",
-                        }}
-                        onClick={() =>
-                          handleStatusFilterClick(
-                            option.value as AttendanceStatus
-                          )
-                        }
-                      >
-                        {option.label}:{" "}
-                        {summary[option.value as keyof typeof summary]}
-                      </Box>
-                    </Box>
-                  );
-                })}
-              </Box>
-            </Box>
-          )}
-
-          {/* Active Filter Display - Compact mobile */}
-          {selectedStatusFilter && (
-            <Box
-              sx={{
-                mt: { xs: 1, sm: 2 },
-                mb: { xs: 0.5, sm: 1 },
-                display: "flex",
-                flexDirection: { xs: "row", sm: "row" },
-                alignItems: { xs: "center", sm: "center" },
-                gap: 1,
-                justifyContent: { xs: "flex-start", sm: "flex-start" },
-              }}
-            >
-              <Chip
-                label={`סטטוס: ${
-                  attendanceStatusOptions.find(
-                    (opt) => opt.value === selectedStatusFilter
-                  )?.label || ""
-                }`}
-                size="small"
-                color="primary"
-                onDelete={clearStatusFilter}
-                sx={{
-                  fontSize: { xs: "0.7rem", sm: "0.75rem" },
-                  fontWeight: 500,
-                }}
-              />
+                נוכחות יומית
+              </Typography>
               <Typography
                 variant="caption"
                 color="text.secondary"
-                sx={{
-                  fontSize: { xs: "0.7rem", sm: "0.75rem" },
-                  textAlign: { xs: "left", sm: "left" },
-                }}
+                sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
               >
-                מציג {filteredChildren.length} מתוך {children.length} ילדים
+                {formatCurrentDate()}
               </Typography>
             </Box>
-          )}
-        </Box>
+
+            <Typography
+              variant="body2"
+              color="primary"
+              sx={{ fontWeight: 500, fontSize: { xs: "0.9rem", sm: "1rem" } }}
+            >
+              {getGroupName()}
+            </Typography>
+
+            {/* Attendance Summary - Compact mobile design */}
+            {children.length > 0 && (
+              <Fade in={!isLoading && children.length > 0} timeout={600}>
+                <Box
+                  sx={{
+                    mt: { xs: 1.5, sm: 2 },
+                    display: "flex",
+                    flexDirection: { xs: "column", sm: "row" },
+                    gap: { xs: 1, sm: 1 },
+                    flexWrap: { xs: "nowrap", sm: "wrap" },
+                  }}
+                >
+                  {/* Mobile: Compact horizontal scroll */}
+                  <Box
+                    sx={{
+                      display: { xs: "flex", sm: "none" },
+                      gap: 1,
+                      pb: 0.5,
+                      justifyContent: "space-evenly",
+                      px: 2,
+                    }}
+                  >
+                    {attendanceStatusOptions.map((option, index) => {
+                      const isArrived = option.value === "arrived";
+                      const count =
+                        summary[option.value as keyof typeof summary];
+                      return (
+                        <Box
+                          key={option.value}
+                          onClick={() =>
+                            handleStatusFilterClick(
+                              option.value as AttendanceStatus
+                            )
+                          }
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            minWidth: 0,
+                            flex: 1,
+                            py: 1.2,
+                            px: 1,
+                            bgcolor: isArrived
+                              ? STATUS_COLORS[option.value as AttendanceStatus]
+                                  .bg
+                              : "rgba(255, 255, 255, 0.8)",
+                            color: isArrived
+                              ? STATUS_COLORS[option.value as AttendanceStatus]
+                                  .text
+                              : STATUS_COLORS[option.value as AttendanceStatus]
+                                  .text,
+                            border: `1px solid ${
+                              STATUS_COLORS[option.value as AttendanceStatus]
+                                .border
+                            }`,
+                            borderRadius: 2,
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
+                            opacity: 0,
+                            animation: "fadeInScale 0.4s ease-out forwards",
+                            animationDelay: `${index * 100}ms`, // Staggered animation for badges
+                            "@keyframes fadeInScale": {
+                              "0%": {
+                                opacity: 0,
+                                transform: "scale(0.8)",
+                              },
+                              "100%": {
+                                opacity: 1,
+                                transform: "scale(1)",
+                              },
+                            },
+                            "&:hover": {
+                              transform: "scale(1.05)",
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                            },
+                          }}
+                        >
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                              lineHeight: 1,
+                            }}
+                          >
+                            {option.label}
+                          </Typography>
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              fontSize: "1.1rem",
+                              fontWeight: 700,
+                              lineHeight: 1,
+                              mt: 0.4,
+                            }}
+                          >
+                            {count}
+                          </Typography>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+
+                  {/* Desktop: Original design */}
+                  <Box
+                    sx={{
+                      display: { xs: "none", sm: "flex" },
+                      flexWrap: "wrap",
+                      gap: 1,
+                    }}
+                  >
+                    {attendanceStatusOptions.map((option, index) => {
+                      const isArrived = option.value === "arrived";
+                      return (
+                        <Box
+                          key={option.value}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            opacity: 0,
+                            animation: "fadeInScale 0.4s ease-out forwards",
+                            animationDelay: `${index * 100}ms`, // Staggered animation for badges
+                            "@keyframes fadeInScale": {
+                              "0%": {
+                                opacity: 0,
+                                transform: "scale(0.8)",
+                              },
+                              "100%": {
+                                opacity: 1,
+                                transform: "scale(1)",
+                              },
+                            },
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              bgcolor: isArrived
+                                ? STATUS_COLORS[
+                                    option.value as AttendanceStatus
+                                  ].bg
+                                : "rgba(255, 255, 255, 0.8)",
+                              color: isArrived
+                                ? STATUS_COLORS[
+                                    option.value as AttendanceStatus
+                                  ].text
+                                : STATUS_COLORS[
+                                    option.value as AttendanceStatus
+                                  ].text,
+                              border: `1px solid ${
+                                STATUS_COLORS[option.value as AttendanceStatus]
+                                  .border
+                              }`,
+                              borderRadius: isArrived ? 3 : 2,
+                              fontWeight: isArrived ? 700 : 500,
+                              fontSize: isArrived ? 16 : 14,
+                              px: isArrived ? 2 : 1.5,
+                              py: isArrived ? 1 : 0.8,
+                              width: isArrived ? 90 : 85,
+                              height: isArrived ? 36 : 28,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              mr: 0.5,
+                              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              cursor: "pointer",
+                              "&:hover": {
+                                transform: "scale(1.02)",
+                                boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+                              },
+                              transition: "all 0.2s ease-in-out",
+                            }}
+                            onClick={() =>
+                              handleStatusFilterClick(
+                                option.value as AttendanceStatus
+                              )
+                            }
+                          >
+                            {option.label}:{" "}
+                            {summary[option.value as keyof typeof summary]}
+                          </Box>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </Box>
+              </Fade>
+            )}
+
+            {/* Active Filter Display - Compact mobile */}
+            {selectedStatusFilter && (
+              <Fade in={!!selectedStatusFilter} timeout={300}>
+                <Box
+                  sx={{
+                    mt: { xs: 1, sm: 2 },
+                    mb: { xs: 0.5, sm: 1 },
+                    display: "flex",
+                    flexDirection: { xs: "row", sm: "row" },
+                    alignItems: { xs: "center", sm: "center" },
+                    gap: 1,
+                    justifyContent: { xs: "flex-start", sm: "flex-start" },
+                  }}
+                >
+                  <Chip
+                    label={`סטטוס: ${
+                      attendanceStatusOptions.find(
+                        (opt) => opt.value === selectedStatusFilter
+                      )?.label || ""
+                    }`}
+                    size="small"
+                    color="primary"
+                    onDelete={clearStatusFilter}
+                    sx={{
+                      fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                      fontWeight: 500,
+                    }}
+                  />
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                      textAlign: { xs: "left", sm: "left" },
+                    }}
+                  >
+                    מציג {filteredChildren.length} מתוך {children.length} ילדים
+                  </Typography>
+                </Box>
+              </Fade>
+            )}
+          </Box>
+        </Fade>
 
         {/* Children List - Maximized height for mobile */}
         <Box
@@ -681,69 +834,82 @@ const DailyAttendance: React.FC = () => {
           }}
         >
           {isLoading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-              <CircularProgress />
+            <Box sx={{ height: "100%", pb: 2 }}>
+              {/* Show multiple skeleton items while loading */}
+              {Array.from({ length: 8 }).map((_, index) => (
+                <AttendanceSkeleton key={index} />
+              ))}
             </Box>
           ) : filteredChildren.length === 0 ? (
-            <Box sx={{ textAlign: "center", py: 3 }}>
-              <Typography color="text.secondary">
-                {selectedStatusFilter
-                  ? `לא נמצאו ילדים עם סטטוס "${
-                      attendanceStatusOptions.find(
-                        (opt) => opt.value === selectedStatusFilter
-                      )?.label
-                    }"`
-                  : "לא נמצאו ילדים לקבוצה זו"}
-              </Typography>
-            </Box>
+            <Fade in={!isLoading} timeout={700}>
+              <Box sx={{ textAlign: "center", py: 3 }}>
+                <Typography color="text.secondary">
+                  {selectedStatusFilter
+                    ? `לא נמצאו ילדים עם סטטוס "${
+                        attendanceStatusOptions.find(
+                          (opt) => opt.value === selectedStatusFilter
+                        )?.label
+                      }"`
+                    : "לא נמצאו ילדים לקבוצה זו"}
+                </Typography>
+              </Box>
+            </Fade>
           ) : filteredChildren.length > 5 ? (
             // Use virtualization for larger lists
-            <Box sx={{ height: "100%", pb: 2 }}>
-              <VirtualList
-                height={listHeight - 16} // Subtract padding to account for bottom space
-                itemCount={filteredChildren.length}
-                itemSize={100} // Reduced item size for smaller gaps
-                width="100%"
-                overscanCount={8}
-                itemKey={(index, data) =>
-                  data.children[index]?.id || `child-${index}`
-                }
-                itemData={{
-                  children: filteredChildren,
-                  attendanceRecords,
-                  attendanceTimestamps,
-                  onStatusChange: handleStatusChange,
-                }}
-              >
-                {({ index, style, data }) => (
-                  <div style={style}>
-                    <AttendanceChildListItem
-                      key={data.children[index].id}
-                      child={data.children[index]}
-                      attendanceStatus={
-                        data.attendanceRecords[data.children[index].id!] ||
-                        "missing"
-                      }
-                      updateTime={
-                        data.attendanceTimestamps[data.children[index].id!]
-                      }
-                      onStatusChange={data.onStatusChange}
-                    />
-                  </div>
-                )}
-              </VirtualList>
-            </Box>
+            <Fade in={!isLoading} timeout={700}>
+              <Box sx={{ height: "100%", pb: 2 }}>
+                <VirtualList
+                  height={listHeight - 16} // Subtract padding to account for bottom space
+                  itemCount={filteredChildren.length}
+                  itemSize={100} // Reduced item size for smaller gaps
+                  width="100%"
+                  overscanCount={8}
+                  itemKey={(index, data) =>
+                    data.children[index]?.id || `child-${index}`
+                  }
+                  itemData={{
+                    children: filteredChildren,
+                    attendanceRecords,
+                    attendanceTimestamps,
+                    onStatusChange: handleStatusChange,
+                  }}
+                >
+                  {({ index, style, data }) => (
+                    <div style={style}>
+                      <AttendanceChildListItem
+                        key={data.children[index].id}
+                        child={data.children[index]}
+                        attendanceStatus={
+                          data.attendanceRecords[data.children[index].id!] ||
+                          "missing"
+                        }
+                        updateTime={
+                          data.attendanceTimestamps[data.children[index].id!]
+                        }
+                        onStatusChange={data.onStatusChange}
+                        index={index}
+                      />
+                    </div>
+                  )}
+                </VirtualList>
+              </Box>
+            </Fade>
           ) : (
             // Use regular rendering for smaller lists
-            filteredChildren.map((child) => (
-              <AttendanceChildListItem
-                key={child.id}
-                child={child}
-                attendanceStatus={attendanceRecords[child.id!] || "missing"}
-                updateTime={attendanceTimestamps[child.id!]}
-                onStatusChange={handleStatusChange}
-              />
-            ))
+            <Fade in={!isLoading} timeout={700}>
+              <Box>
+                {filteredChildren.map((child, index) => (
+                  <AttendanceChildListItem
+                    key={child.id}
+                    child={child}
+                    attendanceStatus={attendanceRecords[child.id!] || "missing"}
+                    updateTime={attendanceTimestamps[child.id!]}
+                    onStatusChange={handleStatusChange}
+                    index={index}
+                  />
+                ))}
+              </Box>
+            </Fade>
           )}
         </Box>
       </Box>
