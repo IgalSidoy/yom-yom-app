@@ -1112,7 +1112,7 @@ const DailyAttendance: React.FC = () => {
           ) : (
             // Use regular rendering for smaller lists
             <Fade in={!isInitialLoading} timeout={500}>
-              <Box>
+              <Box sx={{ height: "100%", px: { xs: 2, sm: 2 }, pb: 4 }}>
                 {filteredChildren.map((child, index) => (
                   <AttendanceChildListItem
                     key={child.id}
@@ -1123,6 +1123,8 @@ const DailyAttendance: React.FC = () => {
                     index={index}
                   />
                 ))}
+                {/* Small spacer for extra scroll space */}
+                <Box sx={{ height: 20 }} />
               </Box>
             </Fade>
           )}
