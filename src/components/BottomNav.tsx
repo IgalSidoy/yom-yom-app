@@ -55,12 +55,12 @@ const BottomNav: React.FC = () => {
       { label: "Feed" as NavLabel, icon: <DynamicFeedIcon />, path: "/feed" },
     ];
 
-    // Add staff dashboard for staff users
+    // Add attendance for staff users
     if (user?.role === "Staff") {
       baseItems.push({
         label: "StaffDashboard" as NavLabel,
         icon: <PeopleIcon />,
-        path: "/staff-dashboard",
+        path: "/attendance",
       });
     }
 
