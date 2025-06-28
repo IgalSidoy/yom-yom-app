@@ -17,7 +17,12 @@ import {
   Container,
 } from "@mui/material";
 import { useApp } from "../contexts/AppContext";
-import { childApi, ChildWithParents } from "../services/api";
+import {
+  ChildWithParents,
+  attendanceApi,
+  GroupAttendance,
+  AttendanceChild,
+} from "../services/api";
 
 // Attendance status options
 export type AttendanceStatus =
@@ -33,6 +38,32 @@ export interface AttendanceRecord {
   status: AttendanceStatus;
   timestamp: string;
 }
+
+// Status mapping function to convert between API status values and component status types
+const mapApiStatusToComponentStatus = (apiStatus: string): AttendanceStatus => {
+  const statusMap: Record<string, AttendanceStatus> = {
+    Arrived: "arrived",
+    Missing: "missing",
+    Sick: "sick",
+    Late: "late",
+    Vacation: "vacation",
+  };
+  return statusMap[apiStatus] || "unreported";
+};
+
+const mapComponentStatusToApiStatus = (
+  componentStatus: AttendanceStatus
+): string => {
+  const statusMap: Record<AttendanceStatus, string> = {
+    arrived: "Arrived",
+    missing: "Missing",
+    sick: "Sick",
+    late: "Late",
+    vacation: "Vacation",
+    unreported: "Unreported",
+  };
+  return statusMap[componentStatus];
+};
 
 // Use theme/site colors
 const THEME_ORANGE = "#FF9F43";
@@ -78,7 +109,7 @@ const AttendanceChildListItem: React.FC<{
   child: ChildWithParents;
   attendanceStatus: AttendanceStatus;
   updateTime?: string;
-  onStatusChange: (childId: string, status: AttendanceStatus) => void;
+  onStatusChange: (childId: string, status: AttendanceStatus) => Promise<void>;
   index?: number; // Add index for staggered animation
 }> = memo(
   ({ child, attendanceStatus, updateTime, onStatusChange, index = 0 }) => {
@@ -174,7 +205,9 @@ const AttendanceChildListItem: React.FC<{
               variant={
                 attendanceStatus === "arrived" ? "contained" : "outlined"
               }
-              onClick={() => onStatusChange(child.id!, "arrived")}
+              onClick={() =>
+                onStatusChange(child.id!, "arrived").catch(console.error)
+              }
               sx={{
                 bgcolor:
                   attendanceStatus === "arrived"
@@ -250,7 +283,9 @@ const AttendanceChildListItem: React.FC<{
                 const next =
                   rareStatuses[(idx + 1) % rareStatuses.length]?.value ||
                   rareStatuses[0].value;
-                onStatusChange(child.id!, next as AttendanceStatus);
+                onStatusChange(child.id!, next as AttendanceStatus).catch(
+                  console.error
+                );
               }}
               sx={{
                 bgcolor:
@@ -507,35 +542,83 @@ const DailyAttendance: React.FC = () => {
   >({});
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<
     AttendanceStatus | ""
-  >("unreported");
+  >("");
   const [isInitialLoading, setIsInitialLoading] = useState(true); // Separate state for initial loading
   const [listHeight, setListHeight] = useState(400);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchChildren = async () => {
-      if (!user?.accountId || !user?.groupId) return;
-      setIsInitialLoading(true); // Use initial loading for first data fetch
+    const fetchAttendanceData = async () => {
+      if (!user?.groupId) return;
+      setIsInitialLoading(true);
       try {
-        const response = await childApi.getChildrenByAccountWithGroupFilter(
-          user.accountId,
-          user.groupId
-        );
-        setChildren(response.children || []);
+        // Get current date in YYYY-MM-DD format
+        const today = new Date().toISOString().split("T")[0];
 
-        // Initialize attendance records for all children
-        const initialRecords: Record<string, AttendanceStatus> = {};
-        response.children?.forEach((child) => {
-          initialRecords[child.id!] = "unreported"; // Default status
+        // Fetch attendance data for today (includes children information)
+        const attendanceResponse = await attendanceApi.getGroupAttendance(
+          user.groupId,
+          today
+        );
+
+        // Debug logging
+        console.log("Attendance API Response:", attendanceResponse);
+        console.log("Children in response:", attendanceResponse.children);
+
+        // Map attendance data to component format
+        const attendanceData = attendanceResponse; // The response is the attendance data directly
+        const records: Record<string, AttendanceStatus> = {};
+        const timestamps: Record<string, string> = {};
+        const childrenData: ChildWithParents[] = [];
+
+        // Process attendance data and extract children information
+        attendanceData.children.forEach((attendanceChild) => {
+          console.log("Processing attendance child:", attendanceChild);
+          const status = mapApiStatusToComponentStatus(attendanceChild.status);
+          records[attendanceChild.childId] = status;
+          timestamps[attendanceChild.childId] = attendanceChild.timestamp;
+
+          // Create child object from attendance data (now includes firstName, lastName)
+          if (attendanceChild.firstName && attendanceChild.lastName) {
+            childrenData.push({
+              id: attendanceChild.childId,
+              firstName: attendanceChild.firstName,
+              lastName: attendanceChild.lastName,
+              dateOfBirth: attendanceChild.dateOfBirth || "",
+              accountId: attendanceData.accountId,
+              groupId: attendanceData.groupId,
+              groupName: attendanceData.groupName,
+              parents: [], // Parents not included in attendance data
+              created: "",
+              updated: "",
+            });
+          }
         });
-        setAttendanceRecords(initialRecords);
-      } catch (error) {
+
+        console.log("Processed children data:", childrenData);
+        console.log("Attendance records:", records);
+
+        setChildren(childrenData);
+        setAttendanceRecords(records);
+        setAttendanceTimestamps(timestamps);
+      } catch (attendanceError: any) {
+        // If no attendance data exists yet, show empty state
+        // Attendance records will be created when users first interact with the interface
+        console.log("Attendance API Error:", attendanceError);
+        console.log("Error details:", {
+          message: attendanceError.message,
+          status: attendanceError.response?.status,
+          data: attendanceError.response?.data,
+        });
         setChildren([]);
+        setAttendanceRecords({});
+        setAttendanceTimestamps({});
+        console.log("No attendance data found for today");
       } finally {
         setIsInitialLoading(false);
       }
     };
-    fetchChildren();
+    fetchAttendanceData();
   }, [user]);
 
   // Calculate dynamic heights based on viewport
@@ -591,14 +674,23 @@ const DailyAttendance: React.FC = () => {
   };
 
   const getGroupName = () => {
+    // Try to get group name from children first (if available)
     if (children.length > 0 && children[0].groupName) {
       return children[0].groupName;
     }
+    // Fallback to a default name
     return "קבוצה לא ידועה";
   };
 
-  const handleStatusChange = (childId: string, status: AttendanceStatus) => {
+  const handleStatusChange = async (
+    childId: string,
+    status: AttendanceStatus
+  ) => {
+    if (!user?.groupId) return;
+
     const now = new Date().toISOString();
+
+    // Optimistically update the UI
     setAttendanceRecords((prev) => ({
       ...prev,
       [childId]: status,
@@ -607,6 +699,32 @@ const DailyAttendance: React.FC = () => {
       ...prev,
       [childId]: now,
     }));
+
+    // Call API to persist the change
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const apiStatus = mapComponentStatusToApiStatus(status);
+
+      // Update the specific child's status
+      await attendanceApi.updateChildAttendance(
+        user.groupId,
+        today,
+        childId,
+        apiStatus
+      );
+    } catch (error) {
+      // Revert the optimistic update on error
+      setAttendanceRecords((prev) => ({
+        ...prev,
+        [childId]: prev[childId] || "unreported",
+      }));
+      setAttendanceTimestamps((prev) => {
+        const newTimestamps = { ...prev };
+        delete newTimestamps[childId];
+        return newTimestamps;
+      });
+      console.error("Failed to update attendance status:", error);
+    }
   };
 
   const getAttendanceSummary = () => {
@@ -1063,6 +1181,8 @@ const DailyAttendance: React.FC = () => {
                           (opt) => opt.value === selectedStatusFilter
                         )?.label
                       }"`
+                    : children.length === 0
+                    ? "לא נמצאו נתוני נוכחות להיום. נתוני נוכחות ייווצרו כאשר תתחיל לסמן נוכחות."
                     : "לא נמצאו ילדים לקבוצה זו"}
                 </Typography>
               </Box>
