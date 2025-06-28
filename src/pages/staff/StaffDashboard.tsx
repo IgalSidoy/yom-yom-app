@@ -27,17 +27,14 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../../contexts/AppContext";
 import Container from "../../components/Container";
-import { attendanceApi, GroupAttendance } from "../../services/api";
+import { useAttendance } from "../../contexts/AttendanceContext";
 
 const StaffDashboard: React.FC = () => {
   const { user } = useApp();
   const navigate = useNavigate();
   const theme = useTheme();
+  const { attendanceData, isLoading: isLoadingAttendance } = useAttendance();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [attendanceData, setAttendanceData] = useState<GroupAttendance | null>(
-    null
-  );
-  const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -45,39 +42,6 @@ const StaffDashboard: React.FC = () => {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    if (user?.groupId) {
-      fetchAttendanceData();
-    }
-  }, [user?.groupId]);
-
-  useEffect(() => {
-    const handleFocus = () => {
-      if (user?.groupId) {
-        fetchAttendanceData();
-      }
-    };
-
-    window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
-  }, [user?.groupId]);
-
-  const fetchAttendanceData = async () => {
-    if (!user?.groupId) return;
-
-    setIsLoadingAttendance(true);
-    try {
-      const today = new Date().toISOString().split("T")[0];
-      const data = await attendanceApi.getGroupAttendance(user.groupId, today);
-      setAttendanceData(data);
-    } catch (error) {
-      console.error("Failed to fetch attendance data:", error);
-      setAttendanceData(null);
-    } finally {
-      setIsLoadingAttendance(false);
-    }
-  };
 
   const calculateStats = () => {
     if (!attendanceData?.children) {

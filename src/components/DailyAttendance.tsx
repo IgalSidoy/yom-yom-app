@@ -17,6 +17,7 @@ import {
   Container,
 } from "@mui/material";
 import { useApp } from "../contexts/AppContext";
+import { useAttendance } from "../contexts/AttendanceContext";
 import {
   ChildWithParents,
   attendanceApi,
@@ -533,81 +534,68 @@ const AttendanceSkeleton: React.FC = () => (
 
 const DailyAttendance: React.FC = () => {
   const { user } = useApp();
-  const [children, setChildren] = useState<ChildWithParents[]>([]);
-  const [attendanceRecords, setAttendanceRecords] = useState<
-    Record<string, AttendanceStatus>
-  >({});
-  const [attendanceTimestamps, setAttendanceTimestamps] = useState<
-    Record<string, string>
-  >({});
+  const { attendanceData, isLoading, updateAttendance } = useAttendance();
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<
     AttendanceStatus | ""
   >("");
-  const [isInitialLoading, setIsInitialLoading] = useState(true); // Separate state for initial loading
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [listHeight, setListHeight] = useState(400);
-  const [groupName, setGroupName] = useState<string>("");
-  const [accountName, setAccountName] = useState<string>("");
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const fetchAttendanceData = async () => {
-      if (!user?.groupId) return;
-      setIsInitialLoading(true);
-      try {
-        // Get current date in YYYY-MM-DD format
-        const today = new Date().toISOString().split("T")[0];
+  // Convert attendance data to component format
+  const {
+    children,
+    attendanceRecords,
+    attendanceTimestamps,
+    groupName,
+    accountName,
+  } = useMemo(() => {
+    if (!attendanceData?.children) {
+      return {
+        children: [],
+        attendanceRecords: {},
+        attendanceTimestamps: {},
+        groupName: "",
+        accountName: "",
+      };
+    }
 
-        // Fetch attendance data for today (includes children information)
-        const attendanceResponse = await attendanceApi.getGroupAttendance(
-          user.groupId,
-          today
-        );
+    const records: Record<string, AttendanceStatus> = {};
+    const timestamps: Record<string, string> = {};
+    const childrenData: ChildWithParents[] = [];
 
-        // Map attendance data to component format
-        const attendanceData = attendanceResponse; // The response is the attendance data directly
-        const records: Record<string, AttendanceStatus> = {};
-        const timestamps: Record<string, string> = {};
-        const childrenData: ChildWithParents[] = [];
+    attendanceData.children.forEach((attendanceChild) => {
+      const status = mapApiStatusToComponentStatus(attendanceChild.status);
+      records[attendanceChild.childId] = status;
+      timestamps[attendanceChild.childId] = attendanceChild.timestamp;
 
-        // Process attendance data and extract children information
-        attendanceData.children.forEach((attendanceChild) => {
-          const status = mapApiStatusToComponentStatus(attendanceChild.status);
-          records[attendanceChild.childId] = status;
-          timestamps[attendanceChild.childId] = attendanceChild.timestamp;
+      childrenData.push({
+        id: attendanceChild.childId,
+        firstName: attendanceChild.firstName,
+        lastName: attendanceChild.lastName,
+        dateOfBirth: attendanceChild.dateOfBirth || "",
+        accountId: attendanceData.accountId,
+        groupId: attendanceData.groupId,
+        groupName: attendanceData.groupName,
+        parents: [],
+        created: "",
+        updated: "",
+      });
+    });
 
-          // Create child object from attendance data (firstName and lastName are always present)
-          childrenData.push({
-            id: attendanceChild.childId,
-            firstName: attendanceChild.firstName,
-            lastName: attendanceChild.lastName,
-            dateOfBirth: attendanceChild.dateOfBirth || "",
-            accountId: attendanceData.accountId,
-            groupId: attendanceData.groupId,
-            groupName: attendanceData.groupName,
-            parents: [], // Parents not included in attendance data
-            created: "",
-            updated: "",
-          });
-        });
-
-        setChildren(childrenData);
-        setAttendanceRecords(records);
-        setAttendanceTimestamps(timestamps);
-        setGroupName(attendanceData.groupName);
-        setAccountName(attendanceData.accountName);
-      } catch (attendanceError: any) {
-        // If no attendance data exists yet, show empty state
-        // Attendance records will be created when users first interact with the interface
-        console.log("No attendance data found for today");
-        setChildren([]);
-        setAttendanceRecords({});
-        setAttendanceTimestamps({});
-      } finally {
-        setIsInitialLoading(false);
-      }
+    return {
+      children: childrenData,
+      attendanceRecords: records,
+      attendanceTimestamps: timestamps,
+      groupName: attendanceData.groupName,
+      accountName: attendanceData.accountName,
     };
-    fetchAttendanceData();
-  }, [user]);
+  }, [attendanceData]);
+
+  // Set initial loading based on context loading state
+  useEffect(() => {
+    setIsInitialLoading(isLoading);
+  }, [isLoading]);
 
   // Calculate dynamic heights based on viewport
   useEffect(() => {
@@ -677,43 +665,27 @@ const DailyAttendance: React.FC = () => {
     childId: string,
     status: AttendanceStatus
   ) => {
-    if (!user?.groupId) return;
+    if (!user?.groupId || !attendanceData) return;
 
-    const now = new Date().toISOString();
+    const today = new Date().toISOString().split("T")[0];
+    const apiStatus = mapComponentStatusToApiStatus(status);
 
-    // Optimistically update the UI
-    setAttendanceRecords((prev) => ({
-      ...prev,
-      [childId]: status,
-    }));
-    setAttendanceTimestamps((prev) => ({
-      ...prev,
-      [childId]: now,
-    }));
-
-    // Call API to persist the change
     try {
-      const today = new Date().toISOString().split("T")[0];
-      const apiStatus = mapComponentStatusToApiStatus(status);
-
-      // Update the specific child's status
-      await attendanceApi.updateChildAttendance(
-        user.groupId,
-        today,
-        childId,
-        apiStatus
+      // Create updated attendance data
+      const updatedChildren = attendanceData.children.map((child) =>
+        child.childId === childId
+          ? { ...child, status: apiStatus, timestamp: new Date().toISOString() }
+          : child
       );
+
+      const updatedAttendanceData: GroupAttendance = {
+        ...attendanceData,
+        children: updatedChildren,
+      };
+
+      // Update via context
+      await updateAttendance(user.groupId, today, updatedAttendanceData);
     } catch (error) {
-      // Revert the optimistic update on error
-      setAttendanceRecords((prev) => ({
-        ...prev,
-        [childId]: prev[childId] || "unreported",
-      }));
-      setAttendanceTimestamps((prev) => {
-        const newTimestamps = { ...prev };
-        delete newTimestamps[childId];
-        return newTimestamps;
-      });
       console.error("Failed to update attendance status:", error);
     }
   };
