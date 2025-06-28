@@ -657,24 +657,25 @@ export interface UserChildrenResponse {
 // Attendance API interfaces
 export interface AttendanceChild {
   childId: string;
+  firstName: string;
+  lastName: string;
   status: string;
   timestamp: string;
   updatedByUserId: string;
-  firstName?: string;
-  lastName?: string;
   dateOfBirth?: string;
 }
 
 export interface GroupAttendance {
   id: string;
   groupId: string;
+  groupName: string;
   accountId: string;
+  accountName: string;
   date: string;
   children: AttendanceChild[];
   isClosed: boolean;
   created: string;
   updated: string;
-  groupName?: string;
 }
 
 // Attendance API functions

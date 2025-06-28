@@ -545,6 +545,8 @@ const DailyAttendance: React.FC = () => {
   >("");
   const [isInitialLoading, setIsInitialLoading] = useState(true); // Separate state for initial loading
   const [listHeight, setListHeight] = useState(400);
+  const [groupName, setGroupName] = useState<string>("");
+  const [accountName, setAccountName] = useState<string>("");
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -561,10 +563,6 @@ const DailyAttendance: React.FC = () => {
           today
         );
 
-        // Debug logging
-        console.log("Attendance API Response:", attendanceResponse);
-        console.log("Children in response:", attendanceResponse.children);
-
         // Map attendance data to component format
         const attendanceData = attendanceResponse; // The response is the attendance data directly
         const records: Record<string, AttendanceStatus> = {};
@@ -573,47 +571,37 @@ const DailyAttendance: React.FC = () => {
 
         // Process attendance data and extract children information
         attendanceData.children.forEach((attendanceChild) => {
-          console.log("Processing attendance child:", attendanceChild);
           const status = mapApiStatusToComponentStatus(attendanceChild.status);
           records[attendanceChild.childId] = status;
           timestamps[attendanceChild.childId] = attendanceChild.timestamp;
 
-          // Create child object from attendance data (now includes firstName, lastName)
-          if (attendanceChild.firstName && attendanceChild.lastName) {
-            childrenData.push({
-              id: attendanceChild.childId,
-              firstName: attendanceChild.firstName,
-              lastName: attendanceChild.lastName,
-              dateOfBirth: attendanceChild.dateOfBirth || "",
-              accountId: attendanceData.accountId,
-              groupId: attendanceData.groupId,
-              groupName: attendanceData.groupName,
-              parents: [], // Parents not included in attendance data
-              created: "",
-              updated: "",
-            });
-          }
+          // Create child object from attendance data (firstName and lastName are always present)
+          childrenData.push({
+            id: attendanceChild.childId,
+            firstName: attendanceChild.firstName,
+            lastName: attendanceChild.lastName,
+            dateOfBirth: attendanceChild.dateOfBirth || "",
+            accountId: attendanceData.accountId,
+            groupId: attendanceData.groupId,
+            groupName: attendanceData.groupName,
+            parents: [], // Parents not included in attendance data
+            created: "",
+            updated: "",
+          });
         });
-
-        console.log("Processed children data:", childrenData);
-        console.log("Attendance records:", records);
 
         setChildren(childrenData);
         setAttendanceRecords(records);
         setAttendanceTimestamps(timestamps);
+        setGroupName(attendanceData.groupName);
+        setAccountName(attendanceData.accountName);
       } catch (attendanceError: any) {
         // If no attendance data exists yet, show empty state
         // Attendance records will be created when users first interact with the interface
-        console.log("Attendance API Error:", attendanceError);
-        console.log("Error details:", {
-          message: attendanceError.message,
-          status: attendanceError.response?.status,
-          data: attendanceError.response?.data,
-        });
+        console.log("No attendance data found for today");
         setChildren([]);
         setAttendanceRecords({});
         setAttendanceTimestamps({});
-        console.log("No attendance data found for today");
       } finally {
         setIsInitialLoading(false);
       }
@@ -674,8 +662,11 @@ const DailyAttendance: React.FC = () => {
   };
 
   const getGroupName = () => {
-    // Try to get group name from children first (if available)
-    if (children.length > 0 && children[0].groupName) {
+    if (groupName && accountName) {
+      return `${groupName} - ${accountName}`;
+    } else if (groupName) {
+      return groupName;
+    } else if (children.length > 0 && children[0].groupName) {
       return children[0].groupName;
     }
     // Fallback to a default name
