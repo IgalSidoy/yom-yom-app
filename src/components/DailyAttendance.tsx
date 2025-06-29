@@ -24,47 +24,25 @@ import {
   GroupAttendance,
   AttendanceChild,
 } from "../services/api";
+import {
+  ComponentAttendanceStatus,
+  ApiAttendanceStatus,
+  mapApiStatusToComponentStatus,
+  mapComponentStatusToApiStatus,
+  ATTENDANCE_STATUS_OPTIONS,
+  STATUS_COLORS,
+  getStatusOption,
+  type ComponentStatus,
+} from "../types/attendance";
 
 // Attendance status options
-export type AttendanceStatus =
-  | "arrived"
-  | "missing"
-  | "sick"
-  | "late"
-  | "vacation"
-  | "unreported";
+export type AttendanceStatus = ComponentStatus;
 
 export interface AttendanceRecord {
   childId: string;
   status: AttendanceStatus;
   timestamp: string;
 }
-
-// Status mapping function to convert between API status values and component status types
-const mapApiStatusToComponentStatus = (apiStatus: string): AttendanceStatus => {
-  const statusMap: Record<string, AttendanceStatus> = {
-    Arrived: "arrived",
-    Missing: "missing",
-    Sick: "sick",
-    Late: "late",
-    Vacation: "vacation",
-  };
-  return statusMap[apiStatus] || "unreported";
-};
-
-const mapComponentStatusToApiStatus = (
-  componentStatus: AttendanceStatus
-): string => {
-  const statusMap: Record<AttendanceStatus, string> = {
-    arrived: "Arrived",
-    missing: "Missing",
-    sick: "Sick",
-    late: "Late",
-    vacation: "Vacation",
-    unreported: "Unreported",
-  };
-  return statusMap[componentStatus];
-};
 
 // Use theme/site colors
 const THEME_ORANGE = "#FF9F43";
@@ -93,18 +71,6 @@ const attendanceStatusOptions = [
   },
 ];
 
-const STATUS_COLORS: Record<
-  AttendanceStatus,
-  { bg: string; text: string; border: string }
-> = {
-  arrived: { bg: "#FF9F43", text: "#fff", border: "#FF9F43" },
-  missing: { bg: "#FFE3E3", text: "#B85C5C", border: "#F5B5B5" },
-  sick: { bg: "#FFF7C2", text: "#B88B2A", border: "#FFE6A7" },
-  late: { bg: "#E3F0FF", text: "#3A6EA5", border: "#B3D4F7" },
-  vacation: { bg: "#E3FFE3", text: "#3A9A5A", border: "#B3E6B3" },
-  unreported: { bg: "#F5F5F5", text: "#888", border: "#E0E0E0" },
-};
-
 // Memoized Child List Item Component for Daily Attendance
 const AttendanceChildListItem: React.FC<{
   child: ChildWithParents;
@@ -114,12 +80,10 @@ const AttendanceChildListItem: React.FC<{
   index?: number; // Add index for staggered animation
 }> = memo(
   ({ child, attendanceStatus, updateTime, onStatusChange, index = 0 }) => {
-    const rareStatuses = attendanceStatusOptions.filter(
-      (opt) => opt.value !== "arrived"
+    const rareStatuses = ATTENDANCE_STATUS_OPTIONS.filter(
+      (opt) => opt.value !== ComponentAttendanceStatus.ARRIVED
     );
-    const getStatusOption = (val: string) =>
-      attendanceStatusOptions.find((o) => o.value === val);
-    const arrivedOption = getStatusOption("arrived");
+    const arrivedOption = getStatusOption(ComponentAttendanceStatus.ARRIVED);
     const currentOption = getStatusOption(attendanceStatus);
 
     const formatUpdateTime = (timestamp?: string) => {
@@ -204,21 +168,27 @@ const AttendanceChildListItem: React.FC<{
           >
             <Button
               variant={
-                attendanceStatus === "arrived" ? "contained" : "outlined"
+                attendanceStatus === ComponentAttendanceStatus.ARRIVED
+                  ? "contained"
+                  : "outlined"
               }
               onClick={() =>
-                onStatusChange(child.id!, "arrived").catch(console.error)
+                onStatusChange(
+                  child.id!,
+                  ComponentAttendanceStatus.ARRIVED
+                ).catch(console.error)
               }
               sx={{
                 bgcolor:
-                  attendanceStatus === "arrived"
-                    ? STATUS_COLORS.arrived.bg
+                  attendanceStatus === ComponentAttendanceStatus.ARRIVED
+                    ? STATUS_COLORS[ComponentAttendanceStatus.ARRIVED].bg
                     : "#fff",
                 color:
-                  attendanceStatus === "arrived"
-                    ? STATUS_COLORS.arrived.text
-                    : STATUS_COLORS.arrived.bg,
-                borderColor: STATUS_COLORS.arrived.border,
+                  attendanceStatus === ComponentAttendanceStatus.ARRIVED
+                    ? STATUS_COLORS[ComponentAttendanceStatus.ARRIVED].text
+                    : STATUS_COLORS[ComponentAttendanceStatus.ARRIVED].bg,
+                borderColor:
+                  STATUS_COLORS[ComponentAttendanceStatus.ARRIVED].border,
                 borderRadius: 3,
                 fontWeight: 700,
                 fontSize: { xs: 14, sm: 16 },
@@ -275,7 +245,9 @@ const AttendanceChildListItem: React.FC<{
             </Button>
             <Button
               variant={
-                attendanceStatus !== "arrived" ? "contained" : "outlined"
+                attendanceStatus !== ComponentAttendanceStatus.ARRIVED
+                  ? "contained"
+                  : "outlined"
               }
               onClick={() => {
                 const idx = rareStatuses.findIndex(
@@ -290,17 +262,17 @@ const AttendanceChildListItem: React.FC<{
               }}
               sx={{
                 bgcolor:
-                  attendanceStatus !== "arrived"
+                  attendanceStatus !== ComponentAttendanceStatus.ARRIVED
                     ? STATUS_COLORS[attendanceStatus].bg
                     : "#fff",
                 color:
-                  attendanceStatus !== "arrived"
+                  attendanceStatus !== ComponentAttendanceStatus.ARRIVED
                     ? STATUS_COLORS[attendanceStatus].text
-                    : STATUS_COLORS.missing.text,
+                    : STATUS_COLORS[ComponentAttendanceStatus.MISSING].text,
                 borderColor:
-                  attendanceStatus !== "arrived"
+                  attendanceStatus !== ComponentAttendanceStatus.ARRIVED
                     ? STATUS_COLORS[attendanceStatus].border
-                    : STATUS_COLORS.missing.border,
+                    : STATUS_COLORS[ComponentAttendanceStatus.MISSING].border,
                 borderRadius: 3,
                 fontWeight: 700,
                 fontSize: { xs: 14, sm: 16 },
@@ -353,7 +325,7 @@ const AttendanceChildListItem: React.FC<{
                 },
               }}
             >
-              {attendanceStatus !== "arrived"
+              {attendanceStatus !== ComponentAttendanceStatus.ARRIVED
                 ? currentOption?.label
                 : "סטטוס נוסף"}
             </Button>

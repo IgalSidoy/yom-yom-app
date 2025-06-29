@@ -28,6 +28,11 @@ import { useNavigate } from "react-router-dom";
 import { useApp } from "../../contexts/AppContext";
 import Container from "../../components/Container";
 import { useAttendance } from "../../contexts/AttendanceContext";
+import {
+  ApiAttendanceStatus,
+  isPresentStatus,
+  mapApiStatusToComponentStatus,
+} from "../../types/attendance";
 
 const StaffDashboard: React.FC = () => {
   const { user } = useApp();
@@ -56,13 +61,13 @@ const StaffDashboard: React.FC = () => {
 
     const total = attendanceData.children.length;
     const present = attendanceData.children.filter(
-      (child) => child.status === "present"
+      (child) => child.status === ApiAttendanceStatus.ARRIVED
     ).length;
     const late = attendanceData.children.filter(
-      (child) => child.status === "late"
+      (child) => child.status === ApiAttendanceStatus.LATE
     ).length;
     const absent = attendanceData.children.filter(
-      (child) => child.status === "absent"
+      (child) => child.status === ApiAttendanceStatus.MISSING
     ).length;
 
     const attendancePercentage =
