@@ -4,6 +4,8 @@ import React, {
   useState,
   useEffect,
   ReactNode,
+  useCallback,
+  useRef,
 } from "react";
 import { attendanceApi, GroupAttendance } from "../services/api";
 import { useApp } from "./AppContext";
@@ -41,78 +43,96 @@ export const AttendanceProvider: React.FC<AttendanceProviderProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState<string | null>(null);
+  const isInitialized = useRef(false);
 
-  const fetchAttendance = async (groupId: string, date: string) => {
-    // Don't fetch if we already have the data for this group and date
-    if (attendanceData && currentGroupId === groupId && currentDate === date) {
-      return;
-    }
+  const fetchAttendance = useCallback(
+    async (groupId: string, date: string) => {
+      // Don't fetch if we already have the data for this group and date
+      if (
+        attendanceData &&
+        currentGroupId === groupId &&
+        currentDate === date
+      ) {
+        return;
+      }
 
-    setIsLoading(true);
-    setError(null);
+      // Don't fetch if already loading
+      if (isLoading) {
+        return;
+      }
 
-    try {
-      const data = await attendanceApi.getGroupAttendance(groupId, date);
-      setAttendanceData(data);
-      setCurrentGroupId(groupId);
-      setCurrentDate(date);
-    } catch (error: any) {
-      console.error("Failed to fetch attendance data:", error);
-      // If we get 404, it means no attendance data exists yet, which is fine
-      if (error.response?.status === 404) {
-        setAttendanceData(null);
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const data = await attendanceApi.getGroupAttendance(groupId, date);
+        setAttendanceData(data);
         setCurrentGroupId(groupId);
         setCurrentDate(date);
-      } else {
-        setError(error.message || "Failed to fetch attendance data");
+      } catch (error: any) {
+        console.error("Failed to fetch attendance data:", error);
+        // If we get 404, it means no attendance data exists yet, which is fine
+        if (error.response?.status === 404) {
+          setAttendanceData(null);
+          setCurrentGroupId(groupId);
+          setCurrentDate(date);
+        } else {
+          setError(error.message || "Failed to fetch attendance data");
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [attendanceData, currentGroupId, currentDate, isLoading]
+  );
 
-  const updateAttendance = async (
-    groupId: string,
-    date: string,
-    newAttendanceData: GroupAttendance
-  ) => {
-    try {
-      await attendanceApi.updateGroupAttendance(
-        groupId,
-        date,
-        newAttendanceData
-      );
-      setAttendanceData(newAttendanceData);
-      setCurrentGroupId(groupId);
-      setCurrentDate(date);
-      setError(null);
-    } catch (error: any) {
-      console.error("Failed to update attendance data:", error);
-      setError(error.message || "Failed to update attendance data");
-      throw error;
-    }
-  };
+  const updateAttendance = useCallback(
+    async (
+      groupId: string,
+      date: string,
+      newAttendanceData: GroupAttendance
+    ) => {
+      try {
+        await attendanceApi.updateGroupAttendance(
+          groupId,
+          date,
+          newAttendanceData
+        );
+        setAttendanceData(newAttendanceData);
+        setCurrentGroupId(groupId);
+        setCurrentDate(date);
+        setError(null);
+      } catch (error: any) {
+        console.error("Failed to update attendance data:", error);
+        setError(error.message || "Failed to update attendance data");
+        throw error;
+      }
+    },
+    []
+  );
 
-  const refreshAttendance = async () => {
+  const refreshAttendance = useCallback(async () => {
     if (currentGroupId && currentDate) {
       await fetchAttendance(currentGroupId, currentDate);
     }
-  };
+  }, [currentGroupId, currentDate, fetchAttendance]);
 
-  const clearAttendance = () => {
+  const clearAttendance = useCallback(() => {
     setAttendanceData(null);
     setCurrentGroupId(null);
     setCurrentDate(null);
     setError(null);
-  };
+    isInitialized.current = false;
+  }, []);
 
-  // Auto-fetch attendance data when user changes or on component mount
+  // Auto-fetch attendance data only once when user changes or on component mount
   useEffect(() => {
-    if (user?.groupId) {
+    if (user?.groupId && !isInitialized.current) {
       const today = new Date().toISOString().split("T")[0];
       fetchAttendance(user.groupId, today);
+      isInitialized.current = true;
     }
-  }, [user?.groupId]);
+  }, [user?.groupId, fetchAttendance]);
 
   const value: AttendanceContextType = {
     attendanceData,
