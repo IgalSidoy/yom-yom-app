@@ -9,21 +9,14 @@ import {
   Divider,
   CircularProgress,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Alert,
+  ButtonGroup,
   Skeleton,
   Accordion,
   AccordionSummary,
   AccordionDetails,
 } from "@mui/material";
+import StatusButtonWithPopup from "../StatusButtonWithPopup";
 import {
   Person as PersonIcon,
   CheckCircle as CheckCircleIcon,
@@ -67,22 +60,20 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
   onRefresh,
   onUpdateAttendance,
 }) => {
-  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
-  const [selectedChild, setSelectedChild] = React.useState<Child | null>(null);
-  const [selectedStatus, setSelectedStatus] = React.useState<string>("");
+  const [expanded, setExpanded] = React.useState(true);
   const [updateLoading, setUpdateLoading] = React.useState(false);
   const [error, setError] = React.useState<string>("");
-  const [expanded, setExpanded] = React.useState(true);
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case ApiAttendanceStatus.ARRIVED:
-        return <CheckCircleIcon sx={{ color: "success.main", fontSize: 20 }} />;
+        return <CheckCircleIcon sx={{ color: "#FF9F43", fontSize: 20 }} />;
       case ApiAttendanceStatus.LATE:
-        return <ScheduleIcon sx={{ color: "warning.main", fontSize: 20 }} />;
+        return <ScheduleIcon sx={{ color: "#3A6EA5", fontSize: 20 }} />;
       case ApiAttendanceStatus.MISSING:
       case ApiAttendanceStatus.SICK:
       case ApiAttendanceStatus.VACATION:
-        return <NotificationsIcon sx={{ color: "error.main", fontSize: 20 }} />;
+        return <NotificationsIcon sx={{ color: "#B85C5C", fontSize: 20 }} />;
       default:
         return null;
     }
@@ -155,29 +146,14 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
     });
   };
 
-  const handleEditClick = (child: Child) => {
-    setSelectedChild(child);
-    setSelectedStatus(child.status);
-    setError("");
-    setEditDialogOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setEditDialogOpen(false);
-    setSelectedChild(null);
-    setSelectedStatus("");
-    setError("");
-  };
-
-  const handleUpdateAttendance = async () => {
-    if (!selectedChild || !onUpdateAttendance) return;
+  const handleStatusUpdate = async (childId: string, status: string) => {
+    if (!onUpdateAttendance) return;
 
     setUpdateLoading(true);
     setError("");
 
     try {
-      await onUpdateAttendance(selectedChild.childId, selectedStatus);
-      handleCloseDialog();
+      await onUpdateAttendance(childId, status);
       // Refresh the data after successful update
       if (onRefresh) {
         onRefresh();
@@ -199,43 +175,56 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
         borderColor: "rgba(0, 0, 0, 0.04)",
       }}
     >
+      {/* Mobile Layout: Stacked vertically */}
       <Box
         sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
+          display: { xs: "flex", sm: "flex" },
+          flexDirection: { xs: "column", sm: "row-reverse" },
+          alignItems: { xs: "stretch", sm: "center" },
+          justifyContent: { xs: "flex-start", sm: "space-between" },
           gap: { xs: 1.5, sm: 1.5 },
         }}
       >
+        {/* Child Name and Info */}
         <Box
           sx={{
-            display: "flex",
-            alignItems: "center",
-            flex: 1,
-            minWidth: 0,
+            display: { xs: "flex", sm: "block" },
+            flexDirection: { xs: "row", sm: "column" },
+            alignItems: { xs: "center", sm: "stretch" },
+            justifyContent: { xs: "space-between", sm: "flex-start" },
+            order: { xs: 1, sm: 2 },
+            width: { xs: "100%", sm: "auto" },
           }}
         >
-          <Skeleton
-            variant="circular"
-            width={48}
-            height={48}
-            sx={{ mr: 2, flexShrink: 0 }}
-          />
-          <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              minWidth: 0,
+              flexShrink: 1,
+            }}
+          >
             <Skeleton variant="text" width="60%" height={28} sx={{ mb: 0.5 }} />
-            <Skeleton variant="text" width="40%" height={20} />
+            {/* Status icon skeleton for mobile view */}
+            <Box sx={{ display: { xs: "flex", sm: "none" } }}>
+              <Skeleton variant="circular" width={20} height={20} />
+            </Box>
           </Box>
+          <Skeleton variant="text" width="40%" height={20} />
         </Box>
+        {/* Status Button skeleton */}
         <Box
           sx={{
             display: "flex",
+            justifyContent: "center",
             alignItems: "center",
-            gap: 1,
             flexShrink: 0,
+            order: { xs: 2, sm: 1 },
+            width: { xs: "100%", sm: "auto" },
           }}
         >
-          <Skeleton variant="circular" width={20} height={20} />
-          <Skeleton variant="rounded" width={60} height={24} />
+          <Skeleton variant="rounded" width={80} height={40} />
         </Box>
       </Box>
     </Box>
@@ -248,7 +237,7 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
         onChange={() => setExpanded(!expanded)}
         sx={{
           boxShadow: "none",
-          border: "1px solid",
+          //   border: "1px solid",
           borderColor: "divider",
           borderRadius: 2,
           "&:before": {
@@ -282,15 +271,39 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
                 fontSize: { xs: "1.25rem", sm: "1.5rem" },
               }}
             >
-              מידע על ילדי
+              נוכחות
+            </Typography>
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails
+          sx={{
+            px: { xs: 2, sm: 2 },
+            pb: 0,
+            maxHeight: "calc(100vh - 350px)", // Account for navbar, swipe circles, and other UI elements
+            overflow: "auto",
+          }}
+        >
+          {/* Date Info with Refresh Button */}
+          <Box
+            sx={{
+              py: 1,
+              px: 0,
+              borderBottom: "1px solid",
+              borderColor: "rgba(0, 0, 0, 0.04)",
+              mb: 2,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {formatDate(currentTime)}
             </Typography>
             {onRefresh && (
               <IconButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRefresh();
-                }}
+                onClick={onRefresh}
                 disabled={loading}
+                size="small"
                 sx={{
                   color: "primary.main",
                   "&:hover": {
@@ -299,35 +312,9 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
                   },
                 }}
               >
-                <RefreshIcon />
+                <RefreshIcon fontSize="small" />
               </IconButton>
             )}
-          </Box>
-        </AccordionSummary>
-        <AccordionDetails
-          sx={{
-            px: 2,
-            pb: 2,
-            maxHeight: "calc(100vh - 350px)", // Account for navbar, swipe circles, and other UI elements
-            overflow: "auto",
-          }}
-        >
-          {/* Date Summary */}
-          <Box
-            sx={{
-              py: 2,
-              px: 0,
-              borderBottom: "1px solid",
-              borderColor: "rgba(0, 0, 0, 0.04)",
-              mb: 2,
-            }}
-          >
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-              סיכום יומי
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {formatDate(currentTime)}
-            </Typography>
           </Box>
 
           {/* Children List */}
@@ -351,40 +338,42 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
                   },
                 }}
               >
+                {/* Mobile Layout: Stacked vertically */}
                 <Box
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    display: { xs: "flex", sm: "flex" },
+                    flexDirection: { xs: "column", sm: "row-reverse" },
+                    alignItems: { xs: "stretch", sm: "center" },
+                    justifyContent: { xs: "flex-start", sm: "space-between" },
                     gap: { xs: 1.5, sm: 1.5 },
                   }}
                 >
+                  {/* Child Name and Info - Mobile: same line, Desktop: separate */}
                   <Box
                     sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      flex: 1,
-                      minWidth: 0,
+                      display: { xs: "flex", sm: "block" },
+                      flexDirection: { xs: "row", sm: "column" },
+                      alignItems: { xs: "center", sm: "stretch" },
+                      justifyContent: { xs: "space-between", sm: "flex-start" },
+                      order: { xs: 1, sm: 2 },
+                      width: { xs: "100%", sm: "auto" },
                     }}
                   >
-                    <Avatar
+                    <Box
                       sx={{
-                        width: 48,
-                        height: 48,
-                        mr: 2,
-                        bgcolor: "primary.main",
-                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        minWidth: 0,
+                        flexShrink: 1,
                       }}
-                      src={child.avatar}
                     >
-                      <PersonIcon />
-                    </Avatar>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography
                         variant="h6"
                         sx={{
                           fontWeight: 700,
                           color: "text.primary",
+                          textAlign: { xs: "right", sm: "right" },
                           fontSize: { xs: "1.1rem", sm: "1.25rem" },
                           whiteSpace: "nowrap",
                           overflow: "hidden",
@@ -394,55 +383,46 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
                       >
                         {`${child.firstName} ${child.lastName}`}
                       </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: "text.secondary",
-                          fontSize: { xs: "0.85rem", sm: "1rem" },
-                        }}
-                      >
-                        {child.accountName} | {child.groupName}
-                      </Typography>
+                      {/* Status icon for mobile view */}
+                      <Box sx={{ display: { xs: "flex", sm: "none" } }}>
+                        {getStatusIcon(child.status)}
+                      </Box>
                     </Box>
+
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "text.secondary",
+                        textAlign: { xs: "left", sm: "right" },
+                        fontSize: { xs: "0.85rem", sm: "1rem" },
+                        order: { xs: -1, sm: 0 },
+                      }}
+                    >
+                      {child.accountName} | {child.groupName}
+                    </Typography>
                   </Box>
+
+                  {/* Circular Status Buttons */}
                   <Box
                     sx={{
                       display: "flex",
+                      justifyContent: "center",
                       alignItems: "center",
-                      gap: 1,
                       flexShrink: 0,
+                      order: { xs: 2, sm: 1 },
+                      width: { xs: "100%", sm: "auto" },
                     }}
                   >
-                    {getStatusIcon(child.status)}
-                    <Chip
-                      label={getStatusText(child.status)}
-                      size="small"
-                      sx={{
-                        fontWeight: 500,
-                        backgroundColor: getStatusColor(child.status),
-                        color: getStatusTextColor(child.status),
-                        border: `1px solid ${getStatusColor(child.status)}`,
-                        "&:hover": {
-                          backgroundColor: getStatusColor(child.status),
-                          opacity: 0.9,
-                        },
-                      }}
+                    <StatusButtonWithPopup
+                      currentStatus={child.status as ApiAttendanceStatus}
+                      onStatusUpdate={(status) =>
+                        handleStatusUpdate(child.childId, status)
+                      }
+                      updateLoading={updateLoading}
+                      getStatusColor={getStatusColor}
+                      getStatusTextColor={getStatusTextColor}
+                      getStatusText={getStatusText}
                     />
-                    {onUpdateAttendance && (
-                      <IconButton
-                        onClick={() => handleEditClick(child)}
-                        size="small"
-                        sx={{
-                          color: "primary.main",
-                          "&:hover": {
-                            backgroundColor: "primary.main",
-                            color: "white",
-                          },
-                        }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    )}
                   </Box>
                 </Box>
               </Box>
@@ -504,60 +484,6 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
           )}
         </AccordionDetails>
       </Accordion>
-
-      {/* Edit Attendance Dialog */}
-      <Dialog
-        open={editDialogOpen}
-        onClose={handleCloseDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          עדכון נוכחות -{" "}
-          {selectedChild
-            ? `${selectedChild.firstName} ${selectedChild.lastName}`
-            : ""}
-        </DialogTitle>
-        <DialogContent>
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-          <Box sx={{ mt: 2 }}>
-            <FormControl fullWidth>
-              <InputLabel>סטטוס נוכחות</InputLabel>
-              <Select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                label="סטטוס נוכחות"
-              >
-                {ATTENDANCE_STATUS_OPTIONS.filter(
-                  (option) =>
-                    option.value !== ComponentAttendanceStatus.UNREPORTED &&
-                    option.value !== ComponentAttendanceStatus.MISSING
-                ).map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} disabled={updateLoading}>
-            ביטול
-          </Button>
-          <Button
-            onClick={handleUpdateAttendance}
-            variant="contained"
-            disabled={updateLoading || !selectedStatus}
-          >
-            {updateLoading ? "מעדכן..." : "עדכן"}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </>
   );
 };

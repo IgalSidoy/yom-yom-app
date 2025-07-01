@@ -17,6 +17,7 @@ import {
   Container,
   IconButton,
 } from "@mui/material";
+import StatusButtonWithPopup from "./StatusButtonWithPopup";
 import { useApp } from "../contexts/AppContext";
 import { useAttendance } from "../contexts/AttendanceContext";
 import {
@@ -189,181 +190,44 @@ const AttendanceChildListItem: React.FC<{
             </Typography>
           </Box>
 
-          {/* Buttons */}
-          <ButtonGroup
-            variant="text"
+          {/* Status Button with Popup */}
+          <Box
             sx={{
-              boxShadow: "none",
               flexShrink: 0,
               order: { xs: 2, sm: 1 }, // Buttons second on mobile, first on desktop
               justifyContent: { xs: "center", sm: "flex-start" },
               width: { xs: "100%", sm: "auto" },
             }}
           >
-            <Button
-              variant={
-                attendanceStatus === ComponentAttendanceStatus.ARRIVED
-                  ? "contained"
-                  : "outlined"
-              }
-              onClick={() =>
+            <StatusButtonWithPopup
+              currentStatus={mapComponentStatusToApiStatus(attendanceStatus)}
+              onStatusUpdate={(status) =>
                 onStatusChange(
                   child.id!,
-                  ComponentAttendanceStatus.ARRIVED
+                  mapApiStatusToComponentStatus(status)
                 ).catch(console.error)
               }
-              sx={{
-                bgcolor:
-                  attendanceStatus === ComponentAttendanceStatus.ARRIVED
-                    ? STATUS_COLORS[ComponentAttendanceStatus.ARRIVED].bg
-                    : "#fff",
-                color:
-                  attendanceStatus === ComponentAttendanceStatus.ARRIVED
-                    ? STATUS_COLORS[ComponentAttendanceStatus.ARRIVED].text
-                    : STATUS_COLORS[ComponentAttendanceStatus.ARRIVED].bg,
-                borderColor:
-                  STATUS_COLORS[ComponentAttendanceStatus.ARRIVED].border,
-                borderRadius: 3,
-                fontWeight: 700,
-                fontSize: { xs: 14, sm: 16 },
-                py: { xs: 1, sm: 1.2 },
-                px: { xs: 2, sm: 3 },
-                minWidth: { xs: 70, sm: 80 },
-                flex: { xs: 1, sm: "none" },
-                boxShadow: "none",
-                outline: "none",
-                WebkitTapHighlightColor: "transparent",
-                WebkitTouchCallout: "none",
-                WebkitUserSelect: "none",
-                userSelect: "none",
-                "& *": {
-                  outline: "none",
-                  WebkitTapHighlightColor: "transparent",
-                },
-                "&:focus": {
-                  outline: "none",
-                  borderRadius: 3,
-                  WebkitTapHighlightColor: "transparent",
-                  "& *": {
-                    outline: "none",
-                  },
-                },
-                "&:focus-visible": {
-                  outline: "none",
-                  borderRadius: 3,
-                  WebkitTapHighlightColor: "transparent",
-                  "& *": {
-                    outline: "none",
-                  },
-                },
-                "&:active": {
-                  borderRadius: 3,
-                  WebkitTapHighlightColor: "transparent",
-                  outline: "none",
-                  "& *": {
-                    outline: "none",
-                  },
-                },
-                "&:hover": {
-                  transform: "scale(1.05)",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-                  borderRadius: 3,
-                  outline: "none",
-                  "& *": {
-                    outline: "none",
-                  },
-                },
-              }}
-            >
-              {arrivedOption?.label}
-            </Button>
-            <Button
-              variant={
-                attendanceStatus !== ComponentAttendanceStatus.ARRIVED
-                  ? "contained"
-                  : "outlined"
+              updateLoading={false}
+              availableStatuses={[
+                ApiAttendanceStatus.ARRIVED,
+                ApiAttendanceStatus.LATE,
+                ApiAttendanceStatus.SICK,
+                ApiAttendanceStatus.VACATION,
+                ApiAttendanceStatus.MISSING,
+                ApiAttendanceStatus.UNREPORTED,
+              ]}
+              getStatusColor={(status) =>
+                STATUS_COLORS[mapApiStatusToComponentStatus(status)].bg
               }
-              onClick={() => {
-                const idx = rareStatuses.findIndex(
-                  (s) => s.value === attendanceStatus
-                );
-                const next =
-                  rareStatuses[(idx + 1) % rareStatuses.length]?.value ||
-                  rareStatuses[0].value;
-                onStatusChange(child.id!, next as AttendanceStatus).catch(
-                  console.error
-                );
+              getStatusTextColor={(status) =>
+                STATUS_COLORS[mapApiStatusToComponentStatus(status)].text
+              }
+              getStatusText={(status) => {
+                const componentStatus = mapApiStatusToComponentStatus(status);
+                return getStatusOption(componentStatus)?.label || "לא ידוע";
               }}
-              sx={{
-                bgcolor:
-                  attendanceStatus !== ComponentAttendanceStatus.ARRIVED
-                    ? STATUS_COLORS[attendanceStatus].bg
-                    : "#fff",
-                color:
-                  attendanceStatus !== ComponentAttendanceStatus.ARRIVED
-                    ? STATUS_COLORS[attendanceStatus].text
-                    : STATUS_COLORS[ComponentAttendanceStatus.MISSING].text,
-                borderColor:
-                  attendanceStatus !== ComponentAttendanceStatus.ARRIVED
-                    ? STATUS_COLORS[attendanceStatus].border
-                    : STATUS_COLORS[ComponentAttendanceStatus.MISSING].border,
-                borderRadius: 3,
-                fontWeight: 700,
-                fontSize: { xs: 14, sm: 16 },
-                py: { xs: 1, sm: 1.2 },
-                px: { xs: 2, sm: 2 },
-                minWidth: { xs: 70, sm: 80 },
-                flex: { xs: 1, sm: "none" },
-                boxShadow: "none",
-                outline: "none",
-                WebkitTapHighlightColor: "transparent",
-                WebkitTouchCallout: "none",
-                WebkitUserSelect: "none",
-                userSelect: "none",
-                "& *": {
-                  outline: "none",
-                  WebkitTapHighlightColor: "transparent",
-                },
-                "&:focus": {
-                  outline: "none",
-                  borderRadius: 3,
-                  WebkitTapHighlightColor: "transparent",
-                  "& *": {
-                    outline: "none",
-                  },
-                },
-                "&:focus-visible": {
-                  outline: "none",
-                  borderRadius: 3,
-                  WebkitTapHighlightColor: "transparent",
-                  "& *": {
-                    outline: "none",
-                  },
-                },
-                "&:active": {
-                  borderRadius: 3,
-                  WebkitTapHighlightColor: "transparent",
-                  outline: "none",
-                  "& *": {
-                    outline: "none",
-                  },
-                },
-                "&:hover": {
-                  transform: "scale(1.05)",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-                  borderRadius: 3,
-                  outline: "none",
-                  "& *": {
-                    outline: "none",
-                  },
-                },
-              }}
-            >
-              {attendanceStatus !== ComponentAttendanceStatus.ARRIVED
-                ? currentOption?.label
-                : "סטטוס נוסף"}
-            </Button>
-          </ButtonGroup>
+            />
+          </Box>
         </Box>
 
         {/* Second row: update time - Desktop only */}
