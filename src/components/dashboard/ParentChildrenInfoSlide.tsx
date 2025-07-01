@@ -340,6 +340,7 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
           //   border: "1px solid",
           borderColor: "divider",
           borderRadius: 2,
+          mt: -0.5, // Ensure no top margin
           "&:before": {
             display: "none",
           },
@@ -349,6 +350,7 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
           expandIcon={<ExpandMoreIcon />}
           sx={{
             px: 2,
+            borderBottom: "1px solid #e0e0e0",
             py: 1,
             "& .MuiAccordionSummary-content": {
               margin: 0,
@@ -542,65 +544,6 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
                 </Box>
               );
             })
-          )}
-
-          {/* Summary */}
-          {!loading && children.length > 0 && (
-            <Box
-              sx={{
-                py: 2,
-                px: 0,
-                borderTop: "1px solid",
-                borderColor: "rgba(0, 0, 0, 0.04)",
-                mt: 2,
-              }}
-            >
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                סיכום
-              </Typography>
-              <Divider sx={{ my: 1.5 }} />
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  סה"כ ילדים:
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                  {children.length}
-                </Typography>
-              </Box>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mt: 1,
-                }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  נוכחים היום:
-                </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{ fontWeight: 600, color: "success.main" }}
-                >
-                  {
-                    children.filter((c) => {
-                      const currentStatus =
-                        optimisticUpdates[c.childId] || c.status;
-                      return (
-                        currentStatus === ApiAttendanceStatus.ARRIVED ||
-                        currentStatus === "Arrived"
-                      );
-                    }).length
-                  }
-                </Typography>
-              </Box>
-            </Box>
           )}
         </AccordionDetails>
       </Accordion>

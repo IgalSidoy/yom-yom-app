@@ -210,7 +210,7 @@ const ParentDashboard: React.FC = () => {
       <SwipeableCards
         ref={swiperRef}
         slides={slides}
-        autoplayDelay={8000}
+        autoplayDelay={10000}
         spaceBetween={30}
         className="parent-dashboard-swiper"
       />
