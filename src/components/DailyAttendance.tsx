@@ -18,6 +18,7 @@ import {
   IconButton,
 } from "@mui/material";
 import StatusButtonWithPopup from "./StatusButtonWithPopup";
+import DateTimeWidget from "./DateTimeWidget";
 import { useApp } from "../contexts/AppContext";
 import { useAttendance } from "../contexts/AttendanceContext";
 import {
@@ -636,72 +637,87 @@ const DailyAttendance: React.FC = () => {
       ref={containerRef}
     >
       <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-        {/* Header with Group Info and Date - Compact for mobile */}
+        {/* Header with Group Info and Date - Improved Layout */}
         <Fade in={!isInitialLoading} timeout={400}>
           <Box
             sx={{
-              px: { xs: 1, sm: 2 },
-              pt: 2,
-              pb: 1,
+              px: { xs: 2, sm: 3 },
+              py: { xs: 2, sm: 2.5 },
               flexShrink: 0,
-              borderBottom: { xs: "1px solid", sm: "none" },
-              borderColor: { xs: "divider", sm: "transparent" },
-              mb: { xs: 1, sm: 0 },
+              borderBottom: "1px solid",
+              borderColor: "divider",
+              bgcolor: "background.paper",
             }}
             data-header
           >
+            {/* Main Header Row */}
             <Box
               sx={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                mb: 1,
+                mb: 1.5,
               }}
             >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
-                >
-                  נוכחות יומית
-                </Typography>
-                <IconButton
-                  onClick={handleRefresh}
-                  disabled={isLoading}
-                  size="small"
+              {/* Title, Group Name, and Refresh Button */}
+              <Box sx={{ flex: 1 }}>
+                <Box
                   sx={{
-                    color: "primary.main",
-                    "&:hover": {
-                      backgroundColor: "primary.main",
-                      color: "white",
-                    },
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    mb: 0.5,
                   }}
                 >
-                  <RefreshIcon fontSize="small" />
-                </IconButton>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: { xs: "1.25rem", sm: "1.5rem" },
+                      color: "text.primary",
+                      mt: -1.25, // Move title up by ~10px
+                    }}
+                  >
+                    נוכחות יומית
+                  </Typography>
+                  <IconButton
+                    onClick={handleRefresh}
+                    disabled={isLoading}
+                    size="small"
+                    sx={{
+                      color: "primary.main",
+                      bgcolor: "primary.50",
+                      mt: -1.25, // Align with title
+                      "&:hover": {
+                        backgroundColor: "primary.main",
+                        color: "white",
+                      },
+                      "&:disabled": {
+                        bgcolor: "grey.100",
+                        color: "grey.400",
+                      },
+                    }}
+                  >
+                    <RefreshIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+                <Typography
+                  variant="body1"
+                  color="primary"
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: { xs: "0.95rem", sm: "1.1rem" },
+                  }}
+                >
+                  {getGroupName()}
+                </Typography>
               </Box>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
-              >
-                {formatCurrentDate()}
-              </Typography>
-            </Box>
 
-            <Typography
-              variant="body2"
-              color="primary"
-              sx={{ fontWeight: 500, fontSize: { xs: "0.9rem", sm: "1rem" } }}
-            >
-              {getGroupName()}
-            </Typography>
+              {/* DateTime Widget */}
+              <Box>
+                <DateTimeWidget variant="compact" size="large" />
+              </Box>
+            </Box>
 
             {/* Attendance Summary - Compact mobile design */}
             {children.length > 0 && (

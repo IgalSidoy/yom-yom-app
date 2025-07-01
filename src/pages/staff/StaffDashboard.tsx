@@ -8,20 +8,13 @@ import SwipeableCards from "../../components/SwipeableCards";
 import QuickActionsSlide from "../../components/dashboard/QuickActionsSlide";
 import StatisticsSlide from "../../components/dashboard/StatisticsSlide";
 import AdditionalInfoSlide from "../../components/dashboard/AdditionalInfoSlide";
+import DateTimeWidget from "../../components/DateTimeWidget";
 
 const StaffDashboard: React.FC = () => {
   const { user } = useApp();
   const navigate = useNavigate();
   const theme = useTheme();
   const { attendanceData } = useAttendance();
-  const [currentTime, setCurrentTime] = useState(new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   const stats = useMemo(() => {
     if (!attendanceData?.children) {
@@ -61,37 +54,13 @@ const StaffDashboard: React.FC = () => {
     navigate("/attendance");
   };
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("he-IL", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  };
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("he-IL", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
-  const getGreeting = (time: Date) => {
-    const hour = time.getHours();
-    if (hour < 12) return "בוקר טוב";
-    if (hour < 18) return "צהריים טובים";
-    return "ערב טוב";
-  };
-
   // Create slides array
   const slides = [
     <QuickActionsSlide
       key="quick-actions"
       onStartAttendance={handleStartAttendance}
       user={user}
-      currentTime={currentTime}
+      currentTime={new Date()}
     />,
     <StatisticsSlide key="statistics" stats={stats} />,
     <AdditionalInfoSlide key="additional-info" />,
@@ -109,52 +78,12 @@ const StaffDashboard: React.FC = () => {
     >
       {/* Header */}
       <Box sx={{ mb: 3 }}>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            mb: 2,
-          }}
-        >
-          <Box>
-            <Typography
-              variant="h4"
-              sx={{
-                fontWeight: 700,
-                color: "text.primary",
-                mb: 0.5,
-                fontSize: { xs: "1.5rem", sm: "2rem" },
-              }}
-            >
-              {getGreeting(currentTime)}, {user?.firstName}!
-            </Typography>
-            <Typography
-              variant="body1"
-              color="text.secondary"
-              sx={{ fontSize: { xs: "0.9rem", sm: "1rem" } }}
-            >
-              {formatDate(currentTime)}
-            </Typography>
-          </Box>
-          <Box
-            sx={{
-              textAlign: "center",
-              p: 1.5,
-              borderRadius: 2,
-              bgcolor: "primary.main",
-              color: "white",
-              minWidth: 70,
-            }}
-          >
-            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1rem" }}>
-              {formatTime(currentTime)}
-            </Typography>
-            <Typography variant="caption" sx={{ opacity: 0.9 }}>
-              שעה נוכחית
-            </Typography>
-          </Box>
-        </Box>
+        <DateTimeWidget
+          showGreeting={true}
+          userName={user?.firstName}
+          variant="full"
+          size="large"
+        />
       </Box>
 
       {/* Swipeable Content */}
