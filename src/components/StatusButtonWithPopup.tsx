@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { Box, Button, Typography, Chip } from "@mui/material";
 import { ApiAttendanceStatus } from "../types/attendance";
 
@@ -72,100 +73,102 @@ const StatusButtonWithPopup: React.FC<StatusButtonWithPopupProps> = ({
         />
       </Button>
 
-      {/* Popup Overlay */}
-      {isPopupOpen && (
-        <Box
-          sx={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            zIndex: 9999,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            animation: "fadeIn 0.3s ease-in-out",
-            "@keyframes fadeIn": {
-              "0%": {
-                opacity: 0,
-              },
-              "100%": {
-                opacity: 1,
-              },
-            },
-          }}
-          onClick={() => setIsPopupOpen(false)}
-        >
-          {/* Popup Content */}
+      {/* Popup Overlay - Rendered via Portal */}
+      {isPopupOpen &&
+        createPortal(
           <Box
             sx={{
-              backgroundColor: "white",
-              borderRadius: 4,
-              padding: 4,
-              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              zIndex: 99999,
               display: "flex",
-              flexDirection: "column",
-              gap: 2,
-              minWidth: { xs: 280, sm: 300 },
-              maxWidth: { xs: "90vw", sm: 400 },
-              mx: { xs: 2, sm: 0 },
-              animation: "slideIn 0.3s ease-in-out",
-              "@keyframes slideIn": {
+              justifyContent: "center",
+              alignItems: "center",
+              animation: "fadeIn 0.3s ease-in-out",
+              "@keyframes fadeIn": {
                 "0%": {
-                  transform: "scale(0.8) translateY(-20px)",
                   opacity: 0,
                 },
                 "100%": {
-                  transform: "scale(1) translateY(0)",
                   opacity: 1,
                 },
               },
             }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={() => setIsPopupOpen(false)}
           >
-            <Typography
-              variant="h6"
+            {/* Popup Content */}
+            <Box
               sx={{
-                textAlign: "center",
-                fontWeight: 700,
-                mb: 2,
-                color: "text.primary",
-              }}
-            >
-              בחר סטטוס נוכחות
-            </Typography>
-
-            {availableStatuses.map((status) => (
-              <Button
-                key={status}
-                variant="contained"
-                onClick={() => handleStatusUpdate(status)}
-                disabled={updateLoading}
-                sx={{
-                  bgcolor: getStatusColor(status),
-                  color: getStatusTextColor(status),
-                  borderRadius: 3,
-                  fontWeight: 700,
-                  fontSize: 18,
-                  py: 2,
-                  px: 4,
-                  minHeight: 60,
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                  transition: "all 0.3s ease-in-out",
-                  "&:hover": {
-                    transform: "scale(1.02)",
-                    boxShadow: "0 6px 20px rgba(0,0,0,0.25)",
+                backgroundColor: "white",
+                borderRadius: 4,
+                padding: 4,
+                boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+                minWidth: { xs: 280, sm: 300 },
+                maxWidth: { xs: "90vw", sm: 400 },
+                mx: { xs: 2, sm: 0 },
+                animation: "slideIn 0.3s ease-in-out",
+                "@keyframes slideIn": {
+                  "0%": {
+                    transform: "scale(0.8) translateY(-20px)",
+                    opacity: 0,
                   },
+                  "100%": {
+                    transform: "scale(1) translateY(0)",
+                    opacity: 1,
+                  },
+                },
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  textAlign: "center",
+                  fontWeight: 700,
+                  mb: 2,
+                  color: "text.primary",
                 }}
               >
-                {getStatusText(status)}
-              </Button>
-            ))}
-          </Box>
-        </Box>
-      )}
+                בחר סטטוס נוכחות
+              </Typography>
+
+              {availableStatuses.map((status) => (
+                <Button
+                  key={status}
+                  variant="contained"
+                  onClick={() => handleStatusUpdate(status)}
+                  disabled={updateLoading}
+                  sx={{
+                    bgcolor: getStatusColor(status),
+                    color: getStatusTextColor(status),
+                    borderRadius: 3,
+                    fontWeight: 700,
+                    fontSize: 18,
+                    py: 2,
+                    px: 4,
+                    minHeight: 60,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                    transition: "all 0.3s ease-in-out",
+                    "&:hover": {
+                      transform: "scale(1.02)",
+                      boxShadow: "0 6px 20px rgba(0,0,0,0.25)",
+                    },
+                  }}
+                >
+                  {getStatusText(status)}
+                </Button>
+              ))}
+            </Box>
+          </Box>,
+          document.body
+        )}
     </>
   );
 };
