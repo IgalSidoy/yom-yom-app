@@ -126,77 +126,23 @@ const AttendanceChildListItem: React.FC<{
           borderColor: "rgba(0, 0, 0, 0.04)",
         }}
       >
-        {/* Mobile Layout: Stacked vertically */}
+        {/* Mobile Layout: Same line */}
         <Box
           sx={{
             display: { xs: "flex", sm: "flex" },
-            flexDirection: { xs: "column", sm: "row-reverse" },
-            alignItems: { xs: "stretch", sm: "center" },
-            justifyContent: { xs: "flex-start", sm: "space-between" },
+            flexDirection: { xs: "row", sm: "row-reverse" },
+            alignItems: { xs: "center", sm: "center" },
+            justifyContent: { xs: "space-between", sm: "space-between" },
             gap: { xs: 1.5, sm: 1.5 },
           }}
         >
-          {/* Child Name and Time - Mobile: same line, Desktop: separate */}
-          <Box
-            sx={{
-              display: { xs: "flex", sm: "block" },
-              flexDirection: { xs: "row", sm: "column" },
-              alignItems: { xs: "center", sm: "stretch" },
-              justifyContent: { xs: "space-between", sm: "flex-start" },
-              order: { xs: 1, sm: 2 },
-              width: { xs: "100%", sm: "auto" },
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                minWidth: 0,
-                flexShrink: 1,
-              }}
-            >
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 700,
-                  color: "text.primary",
-                  textAlign: { xs: "right", sm: "right" },
-                  fontSize: { xs: "1.1rem", sm: "1.25rem" },
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-                noWrap
-              >
-                {child.firstName} {child.lastName}
-              </Typography>
-              {/* Status icon for mobile view */}
-              <Box sx={{ display: { xs: "flex", sm: "none" } }}>
-                {getStatusIcon(attendanceStatus)}
-              </Box>
-            </Box>
-
-            <Typography
-              variant="body2"
-              sx={{
-                color: "text.secondary",
-                textAlign: { xs: "left", sm: "right" },
-                fontSize: { xs: "0.85rem", sm: "1rem" },
-                order: { xs: -1, sm: 0 },
-              }}
-            >
-              עודכן {formatUpdateTime(updateTime)}
-            </Typography>
-          </Box>
-
           {/* Status Button with Popup */}
           <Box
             sx={{
               flexShrink: 0,
-              order: { xs: 2, sm: 1 }, // Buttons second on mobile, first on desktop
-              justifyContent: { xs: "center", sm: "flex-start" },
-              width: { xs: "100%", sm: "auto" },
+              order: { xs: 1, sm: 1 }, // Button first on mobile and desktop
+              justifyContent: { xs: "flex-start", sm: "flex-start" },
+              width: { xs: "auto", sm: "auto" },
             }}
           >
             <StatusButtonWithPopup
@@ -227,6 +173,61 @@ const AttendanceChildListItem: React.FC<{
                 return getStatusOption(componentStatus)?.label || "לא ידוע";
               }}
             />
+          </Box>
+
+          {/* Child Name and Time - Mobile: same line, Desktop: separate */}
+          <Box
+            sx={{
+              display: { xs: "flex", sm: "block" },
+              flexDirection: { xs: "row", sm: "column" },
+              alignItems: { xs: "center", sm: "stretch" },
+              justifyContent: { xs: "flex-end", sm: "flex-start" },
+              order: { xs: 2, sm: 2 },
+              width: { xs: "auto", sm: "auto" },
+              gap: { xs: 1, sm: 0 },
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                textAlign: { xs: "right", sm: "right" },
+                fontSize: { xs: "0.85rem", sm: "1rem" },
+                whiteSpace: "nowrap",
+              }}
+            >
+              עודכן {formatUpdateTime(updateTime)}
+            </Typography>
+
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                minWidth: 0,
+                flexShrink: 1,
+              }}
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  color: "text.primary",
+                  textAlign: { xs: "right", sm: "right" },
+                  fontSize: { xs: "1.1rem", sm: "1.25rem" },
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+                noWrap
+              >
+                {child.firstName} {child.lastName}
+              </Typography>
+              {/* Status icon for mobile view */}
+              <Box sx={{ display: { xs: "flex", sm: "none" } }}>
+                {getStatusIcon(attendanceStatus)}
+              </Box>
+            </Box>
           </Box>
         </Box>
 
@@ -275,9 +276,10 @@ const AttendanceSkeleton: React.FC = () => (
           display: { xs: "flex", sm: "block" },
           flexDirection: { xs: "row", sm: "column" },
           alignItems: { xs: "center", sm: "stretch" },
-          justifyContent: { xs: "space-between", sm: "flex-start" },
+          justifyContent: { xs: "flex-start", sm: "flex-start" },
           order: { xs: 1, sm: 2 },
           width: { xs: "100%", sm: "auto" },
+          gap: { xs: 1, sm: 0 },
         }}
       >
         <Skeleton
@@ -330,7 +332,7 @@ const AttendanceSkeleton: React.FC = () => (
           display: "flex",
           gap: 1,
           order: { xs: 2, sm: 1 },
-          justifyContent: { xs: "center", sm: "flex-start" },
+          justifyContent: { xs: "flex-end", sm: "flex-start" },
           width: { xs: "100%", sm: "auto" },
         }}
       >

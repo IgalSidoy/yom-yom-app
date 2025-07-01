@@ -151,7 +151,7 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
         return "#FFE6A7"; // MILD_YELLOW
       case ApiAttendanceStatus.VACATION:
       case "Vacation":
-        return "#FFF7ED"; // MILD_BEIGE
+        return "#E3FFE3"; // Light green - same as staff attendance
       case ApiAttendanceStatus.MISSING:
       case "Missing":
         return "#FFE3E3"; // MILD_PINK
@@ -177,7 +177,7 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
         return "#B88B2A"; // Dark yellow text
       case ApiAttendanceStatus.VACATION:
       case "Vacation":
-        return "#B88B2A"; // Dark beige text
+        return "#3A9A5A"; // Dark green text - same as staff attendance
       case ApiAttendanceStatus.MISSING:
       case "Missing":
         return "#B85C5C"; // Dark pink text
@@ -450,30 +450,64 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
                     }),
                   }}
                 >
-                  {/* Mobile Layout: Stacked vertically */}
+                  {/* Mobile Layout: Same line */}
                   <Box
                     sx={{
                       display: { xs: "flex", sm: "flex" },
-                      flexDirection: { xs: "column", sm: "row-reverse" },
-                      alignItems: { xs: "stretch", sm: "center" },
-                      justifyContent: { xs: "flex-start", sm: "space-between" },
+                      flexDirection: { xs: "row", sm: "row-reverse" },
+                      alignItems: { xs: "center", sm: "center" },
+                      justifyContent: {
+                        xs: "space-between",
+                        sm: "space-between",
+                      },
                       gap: { xs: 1.5, sm: 1.5 },
                     }}
                   >
+                    {/* Status Button with Popup */}
+                    <Box
+                      sx={{
+                        flexShrink: 0,
+                        order: { xs: 1, sm: 1 }, // Button first on mobile and desktop
+                        justifyContent: { xs: "flex-start", sm: "flex-start" },
+                        width: { xs: "auto", sm: "auto" },
+                      }}
+                    >
+                      <StatusButtonWithPopup
+                        currentStatus={convertStringToApiStatus(currentStatus)}
+                        onStatusUpdate={(status) =>
+                          handleStatusUpdate(child.childId, status)
+                        }
+                        updateLoading={updateLoading}
+                        getStatusColor={getStatusColor}
+                        getStatusTextColor={getStatusTextColor}
+                        getStatusText={getStatusText}
+                      />
+                    </Box>
+
                     {/* Child Name and Info - Mobile: same line, Desktop: separate */}
                     <Box
                       sx={{
                         display: { xs: "flex", sm: "block" },
                         flexDirection: { xs: "row", sm: "column" },
                         alignItems: { xs: "center", sm: "stretch" },
-                        justifyContent: {
-                          xs: "space-between",
-                          sm: "flex-start",
-                        },
-                        order: { xs: 1, sm: 2 },
-                        width: { xs: "100%", sm: "auto" },
+                        justifyContent: { xs: "flex-end", sm: "flex-start" },
+                        order: { xs: 2, sm: 2 },
+                        width: { xs: "auto", sm: "auto" },
+                        gap: { xs: 1, sm: 0 },
                       }}
                     >
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "text.secondary",
+                          textAlign: { xs: "right", sm: "right" },
+                          fontSize: { xs: "0.85rem", sm: "1rem" },
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {child.accountName} | {child.groupName}
+                      </Typography>
+
                       <Box
                         sx={{
                           display: "flex",
@@ -503,41 +537,6 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
                           {getStatusIcon(currentStatus)}
                         </Box>
                       </Box>
-
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: "text.secondary",
-                          textAlign: { xs: "left", sm: "right" },
-                          fontSize: { xs: "0.85rem", sm: "1rem" },
-                          order: { xs: -1, sm: 0 },
-                        }}
-                      >
-                        {child.accountName} | {child.groupName}
-                      </Typography>
-                    </Box>
-
-                    {/* Circular Status Buttons */}
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        flexShrink: 0,
-                        order: { xs: 2, sm: 1 },
-                        width: { xs: "100%", sm: "auto" },
-                      }}
-                    >
-                      <StatusButtonWithPopup
-                        currentStatus={convertStringToApiStatus(currentStatus)}
-                        onStatusUpdate={(status) =>
-                          handleStatusUpdate(child.childId, status)
-                        }
-                        updateLoading={updateLoading}
-                        getStatusColor={getStatusColor}
-                        getStatusTextColor={getStatusTextColor}
-                        getStatusText={getStatusText}
-                      />
                     </Box>
                   </Box>
                 </Box>
