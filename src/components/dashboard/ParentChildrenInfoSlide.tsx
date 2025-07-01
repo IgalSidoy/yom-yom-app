@@ -20,6 +20,9 @@ import {
   MenuItem,
   Alert,
   Skeleton,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import {
   Person as PersonIcon,
@@ -28,6 +31,7 @@ import {
   Notifications as NotificationsIcon,
   Refresh as RefreshIcon,
   Edit as EditIcon,
+  ExpandMore as ExpandMoreIcon,
 } from "@mui/icons-material";
 import {
   ApiAttendanceStatus,
@@ -68,6 +72,7 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
   const [selectedStatus, setSelectedStatus] = React.useState<string>("");
   const [updateLoading, setUpdateLoading] = React.useState(false);
   const [error, setError] = React.useState<string>("");
+  const [expanded, setExpanded] = React.useState(true);
   const getStatusIcon = (status: string) => {
     switch (status) {
       case ApiAttendanceStatus.ARRIVED:
@@ -186,248 +191,319 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
 
   // Skeleton component for child cards
   const ChildCardSkeleton: React.FC = () => (
-    <Card
+    <Box
       sx={{
-        bgcolor: "background.paper",
-        border: "1px solid",
-        borderColor: "divider",
-        transition: "all 0.3s ease",
-        mb: 2,
+        py: { xs: 1.5, sm: 2 },
+        px: { xs: 0.5, sm: 0 },
+        borderBottom: "1px solid",
+        borderColor: "rgba(0, 0, 0, 0.04)",
       }}
     >
-      <CardContent sx={{ p: 2.5 }}>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            mb: 1.5,
-          }}
-        >
-          <Skeleton variant="circular" width={48} height={48} sx={{ mr: 2 }} />
-          <Box sx={{ flex: 1 }}>
-            <Skeleton variant="text" width="60%" height={28} sx={{ mb: 0.5 }} />
-            <Skeleton variant="text" width="40%" height={20} />
-          </Box>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-            }}
-          >
-            <Skeleton variant="circular" width={20} height={20} />
-            <Skeleton variant="rounded" width={60} height={24} />
-          </Box>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-
-  return (
-    <>
       <Box
         sx={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          mb: 2,
+          gap: { xs: 1.5, sm: 1.5 },
         }}
       >
-        <Typography
-          variant="h5"
+        <Box
           sx={{
-            fontWeight: 600,
-            color: "text.primary",
-            fontSize: { xs: "1.25rem", sm: "1.5rem" },
+            display: "flex",
+            alignItems: "center",
+            flex: 1,
+            minWidth: 0,
           }}
         >
-          מידע על ילדי
-        </Typography>
-        {onRefresh && (
-          <IconButton
-            onClick={onRefresh}
-            disabled={loading}
-            sx={{
-              color: "primary.main",
-              "&:hover": {
-                backgroundColor: "primary.main",
-                color: "white",
-              },
-            }}
-          >
-            <RefreshIcon />
-          </IconButton>
-        )}
+          <Skeleton
+            variant="circular"
+            width={48}
+            height={48}
+            sx={{ mr: 2, flexShrink: 0 }}
+          />
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Skeleton variant="text" width="60%" height={28} sx={{ mb: 0.5 }} />
+            <Skeleton variant="text" width="40%" height={20} />
+          </Box>
+        </Box>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            flexShrink: 0,
+          }}
+        >
+          <Skeleton variant="circular" width={20} height={20} />
+          <Skeleton variant="rounded" width={60} height={24} />
+        </Box>
       </Box>
+    </Box>
+  );
 
-      {/* Date Card */}
-      <Card
+  return (
+    <>
+      <Accordion
+        expanded={expanded}
+        onChange={() => setExpanded(!expanded)}
         sx={{
-          bgcolor: "background.paper",
+          boxShadow: "none",
           border: "1px solid",
           borderColor: "divider",
-          transition: "all 0.3s ease",
-          mb: 2,
+          borderRadius: 2,
+          "&:before": {
+            display: "none",
+          },
         }}
       >
-        <CardContent sx={{ p: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            סיכום יומי
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {formatDate(currentTime)}
-          </Typography>
-        </CardContent>
-      </Card>
-
-      {/* Children List */}
-      {loading ? (
-        <>
-          <ChildCardSkeleton />
-          <ChildCardSkeleton />
-          <ChildCardSkeleton />
-        </>
-      ) : (
-        children.map((child) => (
-          <Card
-            key={child.childId}
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          sx={{
+            px: 2,
+            py: 1,
+            "& .MuiAccordionSummary-content": {
+              margin: 0,
+            },
+          }}
+        >
+          <Box
             sx={{
-              bgcolor: "background.paper",
-              border: "1px solid",
-              borderColor: "divider",
-              transition: "all 0.3s ease",
-              mb: 2,
-              "&:hover": {
-                transform: "translateY(-2px)",
-                boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-              },
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: "100%",
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 600,
+                color: "text.primary",
+                fontSize: { xs: "1.25rem", sm: "1.5rem" },
+              }}
+            >
+              מידע על ילדי
+            </Typography>
+            {onRefresh && (
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRefresh();
+                }}
+                disabled={loading}
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  mb: 1.5,
+                  color: "primary.main",
+                  "&:hover": {
+                    backgroundColor: "primary.main",
+                    color: "white",
+                  },
                 }}
               >
-                <Avatar
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    mr: 2,
-                    bgcolor: "primary.main",
-                  }}
-                  src={child.avatar}
-                >
-                  <PersonIcon />
-                </Avatar>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                    {`${child.firstName} ${child.lastName}`}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {child.accountName} | {child.groupName}
-                  </Typography>
-                </Box>
+                <RefreshIcon />
+              </IconButton>
+            )}
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails
+          sx={{
+            px: 2,
+            pb: 2,
+            maxHeight: "calc(100vh - 350px)", // Account for navbar, swipe circles, and other UI elements
+            overflow: "auto",
+          }}
+        >
+          {/* Date Summary */}
+          <Box
+            sx={{
+              py: 2,
+              px: 0,
+              borderBottom: "1px solid",
+              borderColor: "rgba(0, 0, 0, 0.04)",
+              mb: 2,
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+              סיכום יומי
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {formatDate(currentTime)}
+            </Typography>
+          </Box>
+
+          {/* Children List */}
+          {loading ? (
+            <>
+              <ChildCardSkeleton />
+              <ChildCardSkeleton />
+              <ChildCardSkeleton />
+            </>
+          ) : (
+            children.map((child) => (
+              <Box
+                key={child.childId}
+                sx={{
+                  py: { xs: 1.5, sm: 2 },
+                  px: { xs: 0.5, sm: 0 },
+                  borderBottom: "1px solid",
+                  borderColor: "rgba(0, 0, 0, 0.04)",
+                  "&:last-child": {
+                    borderBottom: "none",
+                  },
+                }}
+              >
                 <Box
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 1,
+                    justifyContent: "space-between",
+                    gap: { xs: 1.5, sm: 1.5 },
                   }}
                 >
-                  {getStatusIcon(child.status)}
-                  <Chip
-                    label={getStatusText(child.status)}
-                    size="small"
+                  <Box
                     sx={{
-                      fontWeight: 500,
-                      backgroundColor: getStatusColor(child.status),
-                      color: getStatusTextColor(child.status),
-                      border: `1px solid ${getStatusColor(child.status)}`,
-                      "&:hover": {
-                        backgroundColor: getStatusColor(child.status),
-                        opacity: 0.9,
-                      },
+                      display: "flex",
+                      alignItems: "center",
+                      flex: 1,
+                      minWidth: 0,
                     }}
-                  />
-                  {onUpdateAttendance && (
-                    <IconButton
-                      onClick={() => handleEditClick(child)}
+                  >
+                    <Avatar
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        mr: 2,
+                        bgcolor: "primary.main",
+                        flexShrink: 0,
+                      }}
+                      src={child.avatar}
+                    >
+                      <PersonIcon />
+                    </Avatar>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontWeight: 700,
+                          color: "text.primary",
+                          fontSize: { xs: "1.1rem", sm: "1.25rem" },
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                        noWrap
+                      >
+                        {`${child.firstName} ${child.lastName}`}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "text.secondary",
+                          fontSize: { xs: "0.85rem", sm: "1rem" },
+                        }}
+                      >
+                        {child.accountName} | {child.groupName}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {getStatusIcon(child.status)}
+                    <Chip
+                      label={getStatusText(child.status)}
                       size="small"
                       sx={{
-                        color: "primary.main",
+                        fontWeight: 500,
+                        backgroundColor: getStatusColor(child.status),
+                        color: getStatusTextColor(child.status),
+                        border: `1px solid ${getStatusColor(child.status)}`,
                         "&:hover": {
-                          backgroundColor: "primary.main",
-                          color: "white",
+                          backgroundColor: getStatusColor(child.status),
+                          opacity: 0.9,
                         },
                       }}
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                  )}
+                    />
+                    {onUpdateAttendance && (
+                      <IconButton
+                        onClick={() => handleEditClick(child)}
+                        size="small"
+                        sx={{
+                          color: "primary.main",
+                          "&:hover": {
+                            backgroundColor: "primary.main",
+                            color: "white",
+                          },
+                        }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                  </Box>
                 </Box>
               </Box>
-            </CardContent>
-          </Card>
-        ))
-      )}
+            ))
+          )}
 
-      {/* Summary */}
-      {!loading && children.length > 0 && (
-        <Card
-          sx={{
-            bgcolor: "background.paper",
-            border: "1px solid",
-            borderColor: "divider",
-            transition: "all 0.3s ease",
-          }}
-        >
-          <CardContent sx={{ p: 2.5 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-              סיכום
-            </Typography>
-            <Divider sx={{ my: 1.5 }} />
+          {/* Summary */}
+          {!loading && children.length > 0 && (
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                py: 2,
+                px: 0,
+                borderTop: "1px solid",
+                borderColor: "rgba(0, 0, 0, 0.04)",
+                mt: 2,
               }}
             >
-              <Typography variant="body2" color="text.secondary">
-                סה"כ ילדים:
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                סיכום
               </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                {children.length}
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mt: 1,
-              }}
-            >
-              <Typography variant="body2" color="text.secondary">
-                נוכחים היום:
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{ fontWeight: 600, color: "success.main" }}
+              <Divider sx={{ my: 1.5 }} />
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
               >
-                {
-                  children.filter(
-                    (c) => c.status === ApiAttendanceStatus.ARRIVED
-                  ).length
-                }
-              </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  סה"כ ילדים:
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                  {children.length}
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mt: 1,
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  נוכחים היום:
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{ fontWeight: 600, color: "success.main" }}
+                >
+                  {
+                    children.filter(
+                      (c) => c.status === ApiAttendanceStatus.ARRIVED
+                    ).length
+                  }
+                </Typography>
+              </Box>
             </Box>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </AccordionDetails>
+      </Accordion>
 
       {/* Edit Attendance Dialog */}
       <Dialog
