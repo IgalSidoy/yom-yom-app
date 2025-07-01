@@ -680,6 +680,17 @@ export interface GroupAttendance {
 
 // Attendance API functions
 export const attendanceApi = {
+  getAttendanceByDate: async (date: string) => {
+    const response = await api.get(`/api/v1/attendance/date/${date}`, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    return response.data as GroupAttendance[];
+  },
+
   getGroupAttendance: async (groupId: string, date: string) => {
     const response = await api.get(
       `/api/v1/attendance/group/${groupId}/date/${date}`,

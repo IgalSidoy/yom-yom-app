@@ -15,9 +15,16 @@ import {
   Button,
   ButtonGroup,
   Container,
+  IconButton,
 } from "@mui/material";
 import { useApp } from "../contexts/AppContext";
 import { useAttendance } from "../contexts/AttendanceContext";
+import {
+  Refresh as RefreshIcon,
+  CheckCircle as CheckCircleIcon,
+  Schedule as ScheduleIcon,
+  Notifications as NotificationsIcon,
+} from "@mui/icons-material";
 import {
   ChildWithParents,
   attendanceApi,
@@ -94,6 +101,21 @@ const AttendanceChildListItem: React.FC<{
       });
     };
 
+    const getStatusIcon = (status: AttendanceStatus) => {
+      switch (status) {
+        case ComponentAttendanceStatus.ARRIVED:
+          return <CheckCircleIcon sx={{ color: "#FF9F43", fontSize: 20 }} />;
+        case ComponentAttendanceStatus.LATE:
+          return <ScheduleIcon sx={{ color: "#3A6EA5", fontSize: 20 }} />;
+        case ComponentAttendanceStatus.MISSING:
+        case ComponentAttendanceStatus.SICK:
+        case ComponentAttendanceStatus.VACATION:
+          return <NotificationsIcon sx={{ color: "#B85C5C", fontSize: 20 }} />;
+        default:
+          return null;
+      }
+    };
+
     return (
       <Box
         sx={{
@@ -124,23 +146,35 @@ const AttendanceChildListItem: React.FC<{
               width: { xs: "100%", sm: "auto" },
             }}
           >
-            <Typography
-              variant="h6"
+            <Box
               sx={{
-                fontWeight: 700,
-                color: "text.primary",
-                textAlign: { xs: "right", sm: "right" },
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
                 minWidth: 0,
                 flexShrink: 1,
-                fontSize: { xs: "1.1rem", sm: "1.25rem" },
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
               }}
-              noWrap
             >
-              {child.firstName} {child.lastName}
-            </Typography>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  color: "text.primary",
+                  textAlign: { xs: "right", sm: "right" },
+                  fontSize: { xs: "1.1rem", sm: "1.25rem" },
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+                noWrap
+              >
+                {child.firstName} {child.lastName}
+              </Typography>
+              {/* Status icon for mobile view */}
+              <Box sx={{ display: { xs: "flex", sm: "none" } }}>
+                {getStatusIcon(attendanceStatus)}
+              </Box>
+            </Box>
 
             <Typography
               variant="body2"
@@ -506,7 +540,8 @@ const AttendanceSkeleton: React.FC = () => (
 
 const DailyAttendance: React.FC = () => {
   const { user } = useApp();
-  const { attendanceData, isLoading, updateAttendance } = useAttendance();
+  const { attendanceData, isLoading, updateAttendance, fetchAttendance } =
+    useAttendance();
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<
     AttendanceStatus | ""
   >("");
@@ -705,6 +740,17 @@ const DailyAttendance: React.FC = () => {
     setSelectedStatusFilter("");
   };
 
+  const handleRefresh = () => {
+    if (user?.groupId) {
+      const today = new Date().toISOString().split("T")[0];
+      fetchAttendance(user.groupId, today, true);
+      // Remove focus from the button after clicking
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    }
+  };
+
   return (
     <Container
       maxWidth="sm"
@@ -746,12 +792,34 @@ const DailyAttendance: React.FC = () => {
                 mb: 1,
               }}
             >
-              <Typography
-                variant="h6"
-                sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                }}
               >
-                נוכחות יומית
-              </Typography>
+                <Typography
+                  variant="h6"
+                  sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
+                >
+                  נוכחות יומית
+                </Typography>
+                <IconButton
+                  onClick={handleRefresh}
+                  disabled={isLoading}
+                  size="small"
+                  sx={{
+                    color: "primary.main",
+                    "&:hover": {
+                      backgroundColor: "primary.main",
+                      color: "white",
+                    },
+                  }}
+                >
+                  <RefreshIcon fontSize="small" />
+                </IconButton>
+              </Box>
               <Typography
                 variant="caption"
                 color="text.secondary"

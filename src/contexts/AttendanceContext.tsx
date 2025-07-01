@@ -14,7 +14,11 @@ interface AttendanceContextType {
   attendanceData: GroupAttendance | null;
   isLoading: boolean;
   error: string | null;
-  fetchAttendance: (groupId: string, date: string) => Promise<void>;
+  fetchAttendance: (
+    groupId: string,
+    date: string,
+    force?: boolean
+  ) => Promise<void>;
   updateAttendance: (
     groupId: string,
     date: string,
@@ -46,9 +50,10 @@ export const AttendanceProvider: React.FC<AttendanceProviderProps> = ({
   const isInitialized = useRef(false);
 
   const fetchAttendance = useCallback(
-    async (groupId: string, date: string) => {
-      // Don't fetch if we already have the data for this group and date
+    async (groupId: string, date: string, force = false) => {
+      // Don't fetch if we already have the data for this group and date, unless force is true
       if (
+        !force &&
         attendanceData &&
         currentGroupId === groupId &&
         currentDate === date

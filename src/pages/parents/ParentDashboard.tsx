@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Box, Typography, useTheme } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../../contexts/AppContext";
 import { useAttendance } from "../../contexts/AttendanceContext";
 import { ApiAttendanceStatus } from "../../types/attendance";
-import SwipeableCards from "../../components/SwipeableCards";
+import { attendanceApi, GroupAttendance } from "../../services/api";
+import SwipeableCards, {
+  SwipeableCardsRef,
+} from "../../components/SwipeableCards";
 import ParentQuickActionsSlide from "../../components/dashboard/ParentQuickActionsSlide";
 import ParentChildrenInfoSlide from "../../components/dashboard/ParentChildrenInfoSlide";
 
@@ -14,6 +17,11 @@ const ParentDashboard: React.FC = () => {
   const theme = useTheme();
   const { attendanceData } = useAttendance();
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [attendanceDataByDate, setAttendanceDataByDate] = useState<
+    GroupAttendance[]
+  >([]);
+  const [loading, setLoading] = useState(false);
+  const swiperRef = useRef<SwipeableCardsRef>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -22,34 +30,77 @@ const ParentDashboard: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Mock data for parent's children - in real app this would come from API
+  // Fetch attendance data for today
+  const fetchAttendanceData = async () => {
+    if (!user?.accountId) return;
+
+    setLoading(true);
+    try {
+      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+      const data = await attendanceApi.getAttendanceByDate(today);
+      setAttendanceDataByDate(data);
+    } catch (error) {
+      console.error("Failed to fetch attendance data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAttendanceData();
+  }, [user?.accountId]);
+
+  // Process attendance data to get parent's children
   const parentChildren = useMemo(() => {
-    if (!attendanceData?.children) {
+    if (!attendanceDataByDate.length) {
       return [];
     }
 
-    // Filter children that belong to this parent
-    // In real app, you'd filter by parentId
-    return attendanceData.children.slice(0, 3).map((child, index) => ({
-      id: child.childId || `child-${index}`,
-      name: child.firstName || `ילד ${index + 1}`,
-      status:
-        child.status === ApiAttendanceStatus.ARRIVED
-          ? ("present" as const)
-          : child.status === ApiAttendanceStatus.LATE
-          ? ("late" as const)
-          : ("absent" as const),
-      groupName: attendanceData.groupName || "קבוצה א",
-      avatar: undefined, // Not available in current API
-    }));
-  }, [attendanceData]);
+    // Flatten all children from all groups and add group and account information
+    const allChildren = attendanceDataByDate.flatMap((groupAttendance) =>
+      groupAttendance.children.map((child) => ({
+        ...child,
+        groupName: groupAttendance.groupName,
+        accountName: groupAttendance.accountName,
+      }))
+    );
+
+    // In a real app, you would filter by parentId
+    // For now, we'll show all children from the user's account
+    return allChildren;
+  }, [attendanceDataByDate]);
 
   const handleViewAttendance = () => {
-    navigate("/attendance");
+    // Swipe to the attendance card (index 1 - ParentChildrenInfoSlide)
+    swiperRef.current?.swipeTo(1);
   };
 
   const handleViewMessages = () => {
     navigate("/feed");
+  };
+
+  const handleUpdateAttendance = async (childId: string, status: string) => {
+    // Find the group attendance data for this child
+    const groupAttendance = attendanceDataByDate.find((group) =>
+      group.children.some((child) => child.childId === childId)
+    );
+
+    if (!groupAttendance) {
+      throw new Error("לא נמצאו נתוני נוכחות לילד זה");
+    }
+
+    try {
+      // Update the child's attendance status
+      await attendanceApi.updateChildAttendance(
+        groupAttendance.groupId,
+        groupAttendance.date,
+        childId,
+        status
+      );
+    } catch (error) {
+      console.error("Failed to update attendance:", error);
+      throw error;
+    }
   };
 
   const formatTime = (date: Date) => {
@@ -89,6 +140,9 @@ const ParentDashboard: React.FC = () => {
       key="children-info"
       children={parentChildren}
       currentTime={currentTime}
+      loading={loading}
+      onRefresh={fetchAttendanceData}
+      onUpdateAttendance={handleUpdateAttendance}
     />,
   ];
 
@@ -154,6 +208,7 @@ const ParentDashboard: React.FC = () => {
 
       {/* Swipeable Content */}
       <SwipeableCards
+        ref={swiperRef}
         slides={slides}
         autoplayDelay={8000}
         spaceBetween={30}
