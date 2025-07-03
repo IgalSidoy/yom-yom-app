@@ -21,6 +21,7 @@ const ParentDashboard: React.FC = () => {
     GroupAttendance[]
   >([]);
   const [loading, setLoading] = useState(false);
+  const [forceExpandAttendance, setForceExpandAttendance] = useState(false);
   const swiperRef = useRef<SwipeableCardsRef>(null);
 
   // Fetch attendance data for today
@@ -43,6 +44,17 @@ const ParentDashboard: React.FC = () => {
     fetchAttendanceData();
   }, [user?.accountId]);
 
+  // Reset force expand flag after it's been used
+  useEffect(() => {
+    if (forceExpandAttendance) {
+      // Reset the flag after a short delay to allow the accordion to expand
+      const timer = setTimeout(() => {
+        setForceExpandAttendance(false);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [forceExpandAttendance]);
+
   // Process attendance data to get parent's children
   const parentChildren = useMemo(() => {
     if (!attendanceDataByDate.length) {
@@ -64,6 +76,8 @@ const ParentDashboard: React.FC = () => {
   }, [attendanceDataByDate]);
 
   const handleViewAttendance = () => {
+    // Set flag to force expand the accordion
+    setForceExpandAttendance(true);
     // Swipe to the attendance card (index 1 - ParentChildrenInfoSlide)
     swiperRef.current?.swipeTo(1);
   };
@@ -112,6 +126,7 @@ const ParentDashboard: React.FC = () => {
       loading={loading}
       onRefresh={fetchAttendanceData}
       onUpdateAttendance={handleUpdateAttendance}
+      forceExpand={forceExpandAttendance}
     />,
   ];
 

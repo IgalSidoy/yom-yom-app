@@ -1,5 +1,13 @@
-import React, { useEffect, useState, useMemo, memo, useRef } from "react";
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  memo,
+  useRef,
+  useCallback,
+} from "react";
 import { FixedSizeList as VirtualList } from "react-window";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -16,6 +24,12 @@ import {
   ButtonGroup,
   Container,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import StatusButtonWithPopup from "./StatusButtonWithPopup";
 import DateTimeWidget from "./DateTimeWidget";
@@ -26,6 +40,7 @@ import {
   CheckCircle as CheckCircleIcon,
   Schedule as ScheduleIcon,
   Notifications as NotificationsIcon,
+  Done as DoneIcon,
 } from "@mui/icons-material";
 import {
   ChildWithParents,
@@ -87,8 +102,16 @@ const AttendanceChildListItem: React.FC<{
   updateTime?: string;
   onStatusChange: (childId: string, status: AttendanceStatus) => Promise<void>;
   index?: number; // Add index for staggered animation
+  isAttendanceClosed?: boolean;
 }> = memo(
-  ({ child, attendanceStatus, updateTime, onStatusChange, index = 0 }) => {
+  ({
+    child,
+    attendanceStatus,
+    updateTime,
+    onStatusChange,
+    index = 0,
+    isAttendanceClosed = false,
+  }) => {
     const rareStatuses = ATTENDANCE_STATUS_OPTIONS.filter(
       (opt) => opt.value !== ComponentAttendanceStatus.ARRIVED
     );
@@ -155,6 +178,7 @@ const AttendanceChildListItem: React.FC<{
                 ).catch(console.error)
               }
               updateLoading={false}
+              disabled={isAttendanceClosed}
               availableStatuses={[
                 ApiAttendanceStatus.ARRIVED,
                 ApiAttendanceStatus.LATE,
@@ -407,14 +431,52 @@ const AttendanceSkeleton: React.FC = () => (
 
 const DailyAttendance: React.FC = () => {
   const { user } = useApp();
-  const { attendanceData, isLoading, updateAttendance, fetchAttendance } =
-    useAttendance();
+  const navigate = useNavigate();
+  const {
+    attendanceData,
+    isLoading,
+    error,
+    isAttendanceClosed,
+    updateAttendance,
+    fetchAttendance,
+    markAttendanceAsClosed,
+  } = useAttendance();
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<
     AttendanceStatus | ""
   >("");
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [listHeight, setListHeight] = useState(400);
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [notification, setNotification] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error" | "info" | "warning";
+  }>({
+    open: false,
+    message: "",
+    severity: "success",
+  });
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Check if attendance is closed (either from context or attendance data)
+  const isAttendanceClosedComputed = useMemo(() => {
+    const result = isAttendanceClosed || attendanceData?.isClosed || false;
+    console.log("isAttendanceClosedComputed:", result);
+    console.log("isAttendanceClosed from context:", isAttendanceClosed);
+    console.log("attendanceData?.isClosed:", attendanceData?.isClosed);
+    return result;
+  }, [isAttendanceClosed, attendanceData?.isClosed]);
+
+  const showNotification = useCallback(
+    (message: string, severity: "success" | "error" | "info" | "warning") => {
+      setNotification({
+        open: true,
+        message,
+        severity,
+      });
+    },
+    []
+  );
 
   // Convert attendance data to component format
   const {
@@ -470,6 +532,15 @@ const DailyAttendance: React.FC = () => {
   useEffect(() => {
     setIsInitialLoading(isLoading);
   }, [isLoading]);
+
+  // Show warning notification when attendance is closed
+  useEffect(() => {
+    console.log("isAttendanceClosedComputed:", isAttendanceClosedComputed);
+    if (isAttendanceClosedComputed) {
+      console.log("Attendance is closed for the day");
+      // Removed notification - just show the disabled overlay
+    }
+  }, [isAttendanceClosedComputed, showNotification]);
 
   // Calculate dynamic heights based on viewport
   useEffect(() => {
@@ -539,10 +610,15 @@ const DailyAttendance: React.FC = () => {
     childId: string,
     status: AttendanceStatus
   ) => {
-    if (!user?.groupId || !attendanceData) return;
+    if (!user?.groupId || !attendanceData || isAttendanceClosedComputed) return;
 
     const today = new Date().toISOString().split("T")[0];
     const apiStatus = mapComponentStatusToApiStatus(status);
+
+    // Find the child name for the notification
+    const child = attendanceData.children.find((c) => c.childId === childId);
+    const childName = child ? `${child.firstName} ${child.lastName}` : "ילד";
+    const statusText = getStatusOption(status)?.label || "לא ידוע";
 
     try {
       // Create updated attendance data
@@ -559,8 +635,14 @@ const DailyAttendance: React.FC = () => {
 
       // Update via context
       await updateAttendance(user.groupId, today, updatedAttendanceData);
+
+      // Show success notification
+      showNotification("עודכן בהצלחה", "success");
     } catch (error) {
       console.error("Failed to update attendance status:", error);
+
+      // Show error notification
+      showNotification("שגיאה", "error");
     }
   };
 
@@ -616,6 +698,58 @@ const DailyAttendance: React.FC = () => {
         document.activeElement.blur();
       }
     }
+  };
+
+  const handleCompleteAttendance = () => {
+    setShowCompleteDialog(true);
+  };
+
+  const handleConfirmComplete = async () => {
+    try {
+      if (!user?.groupId || !attendanceData) {
+        throw new Error("Missing group or attendance data");
+      }
+
+      const today = new Date().toISOString().split("T")[0];
+
+      // Create updated attendance data with isClosed flag
+      const updatedAttendanceData: GroupAttendance = {
+        ...attendanceData,
+        isClosed: true,
+      };
+
+      // Immediately mark attendance as closed in the UI
+      markAttendanceAsClosed();
+
+      // Update attendance with closed status using the API
+      await attendanceApi.updateGroupAttendance(
+        user.groupId,
+        today,
+        updatedAttendanceData
+      );
+
+      // Show success notification
+      showNotification("נוכחות נסגרה בהצלחה", "success");
+
+      // Close dialog and navigate
+      setShowCompleteDialog(false);
+    } catch (error) {
+      console.error("Failed to close attendance session:", error);
+
+      // Show error notification
+      showNotification("שגיאה", "error");
+
+      // Close dialog without navigating
+      setShowCompleteDialog(false);
+    }
+  };
+
+  const handleCancelComplete = () => {
+    setShowCompleteDialog(false);
+  };
+
+  const handleCloseNotification = () => {
+    setNotification((prev) => ({ ...prev, open: false }));
   };
 
   return (
@@ -701,21 +835,86 @@ const DailyAttendance: React.FC = () => {
                     <RefreshIcon fontSize="small" />
                   </IconButton>
                 </Box>
-                <Typography
-                  variant="body1"
-                  color="primary"
+                <Box
                   sx={{
-                    fontWeight: 600,
-                    fontSize: { xs: "0.95rem", sm: "1.1rem" },
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    flexWrap: "wrap",
                   }}
                 >
-                  {getGroupName()}
-                </Typography>
+                  <Typography
+                    variant="body1"
+                    color="primary"
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: { xs: "0.95rem", sm: "1.1rem" },
+                    }}
+                  >
+                    {getGroupName()}
+                  </Typography>
+                  {isAttendanceClosedComputed && (
+                    <Box
+                      sx={{
+                        bgcolor: "warning.main",
+                        color: "white",
+                        borderRadius: 1.5,
+                        px: 1.5,
+                        py: 0.5,
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "0.7rem",
+                        }}
+                      >
+                        נסגר
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
               </Box>
 
-              {/* DateTime Widget */}
-              <Box>
+              {/* DateTime Widget and Complete Button */}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                  gap: 1.5,
+                }}
+              >
                 <DateTimeWidget variant="compact" size="large" />
+                {!isAttendanceClosedComputed && (
+                  <Button
+                    onClick={handleCompleteAttendance}
+                    size="small"
+                    variant="contained"
+                    startIcon={<DoneIcon />}
+                    sx={{
+                      bgcolor: "primary.main",
+                      color: "white",
+                      px: 2,
+                      py: 1,
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+                      borderRadius: 2,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                      "&:hover": {
+                        bgcolor: "primary.dark",
+                        color: "white",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+                        transform: "translateY(-1px)",
+                      },
+                      transition: "all 0.2s ease-in-out",
+                    }}
+                  >
+                    סגור נוכחות
+                  </Button>
+                )}
               </Box>
             </Box>
 
@@ -1047,6 +1246,7 @@ const DailyAttendance: React.FC = () => {
             px: { xs: 0, sm: 2 },
             pb: 0,
             mt: { xs: 0.5, sm: 0 },
+            position: "relative",
           }}
         >
           {isInitialLoading ? (
@@ -1106,6 +1306,7 @@ const DailyAttendance: React.FC = () => {
                         }
                         onStatusChange={data.onStatusChange}
                         index={index}
+                        isAttendanceClosed={isAttendanceClosedComputed}
                       />
                     </div>
                   )}
@@ -1126,6 +1327,7 @@ const DailyAttendance: React.FC = () => {
                     updateTime={attendanceTimestamps[child.id!]}
                     onStatusChange={handleStatusChange}
                     index={index}
+                    isAttendanceClosed={isAttendanceClosedComputed}
                   />
                 ))}
                 {/* Small spacer for extra scroll space */}
@@ -1135,6 +1337,161 @@ const DailyAttendance: React.FC = () => {
           )}
         </Box>
       </Box>
+
+      {/* Confirmation Dialog for Completing Attendance */}
+      <Dialog
+        open={showCompleteDialog}
+        onClose={handleCancelComplete}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 0,
+            overflow: "hidden",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+          },
+        }}
+      >
+        <Box
+          sx={{
+            bgcolor: "primary.main",
+            color: "white",
+            p: 3,
+            textAlign: "center",
+          }}
+        >
+          <DoneIcon sx={{ fontSize: 48, mb: 2, opacity: 0.9 }} />
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 700,
+              fontSize: "1.5rem",
+            }}
+          >
+            סיום נוכחות יומית
+          </Typography>
+        </Box>
+
+        <DialogContent sx={{ textAlign: "center", py: 3, px: 3 }}>
+          <Typography
+            variant="body1"
+            color="text.primary"
+            sx={{
+              mb: 2,
+              fontWeight: 500,
+              fontSize: "1.1rem",
+            }}
+          >
+            האם אתה בטוח שברצונך לסגור את נוכחות היום?
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ lineHeight: 1.6 }}
+          >
+            פעולה זו תסגור את נוכחות היום ותחזיר אותך לדשבורד הראשי.
+          </Typography>
+        </DialogContent>
+
+        <DialogActions
+          sx={{
+            justifyContent: "center",
+            gap: 2,
+            px: 3,
+            pb: 3,
+            pt: 1,
+          }}
+        >
+          <Button
+            onClick={handleCancelComplete}
+            variant="outlined"
+            size="large"
+            sx={{
+              minWidth: 120,
+              borderColor: "grey.300",
+              color: "text.secondary",
+              borderRadius: 2,
+              px: 3,
+              py: 1.5,
+              fontSize: "0.95rem",
+              fontWeight: 600,
+              "&:hover": {
+                borderColor: "grey.500",
+                backgroundColor: "grey.50",
+                transform: "translateY(-1px)",
+              },
+              transition: "all 0.2s ease-in-out",
+            }}
+          >
+            ביטול
+          </Button>
+          <Button
+            onClick={handleConfirmComplete}
+            variant="contained"
+            size="large"
+            startIcon={<DoneIcon />}
+            sx={{
+              minWidth: 140,
+              bgcolor: "primary.main",
+              color: "white",
+              borderRadius: 2,
+              px: 3,
+              py: 1.5,
+              fontSize: "0.95rem",
+              fontWeight: 600,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              "&:hover": {
+                bgcolor: "primary.dark",
+                color: "white",
+                boxShadow: "0 6px 16px rgba(0,0,0,0.25)",
+                transform: "translateY(-1px)",
+              },
+              transition: "all 0.2s ease-in-out",
+            }}
+          >
+            סגור
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Notification Snackbar */}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={4000}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        sx={{
+          mt: { xs: 2, sm: 3 }, // Higher positioning
+        }}
+      >
+        <Alert
+          onClose={handleCloseNotification}
+          severity={notification.severity}
+          variant="filled"
+          sx={{
+            width: "100%",
+            fontSize: "0.95rem",
+            fontWeight: 500,
+            borderRadius: 2,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            "&.MuiAlert-standardSuccess, &.MuiAlert-filledSuccess": {
+              backgroundColor: "#66BB6A",
+              color: "white",
+            },
+            "&.MuiAlert-standardError, &.MuiAlert-filledError": {
+              backgroundColor: "#F44336",
+              color: "white",
+            },
+            "&.MuiAlert-standardWarning, &.MuiAlert-filledWarning": {
+              backgroundColor: "#FF9800",
+              color: "white",
+            },
+          }}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

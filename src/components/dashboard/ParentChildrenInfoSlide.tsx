@@ -51,6 +51,7 @@ interface ParentChildrenInfoSlideProps {
   loading?: boolean;
   onRefresh?: () => void;
   onUpdateAttendance?: (childId: string, status: string) => Promise<void>;
+  forceExpand?: boolean;
 }
 
 const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
@@ -59,6 +60,7 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
   loading = false,
   onRefresh,
   onUpdateAttendance,
+  forceExpand = false,
 }) => {
   const [expanded, setExpanded] = React.useState(true);
   const [updateLoading, setUpdateLoading] = React.useState(false);
@@ -66,6 +68,13 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
   const [optimisticUpdates, setOptimisticUpdates] = React.useState<
     Record<string, string>
   >({});
+
+  // Handle force expand prop
+  useEffect(() => {
+    if (forceExpand) {
+      setExpanded(true);
+    }
+  }, [forceExpand]);
 
   // Clean up optimistic updates when the actual data matches
   useEffect(() => {
