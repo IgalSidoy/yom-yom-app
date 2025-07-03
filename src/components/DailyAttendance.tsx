@@ -461,9 +461,6 @@ const DailyAttendance: React.FC = () => {
   // Check if attendance is closed (either from context or attendance data)
   const isAttendanceClosedComputed = useMemo(() => {
     const result = isAttendanceClosed || attendanceData?.isClosed || false;
-    console.log("isAttendanceClosedComputed:", result);
-    console.log("isAttendanceClosed from context:", isAttendanceClosed);
-    console.log("attendanceData?.isClosed:", attendanceData?.isClosed);
     return result;
   }, [isAttendanceClosed, attendanceData?.isClosed]);
 
@@ -535,10 +532,7 @@ const DailyAttendance: React.FC = () => {
 
   // Show warning notification when attendance is closed
   useEffect(() => {
-    console.log("isAttendanceClosedComputed:", isAttendanceClosedComputed);
     if (isAttendanceClosedComputed) {
-      console.log("Attendance is closed for the day");
-      // Removed notification - just show the disabled overlay
     }
   }, [isAttendanceClosedComputed, showNotification]);
 
