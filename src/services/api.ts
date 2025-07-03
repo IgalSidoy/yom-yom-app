@@ -654,4 +654,109 @@ export interface UserChildrenResponse {
   children: UserChild[];
 }
 
+// Attendance API interfaces
+export interface AttendanceChild {
+  childId: string;
+  firstName: string;
+  lastName: string;
+  status: string;
+  timestamp: string;
+  updatedByUserId: string;
+  dateOfBirth?: string;
+}
+
+export interface GroupAttendance {
+  id: string;
+  groupId: string;
+  groupName: string;
+  accountId: string;
+  accountName: string;
+  date: string;
+  children: AttendanceChild[];
+  isClosed: boolean;
+  created: string;
+  updated: string;
+}
+
+// Attendance API functions
+export const attendanceApi = {
+  getAttendanceByDate: async (date: string) => {
+    const response = await api.get(`/api/v1/attendance/date/${date}`, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    return response.data as GroupAttendance[];
+  },
+
+  getGroupAttendance: async (groupId: string, date: string) => {
+    const response = await api.get(
+      `/api/v1/attendance/group/${groupId}/date/${date}`,
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
+    return response.data as GroupAttendance;
+  },
+
+  updateChildAttendance: async (
+    groupId: string,
+    date: string,
+    childId: string,
+    status: string
+  ) => {
+    const response = await api.put(
+      `/api/v1/attendance/group/${groupId}/date/${date}`,
+      {
+        children: [
+          {
+            childId: childId,
+            status: status,
+          },
+        ],
+        isClosed: false,
+      },
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  },
+
+  updateGroupAttendance: async (
+    groupId: string,
+    date: string,
+    attendanceData: GroupAttendance
+  ) => {
+    const response = await api.put(
+      `/api/v1/attendance/group/${groupId}/date/${date}`,
+      {
+        children: attendanceData.children.map((child) => ({
+          childId: child.childId,
+          status: child.status,
+        })),
+        isClosed: attendanceData.isClosed,
+      },
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  },
+};
+
 export default api;

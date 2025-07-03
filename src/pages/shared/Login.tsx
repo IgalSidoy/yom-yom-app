@@ -10,12 +10,12 @@ import {
   Fade,
   CircularProgress,
 } from "@mui/material";
-import { useAuth } from "../contexts/AuthContext";
-import { useApp } from "../contexts/AppContext";
-import Notification from "../components/Notification";
+import { useAuth } from "../../contexts/AuthContext";
+import { useApp } from "../../contexts/AppContext";
+import Notification from "../../components/Notification";
 
 const Login: React.FC = () => {
-  const [mobile, setMobile] = useState("054-1111111");
+  const [mobile, setMobile] = useState("054-");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [showOtp, setShowOtp] = useState(false);
   const [timer, setTimer] = useState(60);

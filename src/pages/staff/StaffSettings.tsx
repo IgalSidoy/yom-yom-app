@@ -15,13 +15,18 @@ import {
   MenuItem,
   Switch,
   FormControlLabel,
+  Divider,
+  Snackbar,
+  Alert,
+  IconButton,
+  InputAdornment,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { useLanguage } from "../contexts/LanguageContext";
-import { useApp } from "../contexts/AppContext";
-import { useAuth } from "../contexts/AuthContext";
-import { userApi, User } from "../services/api";
-import Notification from "../components/Notification";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { useApp } from "../../contexts/AppContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { userApi, User } from "../../services/api";
+import Notification from "../../components/Notification";
 
 const StaffSettings = () => {
   const { language, setLanguage } = useLanguage();

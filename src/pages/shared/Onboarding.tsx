@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import { useNavigate, Link } from "react-router-dom";
 import CheckIcon from "@mui/icons-material/Check";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 const steps = [1, 2, 3];
 
