@@ -14,7 +14,12 @@ const StaffDashboard: React.FC = () => {
   const { user } = useApp();
   const navigate = useNavigate();
   const theme = useTheme();
-  const { attendanceData } = useAttendance();
+  const { attendanceData, isAttendanceClosed } = useAttendance();
+
+  // Check if attendance is closed (either from context error or attendance data)
+  const isAttendanceClosedComputed = useMemo(() => {
+    return isAttendanceClosed || attendanceData?.isClosed || false;
+  }, [isAttendanceClosed, attendanceData?.isClosed]);
 
   const stats = useMemo(() => {
     if (!attendanceData?.children) {
@@ -61,6 +66,7 @@ const StaffDashboard: React.FC = () => {
       onStartAttendance={handleStartAttendance}
       user={user}
       currentTime={new Date()}
+      isAttendanceClosed={isAttendanceClosedComputed}
     />,
     <StatisticsSlide key="statistics" stats={stats} />,
     <AdditionalInfoSlide key="additional-info" />,

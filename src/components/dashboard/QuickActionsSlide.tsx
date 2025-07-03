@@ -21,12 +21,14 @@ interface QuickActionsSlideProps {
   onStartAttendance: () => void;
   user: any;
   currentTime: Date;
+  isAttendanceClosed?: boolean;
 }
 
 const QuickActionsSlide: React.FC<QuickActionsSlideProps> = ({
   onStartAttendance,
   user,
   currentTime,
+  isAttendanceClosed = false,
 }) => {
   const theme = useTheme();
 
@@ -54,67 +56,69 @@ const QuickActionsSlide: React.FC<QuickActionsSlideProps> = ({
       </Typography>
 
       {/* Start Attendance Card */}
-      <Card
-        sx={{
-          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-          color: "white",
-          cursor: "pointer",
-          transition: "all 0.3s ease",
-          mb: 2,
-          "&:hover": {
-            transform: "translateY(-4px)",
-            boxShadow: "0 8px 25px rgba(0,0,0,0.15)",
-          },
-        }}
-        onClick={onStartAttendance}
-      >
-        <CardContent sx={{ p: 2.5 }}>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              mb: 1.5,
-            }}
-          >
+      {!isAttendanceClosed && (
+        <Card
+          sx={{
+            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+            color: "white",
+            cursor: "pointer",
+            transition: "all 0.3s ease",
+            mb: 2,
+            "&:hover": {
+              transform: "translateY(-4px)",
+              boxShadow: "0 8px 25px rgba(0,0,0,0.15)",
+            },
+          }}
+          onClick={onStartAttendance}
+        >
+          <CardContent sx={{ p: 2.5 }}>
             <Box
               sx={{
-                p: 1.5,
-                borderRadius: 2,
-                bgcolor: "rgba(255,255,255,0.2)",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
+                justifyContent: "space-between",
+                mb: 1.5,
               }}
             >
-              <PeopleIcon sx={{ fontSize: 28 }} />
+              <Box
+                sx={{
+                  p: 1.5,
+                  borderRadius: 2,
+                  bgcolor: "rgba(255,255,255,0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <PeopleIcon sx={{ fontSize: 28 }} />
+              </Box>
+              <IconButton
+                sx={{
+                  color: "white",
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.1)" },
+                }}
+              >
+                <ArrowForwardIcon />
+              </IconButton>
             </Box>
-            <IconButton
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+              התחל נוכחות יומית
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, mb: 1.5 }}>
+              סמן את נוכחות הילדים לקבוצה שלך היום
+            </Typography>
+            <Chip
+              label="מומלץ להתחיל עכשיו"
+              size="small"
               sx={{
+                bgcolor: "rgba(255,255,255,0.2)",
                 color: "white",
-                "&:hover": { bgcolor: "rgba(255,255,255,0.1)" },
+                fontWeight: 500,
               }}
-            >
-              <ArrowForwardIcon />
-            </IconButton>
-          </Box>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            התחל נוכחות יומית
-          </Typography>
-          <Typography variant="body2" sx={{ opacity: 0.9, mb: 1.5 }}>
-            סמן את נוכחות הילדים לקבוצה שלך היום
-          </Typography>
-          <Chip
-            label="מומלץ להתחיל עכשיו"
-            size="small"
-            sx={{
-              bgcolor: "rgba(255,255,255,0.2)",
-              color: "white",
-              fontWeight: 500,
-            }}
-          />
-        </CardContent>
-      </Card>
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Group Info Card */}
       <Card

@@ -14,6 +14,7 @@ interface AttendanceContextType {
   attendanceData: GroupAttendance | null;
   isLoading: boolean;
   error: string | null;
+  isAttendanceClosed: boolean;
   fetchAttendance: (
     groupId: string,
     date: string,
@@ -24,6 +25,7 @@ interface AttendanceContextType {
     date: string,
     attendanceData: GroupAttendance
   ) => Promise<void>;
+  markAttendanceAsClosed: () => void;
   refreshAttendance: () => Promise<void>;
   clearAttendance: () => void;
 }
@@ -45,6 +47,7 @@ export const AttendanceProvider: React.FC<AttendanceProviderProps> = ({
   );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAttendanceClosed, setIsAttendanceClosed] = useState(false);
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState<string | null>(null);
   const isInitialized = useRef(false);
@@ -74,6 +77,7 @@ export const AttendanceProvider: React.FC<AttendanceProviderProps> = ({
         setAttendanceData(data);
         setCurrentGroupId(groupId);
         setCurrentDate(date);
+        setIsAttendanceClosed(false);
       } catch (error: any) {
         console.error("Failed to fetch attendance data:", error);
         // If we get 404, it means no attendance data exists yet, which is fine
@@ -81,8 +85,17 @@ export const AttendanceProvider: React.FC<AttendanceProviderProps> = ({
           setAttendanceData(null);
           setCurrentGroupId(groupId);
           setCurrentDate(date);
+          setIsAttendanceClosed(false);
+        } else if (error.response?.status === 422) {
+          // Attendance is closed for the day
+          setAttendanceData(null);
+          setCurrentGroupId(groupId);
+          setCurrentDate(date);
+          setIsAttendanceClosed(true);
+          setError("נוכחות היום נסגרה");
         } else {
           setError(error.message || "Failed to fetch attendance data");
+          setIsAttendanceClosed(false);
         }
       } finally {
         setIsLoading(false);
@@ -116,6 +129,17 @@ export const AttendanceProvider: React.FC<AttendanceProviderProps> = ({
     []
   );
 
+  const markAttendanceAsClosed = useCallback(() => {
+    setIsAttendanceClosed(true);
+    // Also update the attendance data to mark it as closed
+    if (attendanceData) {
+      setAttendanceData({
+        ...attendanceData,
+        isClosed: true,
+      });
+    }
+  }, [attendanceData]);
+
   const refreshAttendance = useCallback(async () => {
     if (currentGroupId && currentDate) {
       await fetchAttendance(currentGroupId, currentDate);
@@ -127,6 +151,7 @@ export const AttendanceProvider: React.FC<AttendanceProviderProps> = ({
     setCurrentGroupId(null);
     setCurrentDate(null);
     setError(null);
+    setIsAttendanceClosed(false);
     isInitialized.current = false;
   }, []);
 
@@ -143,8 +168,10 @@ export const AttendanceProvider: React.FC<AttendanceProviderProps> = ({
     attendanceData,
     isLoading,
     error,
+    isAttendanceClosed,
     fetchAttendance,
     updateAttendance,
+    markAttendanceAsClosed,
     refreshAttendance,
     clearAttendance,
   };

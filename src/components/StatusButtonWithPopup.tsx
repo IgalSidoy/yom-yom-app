@@ -7,6 +7,7 @@ interface StatusButtonWithPopupProps {
   currentStatus: ApiAttendanceStatus;
   onStatusUpdate: (status: ApiAttendanceStatus) => void;
   updateLoading?: boolean;
+  disabled?: boolean;
   availableStatuses?: ApiAttendanceStatus[];
   getStatusColor: (status: ApiAttendanceStatus) => string;
   getStatusTextColor: (status: ApiAttendanceStatus) => string;
@@ -17,6 +18,7 @@ const StatusButtonWithPopup: React.FC<StatusButtonWithPopupProps> = ({
   currentStatus,
   onStatusUpdate,
   updateLoading = false,
+  disabled = false,
   availableStatuses = [
     ApiAttendanceStatus.LATE,
     ApiAttendanceStatus.SICK,
@@ -26,6 +28,7 @@ const StatusButtonWithPopup: React.FC<StatusButtonWithPopupProps> = ({
   getStatusTextColor,
   getStatusText,
 }) => {
+  console.log("StatusButtonWithPopup disabled:", disabled);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
   const handleStatusUpdate = (status: ApiAttendanceStatus) => {
@@ -38,11 +41,11 @@ const StatusButtonWithPopup: React.FC<StatusButtonWithPopupProps> = ({
       {/* Status Button */}
       <Button
         variant="contained"
-        onClick={() => setIsPopupOpen(true)}
-        disabled={updateLoading}
+        onClick={() => !disabled && setIsPopupOpen(true)}
+        disabled={updateLoading || disabled}
         sx={{
-          bgcolor: getStatusColor(currentStatus),
-          color: getStatusTextColor(currentStatus),
+          bgcolor: disabled ? "grey.400" : getStatusColor(currentStatus),
+          color: disabled ? "white" : getStatusTextColor(currentStatus),
           borderRadius: 2,
           fontWeight: 600,
           fontSize: 14,
@@ -52,8 +55,15 @@ const StatusButtonWithPopup: React.FC<StatusButtonWithPopupProps> = ({
           boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
           transition: "all 0.2s ease-in-out",
           "&:hover": {
-            transform: "scale(1.02)",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            transform: disabled ? "none" : "scale(1.02)",
+            boxShadow: disabled
+              ? "0 2px 8px rgba(0,0,0,0.1)"
+              : "0 4px 12px rgba(0,0,0,0.15)",
+          },
+          "&:disabled": {
+            bgcolor: "grey.400",
+            color: "white",
+            cursor: "not-allowed",
           },
         }}
       >
