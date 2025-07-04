@@ -99,27 +99,33 @@ const SleepPost: React.FC<SleepPostProps> = ({
       onLike={onLike}
     >
       {/* Status and Group Info */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-        {getStatusIcon()}
-        <Chip
-          label={getStatusText()}
-          size="small"
-          color={getStatusColor() as any}
-          sx={{
-            fontSize: "0.7rem",
-            height: 24,
-            "& .MuiChip-label": {
-              px: 1,
-            },
-          }}
-        />
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {getStatusIcon()}
+          <Chip
+            label={getStatusText()}
+            size="small"
+            color={getStatusColor() as any}
+            sx={{
+              fontSize: "0.75rem",
+              height: 28,
+              fontWeight: 600,
+              "& .MuiChip-label": {
+                px: 1.5,
+              },
+            }}
+          />
+        </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: "auto" }}>
-          <GroupIcon sx={{ fontSize: 18, color: "text.secondary" }} />
+          <GroupIcon
+            sx={{ fontSize: 20, color: "text.secondary", opacity: 0.7 }}
+          />
           <Typography
             variant="body2"
             sx={{
               color: "text.secondary",
-              fontSize: "0.85rem",
+              fontSize: "0.9rem",
+              fontWeight: 500,
             }}
           >
             {groupName}
@@ -133,22 +139,35 @@ const SleepPost: React.FC<SleepPostProps> = ({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          p: 1.5,
-          bgcolor: "background.default",
-          borderRadius: 1.5,
+          p: 3,
+          bgcolor: "rgba(156, 39, 176, 0.03)",
+          borderRadius: 3,
           border: "1px solid",
-          borderColor: "divider",
-          mb: 2,
+          borderColor: "rgba(156, 39, 176, 0.1)",
+          position: "relative",
+          overflow: "hidden",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "2px",
+            background: "linear-gradient(90deg, #9C27B0 0%, #BA68C8 100%)",
+          },
         }}
       >
-        <Box>
+        {/* Sleep Percentage */}
+        <Box sx={{ textAlign: "center", flex: 1 }}>
           <Typography
-            variant="h4"
+            variant="h3"
             sx={{
-              fontWeight: 700,
-              color: "#9C27B0", // Purple color for sleep
-              fontSize: "1.5rem",
+              fontWeight: 800,
+              color: "#9C27B0",
+              fontSize: { xs: "2rem", sm: "2.5rem" },
               lineHeight: 1,
+              mb: 0.5,
+              textShadow: "0 2px 4px rgba(156, 39, 176, 0.2)",
             }}
           >
             {sleepPercentage}%
@@ -157,21 +176,36 @@ const SleepPost: React.FC<SleepPostProps> = ({
             variant="caption"
             sx={{
               color: "text.secondary",
-              fontSize: "0.7rem",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
             }}
           >
             ילדים ישנים
           </Typography>
         </Box>
 
-        <Box sx={{ textAlign: "center" }}>
+        {/* Divider */}
+        <Box
+          sx={{
+            width: "1px",
+            height: 60,
+            bgcolor: "rgba(156, 39, 176, 0.2)",
+            mx: 2,
+          }}
+        />
+
+        {/* Sleeping Count */}
+        <Box sx={{ textAlign: "center", flex: 1 }}>
           <Typography
-            variant="h6"
+            variant="h4"
             sx={{
-              fontWeight: 600,
+              fontWeight: 700,
               color: "text.primary",
-              fontSize: "1.1rem",
+              fontSize: { xs: "1.5rem", sm: "1.75rem" },
               lineHeight: 1,
+              mb: 0.5,
             }}
           >
             {sleepingChildren}/{totalChildren}
@@ -180,36 +214,54 @@ const SleepPost: React.FC<SleepPostProps> = ({
             variant="caption"
             sx={{
               color: "text.secondary",
-              fontSize: "0.7rem",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
             }}
           >
             ילדים ישנים
           </Typography>
         </Box>
 
+        {/* Average Sleep Duration */}
         {averageSleepDuration && averageSleepDuration > 0 && (
-          <Box sx={{ textAlign: "center" }}>
-            <Typography
-              variant="h6"
+          <>
+            <Box
               sx={{
-                fontWeight: 600,
-                color: "text.primary",
-                fontSize: "1.1rem",
-                lineHeight: 1,
+                width: "1px",
+                height: 60,
+                bgcolor: "rgba(156, 39, 176, 0.2)",
+                mx: 2,
               }}
-            >
-              {formatDuration(averageSleepDuration)}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                color: "text.secondary",
-                fontSize: "0.7rem",
-              }}
-            >
-              ממוצע שינה
-            </Typography>
-          </Box>
+            />
+            <Box sx={{ textAlign: "center", flex: 1 }}>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 700,
+                  color: "text.primary",
+                  fontSize: { xs: "1.5rem", sm: "1.75rem" },
+                  lineHeight: 1,
+                  mb: 0.5,
+                }}
+              >
+                {formatDuration(averageSleepDuration)}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  fontSize: "0.8rem",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                }}
+              >
+                ממוצע שינה
+              </Typography>
+            </Box>
+          </>
         )}
       </Box>
 

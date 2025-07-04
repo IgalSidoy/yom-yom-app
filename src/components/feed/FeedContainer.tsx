@@ -129,7 +129,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
         sx={{
           height: { xs: "calc(100vh - 72px)", sm: "100vh" },
           bgcolor: "background.default",
-          p: { xs: 1, sm: 2, md: 3 },
+          p: { xs: 0, sm: 2, md: 3 },
           dir: "rtl",
           overflow: "hidden",
         }}
@@ -147,12 +147,14 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
               border: "none",
               display: "flex",
               flexDirection: "column",
+              px: 0,
             }}
           >
             {/* Mobile Header */}
             <Box
               sx={{
-                p: 2,
+                px: 2,
+                py: 2,
                 borderBottom: "1px solid",
                 borderColor: "divider",
                 bgcolor: "background.paper",
@@ -175,7 +177,8 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
             {/* Mobile Content */}
             <Box
               sx={{
-                p: 2,
+                px: 0,
+                py: 1,
                 flex: 1,
                 bgcolor: "background.default",
                 overflow: "auto",

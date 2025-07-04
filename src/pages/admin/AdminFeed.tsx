@@ -62,13 +62,15 @@ const AdminFeed: React.FC = () => {
         <Box
           key={post.id}
           sx={{
-            p: 2,
-            mb: 2,
+            p: { xs: 1.5, sm: 2 },
+            mb: { xs: 0, sm: 2 },
             bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 1,
-            border: "1px solid",
-            borderColor: "divider",
+            borderRadius: { xs: 0, sm: 2 },
+            boxShadow: { xs: "none", sm: 1 },
+            border: { xs: "none", sm: "1px solid" },
+            borderColor: { xs: "transparent", sm: "divider" },
+            borderBottom: { xs: "1px solid", sm: "none" },
+            borderBottomColor: { xs: "divider", sm: "transparent" },
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>

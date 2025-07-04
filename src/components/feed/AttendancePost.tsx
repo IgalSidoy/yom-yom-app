@@ -98,27 +98,33 @@ const AttendancePost: React.FC<AttendancePostProps> = ({
       onLike={onLike}
     >
       {/* Status and Group Info */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-        {getStatusIcon()}
-        <Chip
-          label={getStatusText()}
-          size="small"
-          color={getStatusColor() as any}
-          sx={{
-            fontSize: "0.7rem",
-            height: 24,
-            "& .MuiChip-label": {
-              px: 1,
-            },
-          }}
-        />
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {getStatusIcon()}
+          <Chip
+            label={getStatusText()}
+            size="small"
+            color={getStatusColor() as any}
+            sx={{
+              fontSize: "0.75rem",
+              height: 28,
+              fontWeight: 600,
+              "& .MuiChip-label": {
+                px: 1.5,
+              },
+            }}
+          />
+        </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: "auto" }}>
-          <GroupIcon sx={{ fontSize: 18, color: "text.secondary" }} />
+          <GroupIcon
+            sx={{ fontSize: 20, color: "text.secondary", opacity: 0.7 }}
+          />
           <Typography
             variant="body2"
             sx={{
               color: "text.secondary",
-              fontSize: "0.85rem",
+              fontSize: "0.9rem",
+              fontWeight: 500,
             }}
           >
             {groupName}
@@ -132,21 +138,35 @@ const AttendancePost: React.FC<AttendancePostProps> = ({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          p: 1.5,
-          bgcolor: "background.default",
-          borderRadius: 1.5,
+          p: 3,
+          bgcolor: "rgba(255, 145, 77, 0.03)",
+          borderRadius: 3,
           border: "1px solid",
-          borderColor: "divider",
+          borderColor: "rgba(255, 145, 77, 0.1)",
+          position: "relative",
+          overflow: "hidden",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "2px",
+            background: "linear-gradient(90deg, #FF914D 0%, #FFB366 100%)",
+          },
         }}
       >
-        <Box>
+        {/* Attendance Percentage */}
+        <Box sx={{ textAlign: "center", flex: 1 }}>
           <Typography
-            variant="h4"
+            variant="h3"
             sx={{
-              fontWeight: 700,
-              color: "primary.main",
-              fontSize: "1.5rem",
+              fontWeight: 800,
+              color: "#FF914D",
+              fontSize: { xs: "2rem", sm: "2.5rem" },
               lineHeight: 1,
+              mb: 0.5,
+              textShadow: "0 2px 4px rgba(255, 145, 77, 0.2)",
             }}
           >
             {attendancePercentage}%
@@ -155,21 +175,36 @@ const AttendancePost: React.FC<AttendancePostProps> = ({
             variant="caption"
             sx={{
               color: "text.secondary",
-              fontSize: "0.7rem",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
             }}
           >
             נוכחות
           </Typography>
         </Box>
 
-        <Box sx={{ textAlign: "center" }}>
+        {/* Divider */}
+        <Box
+          sx={{
+            width: "1px",
+            height: 60,
+            bgcolor: "rgba(255, 145, 77, 0.2)",
+            mx: 2,
+          }}
+        />
+
+        {/* Present Count */}
+        <Box sx={{ textAlign: "center", flex: 1 }}>
           <Typography
-            variant="h6"
+            variant="h4"
             sx={{
-              fontWeight: 600,
+              fontWeight: 700,
               color: "text.primary",
-              fontSize: "1.1rem",
+              fontSize: { xs: "1.5rem", sm: "1.75rem" },
               lineHeight: 1,
+              mb: 0.5,
             }}
           >
             {presentCount}/{totalCount}
@@ -178,7 +213,10 @@ const AttendancePost: React.FC<AttendancePostProps> = ({
             variant="caption"
             sx={{
               color: "text.secondary",
-              fontSize: "0.7rem",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
             }}
           >
             ילדים נוכחים
