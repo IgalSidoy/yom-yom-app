@@ -85,16 +85,34 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
         child.childId === childId
           ? {
               ...child,
-              sleepStartTime: isSleeping
-                ? new Date().toISOString().slice(0, 16)
-                : "",
-              sleepEndTime: isSleeping
-                ? ""
-                : new Date().toISOString().slice(0, 16),
-              sleepDuration: isSleeping ? 0 : child.sleepDuration,
+              sleepStartTime: isSleeping ? "now" : "",
+              sleepEndTime: "",
+              sleepDuration: 0,
             }
           : child
       )
+    );
+  };
+
+  const handleSelectAllAsleep = () => {
+    setSleepChildren((prev) =>
+      prev.map((child) => ({
+        ...child,
+        sleepStartTime: "now",
+        sleepEndTime: "",
+        sleepDuration: 0,
+      }))
+    );
+  };
+
+  const handleSelectNoneAsleep = () => {
+    setSleepChildren((prev) =>
+      prev.map((child) => ({
+        ...child,
+        sleepStartTime: "",
+        sleepEndTime: "",
+        sleepDuration: 0,
+      }))
     );
   };
 
