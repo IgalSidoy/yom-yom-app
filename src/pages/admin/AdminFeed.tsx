@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Alert, Box, Typography, Chip } from "@mui/material";
-import { FeedContainer } from "../../components/feed";
+import { FeedContainer, FetchDailyReportButton } from "../../components/feed";
 
 const AdminFeed: React.FC = () => {
   const [isFeedLoading] = useState(false);
@@ -51,6 +51,7 @@ const AdminFeed: React.FC = () => {
       isLoading={isFeedLoading}
       showFloatingButton={true}
       onPostTypeSelect={handlePostTypeSelect}
+      headerContent={<FetchDailyReportButton />}
     >
       {/* Admin-specific info alert */}
       <Alert severity="info" sx={{ mb: 2 }}>

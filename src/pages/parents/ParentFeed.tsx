@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import { Alert } from "@mui/material";
 import {
   AttendancePost,
@@ -6,62 +6,18 @@ import {
   SleepPostErrorBoundary,
   FeedContainer,
 } from "../../components/feed";
-import { Child, dailyReportsApi, DailyReport } from "../../services/api";
+import { Child } from "../../services/api";
 import { useAttendance } from "../../contexts/AttendanceContext";
 import { useApp } from "../../contexts/AppContext";
+import { useDailyReport } from "../../contexts/DailyReportContext";
 
 const ParentFeed: React.FC = () => {
   const { attendanceData } = useAttendance();
   const { user } = useApp();
-
-  // State for viewing posts
-  const [dailyReport, setDailyReport] = useState<DailyReport | null>(null);
-  const [isLoadingDailyReport, setIsLoadingDailyReport] = useState(false);
+  const { dailyReport } = useDailyReport();
 
   // Loading states
   const [isFeedLoading, setIsFeedLoading] = useState(false);
-
-  // Fetch daily report when user clicks on feed
-  const fetchDailyReport = useCallback(async () => {
-    if (!user?.groupId) {
-      console.log("No user groupId available");
-      return;
-    }
-
-    console.log("Fetching daily report for groupId:", user.groupId);
-    setIsLoadingDailyReport(true);
-    try {
-      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
-      console.log("Fetching report for date:", today);
-      const report = await dailyReportsApi.getDailyReport(user.groupId, today);
-      console.log("Daily report received:", report);
-      setDailyReport(report);
-    } catch (error) {
-      console.error("Failed to fetch daily report:", error);
-      // If no report exists for today, that's okay - we'll create a new one
-    } finally {
-      setIsLoadingDailyReport(false);
-    }
-  }, [user?.groupId]);
-
-  // Fetch initial data when component mounts
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      if (user?.groupId) {
-        setIsFeedLoading(true);
-        try {
-          // Fetch daily report on component mount
-          await fetchDailyReport();
-        } catch (error) {
-          console.error("Failed to fetch initial data:", error);
-        } finally {
-          setIsFeedLoading(false);
-        }
-      }
-    };
-
-    fetchInitialData();
-  }, [user?.groupId, fetchDailyReport]);
 
   // Mock data for parent's children's group
   const mockParentAttendancePosts = [

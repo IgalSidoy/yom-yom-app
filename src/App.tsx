@@ -10,6 +10,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { AppProvider } from "./contexts/AppContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AttendanceProvider } from "./contexts/AttendanceContext";
+import { DailyReportProvider } from "./contexts/DailyReportContext";
 import AppRoutes from "./routes";
 
 const App: React.FC = () => {
@@ -29,7 +30,9 @@ const App: React.FC = () => {
             <LanguageProvider>
               <AuthProvider>
                 <AttendanceProvider>
-                  <AppRoutes />
+                  <DailyReportProvider>
+                    <AppRoutes />
+                  </DailyReportProvider>
                 </AttendanceProvider>
               </AuthProvider>
             </LanguageProvider>

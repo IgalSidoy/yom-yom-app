@@ -1,8 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { Typography, Box, useTheme, useMediaQuery } from "@mui/material";
 import { Skeleton, Fade, Slide, Box as MuiBox } from "@mui/material";
 import Container from "../Container";
 import { FeedFloatingButton } from "./index";
+import CreateSleepPostModal from "./CreateSleepPostModal";
+import SleepPostErrorBoundary from "./SleepPostErrorBoundary";
+import { useAttendance } from "../../contexts/AttendanceContext";
+import { useDailyReport } from "../../contexts/DailyReportContext";
+import { Child } from "../../services/api";
+import {
+  CreateSleepPostData,
+  SleepPost as SleepPostType,
+} from "../../types/posts";
 
 interface FeedContainerProps {
   title: string;
@@ -27,6 +36,115 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const { attendanceData } = useAttendance();
+  const { dailyReport } = useDailyReport();
+
+  // State for sleep post creation
+  const [isSleepModalOpen, setIsSleepModalOpen] = useState(false);
+  const [isCreatingPost, setIsCreatingPost] = useState(false);
+
+  // Get children data from daily report or attendance context
+  const childrenData: Child[] =
+    dailyReport?.children?.map((reportChild) => ({
+      id: reportChild.childId,
+      firstName: reportChild.firstName,
+      lastName: reportChild.lastName,
+      dateOfBirth: "", // Not available in daily report
+      accountId: dailyReport.accountId,
+      groupId: dailyReport.groupId,
+      groupName: attendanceData?.groupName || "גן א",
+      parents: [], // Parents data not available in daily report
+    })) ||
+    attendanceData?.children?.map((attendanceChild) => ({
+      id: attendanceChild.childId,
+      firstName: attendanceChild.firstName,
+      lastName: attendanceChild.lastName,
+      dateOfBirth: attendanceChild.dateOfBirth || "",
+      accountId: attendanceData.accountId,
+      groupId: attendanceData.groupId,
+      groupName: attendanceData.groupName,
+      parents: [], // Parents data not available in attendance context
+    })) ||
+    [];
+
+  const handleSleepPostSubmit = (data: CreateSleepPostData) => {
+    setIsCreatingPost(true);
+    setTimeout(() => {
+      const now = new Date();
+      const newSleepPost: SleepPostType = {
+        id: Date.now().toString(),
+        type: "sleep",
+        title: data.title,
+        groupName: data.groupName,
+        sleepDate: data.sleepDate,
+        children: data.children,
+        totalChildren: data.children.length,
+        sleepingChildren: data.children.length,
+        averageSleepDuration:
+          data.children.length > 0
+            ? Math.round(
+                data.children.reduce(
+                  (sum, child) => sum + (child.sleepDuration || 0),
+                  0
+                ) / data.children.length
+              )
+            : 0,
+        status: "active",
+        teacherName: "שרה כהן",
+        teacherAvatar: "https://randomuser.me/api/portraits/women/32.jpg",
+        publishDate:
+          now.toLocaleDateString("he-IL", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }) +
+          " " +
+          now.toLocaleTimeString("he-IL", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        isLiked: false,
+        likeCount: 0,
+      };
+
+      // TODO: Add the new sleep post to the feed state
+      // This should be handled by the parent component
+      console.log("New sleep post created:", newSleepPost);
+
+      setIsSleepModalOpen(false);
+      setIsCreatingPost(false);
+    }, 800);
+  };
+
+  const handlePostTypeSelect = async (postType: string) => {
+    console.log("FeedContainer: Selected post type:", postType);
+
+    // Call the parent's onPostTypeSelect if provided
+    if (onPostTypeSelect) {
+      await onPostTypeSelect(postType);
+    }
+
+    // Handle post type selection
+    switch (postType) {
+      case "sleep":
+        setIsSleepModalOpen(true);
+        break;
+      case "snack":
+        console.log("Creating snack post...");
+        // TODO: Implement snack post creation
+        break;
+      case "activity":
+        console.log("Creating activity post...");
+        // TODO: Implement activity post creation
+        break;
+      default:
+        console.log("Unknown post type:", postType);
+    }
+  };
+
+  // Get post creation handler from context or prop
+  const postTypeHandler = handlePostTypeSelect;
 
   // Skeleton components
   const PostSkeleton = () => (
@@ -124,208 +242,238 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
   );
 
   return (
-    <Container>
-      <Box
-        sx={{
-          height: { xs: "calc(100vh - 72px)", sm: "100vh" },
-          bgcolor: "background.default",
-          p: { xs: 0, sm: 2, md: 3 },
-          dir: "rtl",
-          overflow: "hidden",
+    <Box
+      sx={{
+        height: "100vh",
+        bgcolor: "background.default",
+        p: { xs: 0, sm: 2, md: 3 },
+        dir: "rtl",
+        overflow: "hidden",
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 1,
+      }}
+    >
+      {/* Mobile Container */}
+      {isMobile && (
+        <Box
+          sx={{
+            width: "100%",
+            height: "100%",
+            bgcolor: "background.paper",
+            borderRadius: 0,
+            boxShadow: "none",
+            overflow: "hidden",
+            border: "none",
+            display: "flex",
+            flexDirection: "column",
+            px: 0,
+          }}
+        >
+          {/* Mobile Header */}
+          <Box
+            sx={{
+              px: 2,
+              py: 2,
+              borderBottom: "1px solid",
+              borderColor: "divider",
+              bgcolor: "background.paper",
+            }}
+          >
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                color: "text.primary",
+                textAlign: "center",
+                fontSize: "1.25rem",
+              }}
+            >
+              {title}
+            </Typography>
+            {headerContent && <Box sx={{ mt: 2 }}>{headerContent}</Box>}
+          </Box>
+
+          {/* Mobile Content */}
+          <Box
+            sx={{
+              px: 0,
+              py: 1,
+              pb: 10,
+              flex: 1,
+              bgcolor: "background.default",
+              overflow: "auto",
+              position: "relative",
+            }}
+          >
+            {isLoading ? (
+              <FeedSkeleton />
+            ) : (
+              <>
+                {(isPostsLoading || isCreatingPost) && (
+                  <Slide direction="down" in={true} timeout={400}>
+                    <MuiBox
+                      sx={{
+                        p: 2,
+                        mb: 2,
+                        bgcolor: "primary.main",
+                        color: "primary.contrastText",
+                        borderRadius: 2,
+                        textAlign: "center",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 1,
+                      }}
+                    >
+                      <Skeleton variant="circular" width={16} height={16} />
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        מוסיף פוסט חדש...
+                      </Typography>
+                    </MuiBox>
+                  </Slide>
+                )}
+                {children}
+              </>
+            )}
+
+            {/* Floating Action Button for Mobile */}
+            {showFloatingButton && postTypeHandler && (
+              <FeedFloatingButton onPostTypeSelect={postTypeHandler} />
+            )}
+          </Box>
+        </Box>
+      )}
+
+      {/* Desktop/Tablet Container */}
+      {!isMobile && (
+        <Box
+          sx={{
+            width: "100%",
+            maxWidth: {
+              sm: "600px",
+              md: "700px",
+              lg: "800px",
+              xl: "900px",
+            },
+            height: "calc(100vh - 150px)",
+            mx: "auto",
+            bgcolor: "background.paper",
+            borderRadius: 3,
+            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+            overflow: "hidden",
+            border: "1px solid",
+            borderColor: "divider",
+            display: "flex",
+            flexDirection: "column",
+            position: "relative",
+          }}
+        >
+          {/* Desktop Header */}
+          <Box
+            sx={{
+              p: { sm: 3, md: 4 },
+              borderBottom: "1px solid",
+              borderColor: "divider",
+              bgcolor: "background.paper",
+            }}
+          >
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 700,
+                color: "text.primary",
+                textAlign: "center",
+                fontSize: { sm: "1.5rem", md: "1.75rem" },
+              }}
+            >
+              {title}
+            </Typography>
+            {subtitle && (
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  textAlign: "center",
+                  mt: 1,
+                  fontSize: { sm: "0.875rem", md: "1rem" },
+                }}
+              >
+                {subtitle}
+              </Typography>
+            )}
+            {headerContent && <Box sx={{ mt: 2 }}>{headerContent}</Box>}
+          </Box>
+
+          {/* Desktop Content */}
+          <Box
+            sx={{
+              p: { sm: 3, md: 4 },
+              flex: 1,
+              bgcolor: "background.default",
+              overflow: "auto",
+              position: "relative",
+            }}
+          >
+            {isLoading ? (
+              <FeedSkeleton />
+            ) : (
+              <>
+                {(isPostsLoading || isCreatingPost) && (
+                  <Slide direction="down" in={true} timeout={400}>
+                    <MuiBox
+                      sx={{
+                        p: 2,
+                        mb: 2,
+                        bgcolor: "primary.main",
+                        color: "primary.contrastText",
+                        borderRadius: 2,
+                        textAlign: "center",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 1,
+                      }}
+                    >
+                      <Skeleton variant="circular" width={16} height={16} />
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        מוסיף פוסט חדש...
+                      </Typography>
+                    </MuiBox>
+                  </Slide>
+                )}
+                {children}
+              </>
+            )}
+
+            {/* Floating Action Button for Desktop */}
+            {showFloatingButton && postTypeHandler && (
+              <FeedFloatingButton onPostTypeSelect={postTypeHandler} />
+            )}
+          </Box>
+        </Box>
+      )}
+
+      {/* Sleep Post Creation Modal with Error Boundary */}
+      <SleepPostErrorBoundary
+        onClose={() => setIsSleepModalOpen(false)}
+        onRetry={() => {
+          console.log("Retrying sleep post creation...");
         }}
       >
-        {/* Mobile Container */}
-        {isMobile && (
-          <Box
-            sx={{
-              width: "100%",
-              height: "100%",
-              bgcolor: "background.paper",
-              borderRadius: 0,
-              boxShadow: "none",
-              overflow: "hidden",
-              border: "none",
-              display: "flex",
-              flexDirection: "column",
-              px: 0,
-            }}
-          >
-            {/* Mobile Header */}
-            <Box
-              sx={{
-                px: 2,
-                py: 2,
-                borderBottom: "1px solid",
-                borderColor: "divider",
-                bgcolor: "background.paper",
-              }}
-            >
-              <Typography
-                variant="h5"
-                sx={{
-                  fontWeight: 700,
-                  color: "text.primary",
-                  textAlign: "center",
-                  fontSize: "1.25rem",
-                }}
-              >
-                {title}
-              </Typography>
-              {headerContent && <Box sx={{ mt: 2 }}>{headerContent}</Box>}
-            </Box>
-
-            {/* Mobile Content */}
-            <Box
-              sx={{
-                px: 0,
-                py: 1,
-                flex: 1,
-                bgcolor: "background.default",
-                overflow: "auto",
-              }}
-            >
-              {isLoading ? (
-                <FeedSkeleton />
-              ) : (
-                <>
-                  {isPostsLoading && (
-                    <Slide direction="down" in={true} timeout={400}>
-                      <MuiBox
-                        sx={{
-                          p: 2,
-                          mb: 2,
-                          bgcolor: "primary.main",
-                          color: "primary.contrastText",
-                          borderRadius: 2,
-                          textAlign: "center",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 1,
-                        }}
-                      >
-                        <Skeleton variant="circular" width={16} height={16} />
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          מוסיף פוסט חדש...
-                        </Typography>
-                      </MuiBox>
-                    </Slide>
-                  )}
-                  {children}
-                </>
-              )}
-            </Box>
-          </Box>
-        )}
-
-        {/* Desktop/Tablet Container */}
-        {!isMobile && (
-          <Box
-            sx={{
-              width: "100%",
-              maxWidth: {
-                sm: "95vw",
-                md: "90vw",
-                lg: "85vw",
-                xl: "80vw",
-              },
-              height: "calc(100vh - 150px)",
-              mx: "auto",
-              bgcolor: "background.paper",
-              borderRadius: 3,
-              boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
-              overflow: "hidden",
-              border: "1px solid",
-              borderColor: "divider",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            {/* Desktop Header */}
-            <Box
-              sx={{
-                p: { sm: 3, md: 4 },
-                borderBottom: "1px solid",
-                borderColor: "divider",
-                bgcolor: "background.paper",
-              }}
-            >
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: 700,
-                  color: "text.primary",
-                  textAlign: "center",
-                  fontSize: { sm: "1.5rem", md: "1.75rem" },
-                }}
-              >
-                {title}
-              </Typography>
-              {subtitle && (
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "text.secondary",
-                    textAlign: "center",
-                    mt: 1,
-                    fontSize: { sm: "0.875rem", md: "1rem" },
-                  }}
-                >
-                  {subtitle}
-                </Typography>
-              )}
-              {headerContent && <Box sx={{ mt: 2 }}>{headerContent}</Box>}
-            </Box>
-
-            {/* Desktop Content */}
-            <Box
-              sx={{
-                p: { sm: 3, md: 4 },
-                flex: 1,
-                bgcolor: "background.default",
-                overflow: "auto",
-              }}
-            >
-              {isLoading ? (
-                <FeedSkeleton />
-              ) : (
-                <>
-                  {isPostsLoading && (
-                    <Slide direction="down" in={true} timeout={400}>
-                      <MuiBox
-                        sx={{
-                          p: 2,
-                          mb: 2,
-                          bgcolor: "primary.main",
-                          color: "primary.contrastText",
-                          borderRadius: 2,
-                          textAlign: "center",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 1,
-                        }}
-                      >
-                        <Skeleton variant="circular" width={16} height={16} />
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          מוסיף פוסט חדש...
-                        </Typography>
-                      </MuiBox>
-                    </Slide>
-                  )}
-                  {children}
-                </>
-              )}
-            </Box>
-          </Box>
-        )}
-
-        {/* Floating Action Button - Only show if enabled */}
-        {showFloatingButton && onPostTypeSelect && (
-          <FeedFloatingButton onPostTypeSelect={onPostTypeSelect} />
-        )}
-      </Box>
-    </Container>
+        <CreateSleepPostModal
+          isOpen={isSleepModalOpen}
+          onClose={() => setIsSleepModalOpen(false)}
+          onSubmit={handleSleepPostSubmit}
+          children={childrenData}
+          groupName={attendanceData?.groupName || "גן א"}
+          groupId={dailyReport?.groupId || attendanceData?.groupId || "group1"}
+        />
+      </SleepPostErrorBoundary>
+    </Box>
   );
 };
 
