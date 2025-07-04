@@ -4,12 +4,14 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/shared/Login";
 import Onboarding from "./pages/shared/Onboarding";
 import Settings from "./pages/shared/Settings";
-import Feed from "./pages/shared/Feed";
 import BottomNav from "./components/BottomNav";
 import StaffDashboard from "./pages/staff/StaffDashboard";
+import StaffFeed from "./pages/staff/StaffFeed";
 import Attendance from "./pages/staff/Attendance";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminFeed from "./pages/admin/AdminFeed";
 import ParentDashboard from "./pages/parents/ParentDashboard";
+import ParentFeed from "./pages/parents/ParentFeed";
 import { useApp } from "./contexts/AppContext";
 
 // Role-based Dashboard component
@@ -32,6 +34,26 @@ const Dashboard: React.FC = () => {
   }
 };
 
+// Role-based Feed component
+const RoleBasedFeed: React.FC = () => {
+  const { user, isLoadingUser } = useApp();
+
+  if (isLoadingUser || !user) {
+    return <div>Loading...</div>;
+  }
+
+  switch (user.role) {
+    case "Staff":
+      return <StaffFeed />;
+    case "Admin":
+      return <AdminFeed />;
+    case "Parent":
+      return <ParentFeed />;
+    default:
+      return <Navigate to="/login" replace />;
+  }
+};
+
 // Staff-only route protection
 const StaffOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useApp();
@@ -45,7 +67,6 @@ const StaffOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const AppRoutes: React.FC = () => {
   const location = useLocation();
-  const showBottomNav = !["/login", "/onboarding"].includes(location.pathname);
 
   return (
     <>
@@ -72,7 +93,7 @@ const AppRoutes: React.FC = () => {
           path="/feed"
           element={
             <ProtectedRoute>
-              <Feed />
+              <RoleBasedFeed />
             </ProtectedRoute>
           }
         />

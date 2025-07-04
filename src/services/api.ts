@@ -658,7 +658,8 @@ export interface UserChildrenResponse {
 // Daily Report interfaces
 export interface DailyReportChild {
   childId: string;
-  childName: string;
+  firstName: string;
+  lastName: string;
   status: string;
   timestamp: string;
   updatedByUserId: string;
@@ -715,6 +716,34 @@ export const dailyReportsApi = {
         withCredentials: true,
       }
     );
+    console.log("API response:", response.data);
+    return response.data;
+  },
+
+  // Get daily reports for all groups on a specific date (for admin users)
+  getDailyReportsByDate: async (date: string) => {
+    console.log("API call: getDailyReportsByDate", { date });
+    const response = await api.get(`/api/v1/daily-reports?date=${date}`, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    console.log("API response:", response.data);
+    return response.data;
+  },
+
+  // Get daily reports for user's children's groups (for parent users)
+  getDailyReportsForUser: async (date: string) => {
+    console.log("API call: getDailyReportsForUser", { date });
+    const response = await api.get(`/api/v1/daily-reports/user?date=${date}`, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
     console.log("API response:", response.data);
     return response.data;
   },

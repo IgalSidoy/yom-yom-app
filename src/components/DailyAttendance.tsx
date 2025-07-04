@@ -132,6 +132,8 @@ const AttendanceChildListItem: React.FC<{
           return <CheckCircleIcon sx={{ color: "#FF9F43", fontSize: 20 }} />;
         case ComponentAttendanceStatus.LATE:
           return <ScheduleIcon sx={{ color: "#3A6EA5", fontSize: 20 }} />;
+        case ComponentAttendanceStatus.AWAKE:
+          return <CheckCircleIcon sx={{ color: "#2E7D32", fontSize: 20 }} />;
         case ComponentAttendanceStatus.MISSING:
         case ComponentAttendanceStatus.SICK:
         case ComponentAttendanceStatus.VACATION:
@@ -183,6 +185,7 @@ const AttendanceChildListItem: React.FC<{
               availableStatuses={[
                 ApiAttendanceStatus.ARRIVED,
                 ApiAttendanceStatus.LATE,
+                ApiAttendanceStatus.AWAKE,
                 ApiAttendanceStatus.SICK,
                 ApiAttendanceStatus.VACATION,
                 ApiAttendanceStatus.MISSING,
@@ -649,6 +652,7 @@ const DailyAttendance: React.FC = () => {
       late: 0,
       vacation: 0,
       unreported: 0,
+      awake: 0,
     };
 
     Object.values(attendanceRecords).forEach((status) => {

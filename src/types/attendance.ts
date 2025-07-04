@@ -6,6 +6,7 @@ export enum ApiAttendanceStatus {
   LATE = "Late",
   VACATION = "Vacation",
   UNREPORTED = "Unreported",
+  AWAKE = "Awake",
 }
 
 // Component Status Values (what the frontend uses internally)
@@ -16,6 +17,7 @@ export enum ComponentAttendanceStatus {
   LATE = "late",
   VACATION = "vacation",
   UNREPORTED = "unreported",
+  AWAKE = "awake",
 }
 
 // Type aliases for easier usage
@@ -32,6 +34,7 @@ export const mapApiStatusToComponentStatus = (
     [ApiAttendanceStatus.SICK]: ComponentAttendanceStatus.SICK,
     [ApiAttendanceStatus.LATE]: ComponentAttendanceStatus.LATE,
     [ApiAttendanceStatus.VACATION]: ComponentAttendanceStatus.VACATION,
+    [ApiAttendanceStatus.AWAKE]: ComponentAttendanceStatus.AWAKE,
   };
   return statusMap[apiStatus] || ComponentAttendanceStatus.UNREPORTED;
 };
@@ -46,6 +49,7 @@ export const mapComponentStatusToApiStatus = (
     [ComponentAttendanceStatus.LATE]: ApiAttendanceStatus.LATE,
     [ComponentAttendanceStatus.VACATION]: ApiAttendanceStatus.VACATION,
     [ComponentAttendanceStatus.UNREPORTED]: ApiAttendanceStatus.UNREPORTED,
+    [ComponentAttendanceStatus.AWAKE]: ApiAttendanceStatus.AWAKE,
   };
   return statusMap[componentStatus];
 };
@@ -95,6 +99,12 @@ export const ATTENDANCE_STATUS_OPTIONS: AttendanceStatusOption[] = [
     color: "#F5F5F5",
     textColor: "#888",
   },
+  {
+    value: ComponentAttendanceStatus.AWAKE,
+    label: "ער",
+    color: "#E8F5E8",
+    textColor: "#2E7D32",
+  },
 ];
 
 // Status colors for UI components
@@ -135,6 +145,11 @@ export const STATUS_COLORS: Record<ComponentStatus, StatusColors> = {
     text: "#888",
     border: "#E0E0E0",
   },
+  [ComponentAttendanceStatus.AWAKE]: {
+    bg: "#E8F5E8",
+    text: "#2E7D32",
+    border: "#C8E6C9",
+  },
 };
 
 // Helper function to get status option by value
@@ -148,7 +163,8 @@ export const getStatusOption = (
 export const isPresentStatus = (status: ComponentStatus): boolean => {
   return (
     status === ComponentAttendanceStatus.ARRIVED ||
-    status === ComponentAttendanceStatus.LATE
+    status === ComponentAttendanceStatus.LATE ||
+    status === ComponentAttendanceStatus.AWAKE
   );
 };
 

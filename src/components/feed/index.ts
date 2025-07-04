@@ -5,3 +5,4 @@ export { default as SleepPost } from "./SleepPost";
 export { default as CreateSleepPostModal } from "./CreateSleepPostModal";
 export { default as SleepPostErrorBoundary } from "./SleepPostErrorBoundary";
 export { default as TestErrorComponent } from "./TestErrorComponent";
+export { default as FeedContainer } from "./FeedContainer";

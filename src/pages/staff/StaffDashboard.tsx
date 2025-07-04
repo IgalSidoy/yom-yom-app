@@ -9,6 +9,7 @@ import QuickActionsSlide from "../../components/dashboard/QuickActionsSlide";
 import StatisticsSlide from "../../components/dashboard/StatisticsSlide";
 import AdditionalInfoSlide from "../../components/dashboard/AdditionalInfoSlide";
 import DateTimeWidget from "../../components/DateTimeWidget";
+import DashboardContainer from "../../components/dashboard/DashboardContainer";
 
 const StaffDashboard: React.FC = () => {
   const { user } = useApp();
@@ -73,15 +74,7 @@ const StaffDashboard: React.FC = () => {
   ];
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        bgcolor: "background.default",
-        p: 2,
-        dir: "rtl",
-        overflow: "hidden", // Prevent scroll during swipe
-      }}
-    >
+    <DashboardContainer>
       {/* Header */}
       <Box sx={{ mb: 3 }}>
         <DateTimeWidget
@@ -99,7 +92,7 @@ const StaffDashboard: React.FC = () => {
         spaceBetween={30}
         className="dashboard-swiper"
       />
-    </Box>
+    </DashboardContainer>
   );
 };
 
