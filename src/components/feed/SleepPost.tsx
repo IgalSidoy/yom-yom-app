@@ -187,7 +187,7 @@ const SleepPost: React.FC<SleepPostProps> = ({
           </Typography>
         </Box>
 
-        {averageSleepDuration && (
+        {averageSleepDuration && averageSleepDuration > 0 && (
           <Box sx={{ textAlign: "center" }}>
             <Typography
               variant="h6"

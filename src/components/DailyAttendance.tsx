@@ -148,6 +148,7 @@ const AttendanceChildListItem: React.FC<{
           px: { xs: 0.5, sm: 3 },
           borderBottom: "1px solid",
           borderColor: "rgba(0, 0, 0, 0.04)",
+          bgcolor: "background.default !important",
         }}
       >
         {/* Mobile Layout: Same line */}

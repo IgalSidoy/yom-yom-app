@@ -655,6 +655,29 @@ export interface UserChildrenResponse {
 }
 
 // Attendance API interfaces
+// Daily Report interfaces
+export interface DailyReportChild {
+  childId: string;
+  childName: string;
+  status: string;
+  timestamp: string;
+  updatedByUserId: string;
+  updatedByUserName: string;
+}
+
+export interface DailyReport {
+  id: string;
+  organizationId: string;
+  accountId: string;
+  groupId: string;
+  createdById: string;
+  date: string;
+  children: DailyReportChild[];
+  isPublished: boolean;
+  created: string;
+  updated: string;
+}
+
 export interface AttendanceChild {
   childId: string;
   firstName: string;
@@ -677,6 +700,25 @@ export interface GroupAttendance {
   created: string;
   updated: string;
 }
+
+// Daily Reports API functions
+export const dailyReportsApi = {
+  getDailyReport: async (groupId: string, date: string) => {
+    console.log("API call: getDailyReport", { groupId, date });
+    const response = await api.get(
+      `/api/v1/daily-reports?groupId=${groupId}&date=${date}`,
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
+    console.log("API response:", response.data);
+    return response.data;
+  },
+};
 
 // Attendance API functions
 export const attendanceApi = {

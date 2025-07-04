@@ -15,10 +15,9 @@ export interface SleepChild {
   childId: string;
   firstName: string;
   lastName: string;
-  sleepStartTime: string;
-  sleepEndTime?: string;
-  sleepDuration?: number; // in minutes
-  sleepQuality?: "excellent" | "good" | "fair" | "poor";
+  sleepStartTime?: string; // Optional - backend will handle timing
+  sleepEndTime?: string; // Optional - backend will handle timing
+  sleepDuration?: number; // in minutes - calculated by backend
   notes?: string;
 }
 
@@ -40,13 +39,3 @@ export interface CreateSleepPostData {
   sleepDate: string;
   children: SleepChild[];
 }
-
-// Sleep quality options
-export const SLEEP_QUALITY_OPTIONS = [
-  { value: "excellent", label: "מצוין", color: "#4CAF50" },
-  { value: "good", label: "טוב", color: "#8BC34A" },
-  { value: "fair", label: "סביר", color: "#FFC107" },
-  { value: "poor", label: "גרוע", color: "#F44336" },
-] as const;
-
-export type SleepQuality = (typeof SLEEP_QUALITY_OPTIONS)[number]["value"];

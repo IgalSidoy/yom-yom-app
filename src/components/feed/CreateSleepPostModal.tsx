@@ -7,10 +7,6 @@ import {
   Button,
   IconButton,
   useTheme,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Chip,
   Avatar,
   List,
@@ -22,19 +18,17 @@ import {
   Divider,
   Alert,
   AlertTitle,
+  Skeleton,
+  Fade,
+  Slide,
+  useMediaQuery,
 } from "@mui/material";
 import {
   Close as CloseIcon,
   Bedtime as SleepIcon,
-  AccessTime as TimeIcon,
-  Star as StarIcon,
   Add as AddIcon,
 } from "@mui/icons-material";
-import {
-  CreateSleepPostData,
-  SleepChild,
-  SLEEP_QUALITY_OPTIONS,
-} from "../../types/posts";
+import { CreateSleepPostData, SleepChild } from "../../types/posts";
 import { Child } from "../../services/api";
 
 interface CreateSleepPostModalProps {
@@ -44,6 +38,7 @@ interface CreateSleepPostModalProps {
   children: Child[];
   groupName: string;
   groupId: string;
+  isLoadingDailyReport?: boolean;
 }
 
 const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
@@ -53,14 +48,25 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
   children,
   groupName,
   groupId,
+  isLoadingDailyReport = false,
 }) => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  // Default title variations for sleep posts
+  const defaultTitles = [
+    "שינת צהריים - " + groupName,
+    "דיווח שינה יומי - " + groupName,
+    "מעקב שינת ילדים - " + groupName,
+    "שינת ילדים - " + groupName,
+    "דיווח שנת צהריים - " + groupName,
+  ];
+
   const [title, setTitle] = useState("");
-  const [sleepDate, setSleepDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [titleIndex, setTitleIndex] = useState(0);
   const [sleepChildren, setSleepChildren] = useState<SleepChild[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isLoading, setIsLoading] = useState(false);
 
   // Initialize sleep children from the children list
   useEffect(() => {
@@ -72,12 +78,18 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
         sleepStartTime: "",
         sleepEndTime: "",
         sleepDuration: 0,
-        sleepQuality: undefined,
         notes: "",
       }));
       setSleepChildren(initialSleepChildren);
     }
   }, [children]);
+
+  // Set initial title when modal opens
+  useEffect(() => {
+    if (isOpen && !title) {
+      setTitle(defaultTitles[titleIndex]);
+    }
+  }, [isOpen, title, defaultTitles, titleIndex]);
 
   const handleChildSleepToggle = (childId: string, isSleeping: boolean) => {
     setSleepChildren((prev) =>
@@ -116,6 +128,12 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
     );
   };
 
+  const handleNextTitle = () => {
+    const nextIndex = (titleIndex + 1) % defaultTitles.length;
+    setTitleIndex(nextIndex);
+    setTitle(defaultTitles[nextIndex]);
+  };
+
   const handleChildUpdate = (
     childId: string,
     field: keyof SleepChild,
@@ -140,15 +158,13 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
 
   const handleSubmit = () => {
     try {
+      setIsLoading(true);
+
       // Validation
       const newErrors: { [key: string]: string } = {};
 
       if (!title.trim()) {
         newErrors.title = "כותרת היא שדה חובה";
-      }
-
-      if (!sleepDate) {
-        newErrors.sleepDate = "תאריך שינה הוא שדה חובה";
       }
 
       const sleepingChildren = sleepChildren.filter(
@@ -159,48 +175,49 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
       }
 
       // Validate sleeping children have required fields
+      // Note: Start and end times will be handled by the backend
       sleepingChildren.forEach((child) => {
-        if (!child.sleepStartTime) {
-          newErrors[`child_${child.childId}_start`] =
-            "זמן התחלת שינה הוא שדה חובה";
-        }
+        // Add any additional validation here if needed
       });
 
       if (Object.keys(newErrors).length > 0) {
         setErrors(newErrors);
+        setIsLoading(false);
         return;
       }
 
-      // Calculate sleep durations
+      // Sleep durations will be calculated by the backend
       const updatedSleepChildren = sleepChildren.map((child) => ({
         ...child,
-        sleepDuration:
-          child.sleepStartTime && child.sleepEndTime
-            ? calculateSleepDuration(child.sleepStartTime, child.sleepEndTime)
-            : 0,
+        sleepDuration: 0, // Will be calculated by backend
       }));
 
       const formData: CreateSleepPostData = {
         title: title.trim(),
         groupId,
         groupName,
-        sleepDate,
+        sleepDate: new Date().toISOString().split("T")[0], // Use today's date
         children: updatedSleepChildren.filter((child) => child.sleepStartTime),
       };
 
-      // Simulate potential API error for demonstration
-      if (Math.random() < 0.1) {
-        // 10% chance of error for testing
-        throw new Error("Network error: Failed to create sleep post");
-      }
+      // Simulate API call delay
+      setTimeout(() => {
+        // Simulate potential API error for demonstration
+        if (Math.random() < 0.1) {
+          // 10% chance of error for testing
+          throw new Error("Network error: Failed to create sleep post");
+        }
 
-      onSubmit(formData);
+        onSubmit(formData);
+        setIsLoading(false);
+      }, 1200);
     } catch (error) {
       console.error("Error creating sleep post:", error);
       setErrors({
         submit:
           error instanceof Error ? error.message : "אירעה שגיאה בלתי צפויה",
       });
+      setIsLoading(false);
     }
   };
 
@@ -211,324 +228,421 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
   if (!isOpen) return null;
 
   return createPortal(
-    <Box
-      sx={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        zIndex: 99999,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        p: 2,
-      }}
-      onClick={onClose}
-    >
+    <Fade in={isOpen} timeout={300}>
       <Box
         sx={{
-          backgroundColor: "white",
-          borderRadius: 3,
-          padding: 3,
-          boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          zIndex: 99999,
           display: "flex",
-          flexDirection: "column",
-          gap: 2,
-          width: "100%",
-          maxWidth: 600,
-          maxHeight: "90vh",
-          overflow: "hidden",
+          justifyContent: "center",
+          alignItems: "center",
+          p: isMobile ? 0 : 2,
         }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={onClose}
       >
-        {/* Header */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 2,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <SleepIcon sx={{ color: "#9C27B0", fontSize: 28 }} />
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 700,
-                color: "text.primary",
-              }}
-            >
-              צור פוסט שינה
-            </Typography>
-          </Box>
-          <IconButton
-            onClick={onClose}
+        <Fade in={isOpen} timeout={100}>
+          <Box
             sx={{
-              color: "text.secondary",
-              "&:hover": {
-                bgcolor: "action.hover",
-              },
+              transform: isOpen ? "translateY(0)" : "translateY(-100vh)",
+              transition: "transform 1s cubic-bezier(0.68, -0.55, 0.265, 1.55)",
+              width: "100%",
+              maxWidth: isMobile ? "100%" : 600,
+              willChange: "transform",
             }}
           >
-            <CloseIcon />
-          </IconButton>
-        </Box>
-
-        {/* Form Content */}
-        <Box sx={{ flex: 1, overflow: "auto", pr: 1 }}>
-          {/* Basic Info */}
-          <Box sx={{ mb: 3 }}>
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 600,
-                color: "text.primary",
-                mb: 2,
-              }}
-            >
-              פרטים בסיסיים
-            </Typography>
-
-            <TextField
-              fullWidth
-              label="כותרת הפוסט"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              error={!!errors.title}
-              helperText={errors.title}
-              sx={{ mb: 2 }}
-            />
-
-            <TextField
-              fullWidth
-              type="date"
-              label="תאריך שינה"
-              value={sleepDate}
-              onChange={(e) => setSleepDate(e.target.value)}
-              error={!!errors.sleepDate}
-              helperText={errors.sleepDate}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Box>
-
-          <Divider sx={{ my: 2 }} />
-
-          {/* Children List */}
-          <Box>
             <Box
               sx={{
+                backgroundColor: "white",
+                borderRadius: isMobile ? "20px" : 3,
+                padding: isMobile ? 2 : 3,
+                boxShadow: isMobile
+                  ? "0 8px 32px rgba(0, 0, 0, 0.4)"
+                  : "0 20px 60px rgba(0, 0, 0, 0.3)",
                 display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mb: 2,
+                flexDirection: "column",
+                gap: 2,
+                width: "100%",
+                maxWidth: isMobile ? "100%" : 600,
+                maxHeight: isMobile ? "85vh" : "90vh",
+                overflow: "hidden",
+                position: "relative",
+                transform: "none",
+                ...(isMobile && {
+                  borderBottom: "1px solid",
+                  borderColor: "divider",
+                  marginTop: 0,
+                }),
               }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  color: "text.primary",
-                }}
-              >
-                ילדים בקבוצה
-              </Typography>
-              <Chip
-                label={`${sleepingChildrenCount} ילדים ישנים`}
-                color="primary"
-                size="small"
-              />
-            </Box>
-
-            {errors.children && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {errors.children}
-              </Alert>
-            )}
-
-            {errors.submit && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                <AlertTitle>שגיאה ביצירת הפוסט</AlertTitle>
-                {errors.submit}
-              </Alert>
-            )}
-
-            <List sx={{ bgcolor: "background.default", borderRadius: 2 }}>
-              {sleepChildren.map((child) => {
-                const isSleeping = !!child.sleepStartTime;
-                return (
-                  <ListItem
-                    key={child.childId}
+              {/* Loading overlay */}
+              {isLoading && (
+                <Fade in={isLoading} timeout={300}>
+                  <Box
                     sx={{
-                      border: "1px solid",
-                      borderColor: "divider",
-                      borderRadius: 1,
-                      mb: 1,
-                      bgcolor: "background.paper",
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      bgcolor: "rgba(255, 255, 255, 0.9)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      zIndex: 10,
+                      borderRadius: 3,
                     }}
                   >
-                    <ListItemAvatar>
-                      <Avatar sx={{ bgcolor: "#9C27B0" }}>
-                        {child.firstName.charAt(0)}
-                      </Avatar>
-                    </ListItemAvatar>
-
-                    <ListItemText
-                      primary={`${child.firstName} ${child.lastName}`}
-                      secondary={
-                        isSleeping ? (
-                          <Box sx={{ mt: 1 }}>
-                            <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
-                              <TextField
-                                size="small"
-                                type="datetime-local"
-                                label="זמן התחלה"
-                                value={child.sleepStartTime}
-                                onChange={(e) =>
-                                  handleChildUpdate(
-                                    child.childId,
-                                    "sleepStartTime",
-                                    e.target.value
-                                  )
-                                }
-                                error={!!errors[`child_${child.childId}_start`]}
-                                helperText={
-                                  errors[`child_${child.childId}_start`]
-                                }
-                                InputLabelProps={{ shrink: true }}
-                                sx={{ flex: 1 }}
-                              />
-                              <TextField
-                                size="small"
-                                type="datetime-local"
-                                label="זמן סיום"
-                                value={child.sleepEndTime}
-                                onChange={(e) =>
-                                  handleChildUpdate(
-                                    child.childId,
-                                    "sleepEndTime",
-                                    e.target.value
-                                  )
-                                }
-                                InputLabelProps={{ shrink: true }}
-                                sx={{ flex: 1 }}
-                              />
-                            </Box>
-
-                            <FormControl
-                              size="small"
-                              sx={{ minWidth: 120, mr: 1 }}
-                            >
-                              <InputLabel>איכות שינה</InputLabel>
-                              <Select
-                                value={child.sleepQuality || ""}
-                                onChange={(e) =>
-                                  handleChildUpdate(
-                                    child.childId,
-                                    "sleepQuality",
-                                    e.target.value
-                                  )
-                                }
-                                label="איכות שינה"
-                              >
-                                {SLEEP_QUALITY_OPTIONS.map((option) => (
-                                  <MenuItem
-                                    key={option.value}
-                                    value={option.value}
-                                  >
-                                    <Box
-                                      sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 1,
-                                      }}
-                                    >
-                                      <Box
-                                        sx={{
-                                          width: 12,
-                                          height: 12,
-                                          borderRadius: "50%",
-                                          bgcolor: option.color,
-                                        }}
-                                      />
-                                      {option.label}
-                                    </Box>
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-
-                            <TextField
-                              size="small"
-                              label="הערות"
-                              value={child.notes}
-                              onChange={(e) =>
-                                handleChildUpdate(
-                                  child.childId,
-                                  "notes",
-                                  e.target.value
-                                )
-                              }
-                              sx={{ flex: 1 }}
-                            />
-                          </Box>
-                        ) : (
-                          "לא ישן"
-                        )
-                      }
-                    />
-
-                    <ListItemSecondaryAction>
-                      <Switch
-                        checked={isSleeping}
-                        onChange={(e) =>
-                          handleChildSleepToggle(
-                            child.childId,
-                            e.target.checked
-                          )
-                        }
-                        color="primary"
+                    <Box sx={{ textAlign: "center" }}>
+                      <Skeleton
+                        variant="circular"
+                        width={60}
+                        height={60}
+                        sx={{ mb: 2 }}
                       />
-                    </ListItemSecondaryAction>
-                  </ListItem>
-                );
-              })}
-            </List>
-          </Box>
-        </Box>
+                      <Skeleton variant="text" width={120} sx={{ mb: 1 }} />
+                      <Skeleton variant="text" width={80} />
+                    </Box>
+                  </Box>
+                </Fade>
+              )}
+              {/* Header */}
+              <Fade
+                in={isOpen}
+                timeout={400}
+                style={{ transitionDelay: "100ms" }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 2,
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <SleepIcon sx={{ color: "#9C27B0", fontSize: 28 }} />
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        fontWeight: 700,
+                        color: "text.primary",
+                      }}
+                    >
+                      צור פוסט שינה
+                    </Typography>
+                  </Box>
+                  <IconButton
+                    onClick={onClose}
+                    sx={{
+                      color: "text.secondary",
+                      "&:hover": {
+                        bgcolor: "action.hover",
+                      },
+                    }}
+                  >
+                    <CloseIcon />
+                  </IconButton>
+                </Box>
+              </Fade>
 
-        {/* Footer */}
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            pt: 2,
-            borderTop: "1px solid",
-            borderColor: "divider",
-          }}
-        >
-          <Button variant="outlined" onClick={onClose} sx={{ flex: 1 }}>
-            ביטול
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            startIcon={<AddIcon />}
-            sx={{
-              flex: 1,
-              bgcolor: "#9C27B0",
-              "&:hover": {
-                bgcolor: "#7B1FA2",
-              },
-            }}
-          >
-            צור פוסט שינה
-          </Button>
-        </Box>
+              {/* Form Content */}
+              <Box sx={{ flex: 1, overflow: "auto", pr: 1 }}>
+                {/* Basic Info */}
+                <Box sx={{ mb: 3 }}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 600,
+                      color: "text.primary",
+                      mb: 2,
+                    }}
+                  >
+                    פרטים בסיסיים
+                  </Typography>
+
+                  <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
+                    <TextField
+                      fullWidth
+                      label="כותרת הפוסט"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      error={!!errors.title}
+                      helperText={errors.title}
+                    />
+                    <Button
+                      variant="outlined"
+                      onClick={handleNextTitle}
+                      sx={{
+                        minWidth: "auto",
+                        px: 2,
+                        borderColor: "#9C27B0",
+                        color: "#9C27B0",
+                        "&:hover": {
+                          borderColor: "#7B1FA2",
+                          bgcolor: "#9C27B010",
+                        },
+                      }}
+                      title="כותרת הבאה"
+                    >
+                      ↻
+                    </Button>
+                  </Box>
+                </Box>
+
+                <Divider sx={{ my: 2 }} />
+
+                {/* Children List */}
+                <Box>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 600,
+                        color: "text.primary",
+                      }}
+                    >
+                      ילדים בקבוצה
+                    </Typography>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Chip
+                        label={`${sleepingChildrenCount} ילדים ישנים`}
+                        color="primary"
+                        size="small"
+                      />
+                    </Box>
+                  </Box>
+
+                  {/* Quick Selection Buttons */}
+                  <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={handleSelectAllAsleep}
+                      sx={{
+                        borderColor: "#9C27B0",
+                        color: "#9C27B0",
+                        "&:hover": {
+                          borderColor: "#7B1FA2",
+                          bgcolor: "#9C27B010",
+                        },
+                      }}
+                    >
+                      בחר הכל ישנים
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={handleSelectNoneAsleep}
+                      sx={{
+                        borderColor: "text.secondary",
+                        color: "text.secondary",
+                        "&:hover": {
+                          borderColor: "text.primary",
+                          bgcolor: "action.hover",
+                        },
+                      }}
+                    >
+                      בטל בחירה
+                    </Button>
+                  </Box>
+
+                  {errors.children && (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                      {errors.children}
+                    </Alert>
+                  )}
+
+                  {errors.submit && (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                      <AlertTitle>שגיאה ביצירת הפוסט</AlertTitle>
+                      {errors.submit}
+                    </Alert>
+                  )}
+
+                  <List sx={{ bgcolor: "background.default", borderRadius: 2 }}>
+                    {isLoadingDailyReport
+                      ? // Loading skeleton for children
+                        Array.from({ length: 3 }).map((_, index) => (
+                          <Fade
+                            in={true}
+                            timeout={300 + index * 100}
+                            key={index}
+                          >
+                            <ListItem
+                              sx={{
+                                border: "1px solid",
+                                borderColor: "divider",
+                                borderRadius: 1,
+                                mb: 1,
+                                bgcolor: "background.paper",
+                              }}
+                            >
+                              <ListItemAvatar>
+                                <Skeleton
+                                  variant="circular"
+                                  width={40}
+                                  height={40}
+                                />
+                              </ListItemAvatar>
+                              <ListItemText
+                                primary={
+                                  <Skeleton variant="text" width="60%" />
+                                }
+                                secondary={
+                                  <Skeleton variant="text" width="40%" />
+                                }
+                              />
+                              <ListItemSecondaryAction>
+                                <Skeleton
+                                  variant="rectangular"
+                                  width={44}
+                                  height={24}
+                                  sx={{ borderRadius: 12 }}
+                                />
+                              </ListItemSecondaryAction>
+                            </ListItem>
+                          </Fade>
+                        ))
+                      : sleepChildren.map((child) => {
+                          const isSleeping = !!child.sleepStartTime;
+                          return (
+                            <Fade in={true} timeout={300} key={child.childId}>
+                              <ListItem
+                                sx={{
+                                  border: "1px solid",
+                                  borderColor: isSleeping
+                                    ? "#9C27B0"
+                                    : "divider",
+                                  borderRadius: 1,
+                                  mb: 1,
+                                  bgcolor: isSleeping
+                                    ? "#9C27B005"
+                                    : "background.paper",
+                                  transition: "all 0.2s ease",
+                                }}
+                              >
+                                <ListItemAvatar>
+                                  <Avatar
+                                    sx={{
+                                      bgcolor: isSleeping ? "#9C27B0" : "#ccc",
+                                      border: isSleeping
+                                        ? "2px solid #9C27B0"
+                                        : "none",
+                                    }}
+                                  >
+                                    {child.firstName.charAt(0)}
+                                  </Avatar>
+                                </ListItemAvatar>
+
+                                <ListItemText
+                                  primary={`${child.firstName} ${child.lastName}`}
+                                  secondary={
+                                    isSleeping ? (
+                                      <Box sx={{ mt: 1, pr: 6 }}>
+                                        <TextField
+                                          size="small"
+                                          label="הערות"
+                                          value={child.notes}
+                                          onChange={(e) =>
+                                            handleChildUpdate(
+                                              child.childId,
+                                              "notes",
+                                              e.target.value
+                                            )
+                                          }
+                                          sx={{ width: "100%" }}
+                                          placeholder="הערות נוספות..."
+                                        />
+                                      </Box>
+                                    ) : (
+                                      "לא ישן"
+                                    )
+                                  }
+                                />
+
+                                <ListItemSecondaryAction>
+                                  <Switch
+                                    checked={isSleeping}
+                                    onChange={(e) =>
+                                      handleChildSleepToggle(
+                                        child.childId,
+                                        e.target.checked
+                                      )
+                                    }
+                                    color="primary"
+                                  />
+                                </ListItemSecondaryAction>
+                              </ListItem>
+                            </Fade>
+                          );
+                        })}
+                  </List>
+                </Box>
+              </Box>
+
+              {/* Footer */}
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 2,
+                  pt: 2,
+                  borderTop: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <Button variant="outlined" onClick={onClose} sx={{ flex: 1 }}>
+                  ביטול
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  startIcon={
+                    isLoading ? (
+                      <Skeleton variant="circular" width={20} height={20} />
+                    ) : (
+                      <AddIcon />
+                    )
+                  }
+                  sx={{
+                    flex: 1,
+                    bgcolor: "#9C27B0",
+                    "&:hover": {
+                      bgcolor: "#7B1FA2",
+                    },
+                    "&:disabled": {
+                      bgcolor: "#9C27B080",
+                    },
+                  }}
+                >
+                  {isLoading ? (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Skeleton variant="text" width={60} />
+                      <Skeleton variant="circular" width={16} height={16} />
+                    </Box>
+                  ) : (
+                    "צור פוסט שינה"
+                  )}
+                </Button>
+              </Box>
+            </Box>
+          </Box>
+        </Fade>
       </Box>
-    </Box>,
+    </Fade>,
     document.body
   );
 };
