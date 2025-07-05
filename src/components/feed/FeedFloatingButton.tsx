@@ -27,10 +27,12 @@ interface PostTypeOption {
 
 interface FeedFloatingButtonProps {
   onPostTypeSelect: (postType: string) => Promise<void>;
+  onOpen?: () => Promise<void>;
 }
 
 const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
   onPostTypeSelect,
+  onOpen,
 }) => {
   const theme = useTheme();
   const [isOpen, setIsOpen] = useState(false);
@@ -76,6 +78,17 @@ const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
     }, 200);
   };
 
+  const handleOpen = async () => {
+    if (onOpen) {
+      try {
+        await onOpen();
+      } catch (error) {
+        console.error("Failed to prepare data for post creation:", error);
+      }
+    }
+    setIsOpen(true);
+  };
+
   const handleClose = () => {
     setIsOpen(false);
   };
@@ -86,7 +99,7 @@ const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
       <Fab
         color="primary"
         aria-label="add post"
-        onClick={() => setIsOpen(true)}
+        onClick={handleOpen}
         disabled={isLoading}
         sx={{
           position: "absolute",

@@ -7,11 +7,12 @@ import CreateSleepPostModal from "./CreateSleepPostModal";
 import SleepPostErrorBoundary from "./SleepPostErrorBoundary";
 import { useAttendance } from "../../contexts/AttendanceContext";
 import { useDailyReport } from "../../contexts/DailyReportContext";
-import { Child } from "../../services/api";
+import { Child, updateDailyReportSleepData } from "../../services/api";
 import {
   CreateSleepPostData,
   SleepPost as SleepPostType,
 } from "../../types/posts";
+import { SleepStatus } from "../../types/enums";
 
 interface FeedContainerProps {
   title: string;
@@ -37,7 +38,11 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { attendanceData } = useAttendance();
-  const { dailyReport } = useDailyReport();
+  const {
+    dailyReport,
+    fetchDailyReport,
+    isLoading: isDailyReportLoading,
+  } = useDailyReport();
 
   // State for sleep post creation
   const [isSleepModalOpen, setIsSleepModalOpen] = useState(false);
@@ -45,7 +50,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
 
   // Get children data from daily report or attendance context
   const childrenData: Child[] =
-    dailyReport?.children?.map((reportChild) => ({
+    dailyReport?.childrenSleepData?.map((reportChild) => ({
       id: reportChild.childId,
       firstName: reportChild.firstName,
       lastName: reportChild.lastName,
@@ -67,54 +72,56 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
     })) ||
     [];
 
-  const handleSleepPostSubmit = (data: CreateSleepPostData) => {
-    setIsCreatingPost(true);
-    setTimeout(() => {
-      const now = new Date();
-      const newSleepPost: SleepPostType = {
-        id: Date.now().toString(),
-        type: "sleep",
+  const handleSleepPostSubmit = async (data: CreateSleepPostData) => {
+    try {
+      setIsCreatingPost(true);
+
+      console.log("Creating sleep post with data:", data);
+
+      // Check if we have the daily report
+      if (!dailyReport?.id) {
+        throw new Error("Daily report not found. Please try again.");
+      }
+
+      // Prepare sleep data for all children in the group
+      const allChildrenData = childrenData.map((child) => {
+        const sleepingChild = data.children.find((c) => c.childId === child.id);
+        return {
+          childId: child.id || "",
+          status: sleepingChild?.sleepStartTime
+            ? SleepStatus.Sleeping
+            : SleepStatus.Awake,
+          comment: sleepingChild?.notes || "",
+        };
+      });
+
+      console.log("Prepared sleep data:", {
         title: data.title,
-        groupName: data.groupName,
-        sleepDate: data.sleepDate,
-        children: data.children,
-        totalChildren: data.children.length,
-        sleepingChildren: data.children.length,
-        averageSleepDuration:
-          data.children.length > 0
-            ? Math.round(
-                data.children.reduce(
-                  (sum, child) => sum + (child.sleepDuration || 0),
-                  0
-                ) / data.children.length
-              )
-            : 0,
-        status: "active",
-        teacherName: "שרה כהן",
-        teacherAvatar: "https://randomuser.me/api/portraits/women/32.jpg",
-        publishDate:
-          now.toLocaleDateString("he-IL", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          }) +
-          " " +
-          now.toLocaleTimeString("he-IL", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        isLiked: false,
-        likeCount: 0,
-      };
+        children: allChildrenData,
+        dailyReportId: dailyReport.id,
+      });
+
+      // Make API call to update daily report with sleep data
+      const response = await updateDailyReportSleepData(dailyReport.id, {
+        childrenSleepData: {
+          title: data.title,
+          children: allChildrenData,
+        },
+      });
+
+      console.log("Daily report sleep data updated successfully:", response);
 
       // TODO: Add the new sleep post to the feed state
       // This should be handled by the parent component
-      console.log("New sleep post created:", newSleepPost);
+      // For now, we'll just close the modal
 
       setIsSleepModalOpen(false);
+    } catch (error) {
+      console.error("Failed to update sleep data:", error);
+      // TODO: Show error message to user
+    } finally {
       setIsCreatingPost(false);
-    }, 800);
+    }
   };
 
   const handlePostTypeSelect = async (postType: string) => {
@@ -140,6 +147,23 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
         break;
       default:
         console.log("Unknown post type:", postType);
+    }
+  };
+
+  // Function to prepare data when floating button is opened
+  const handleFloatingButtonOpen = async () => {
+    // Fetch daily report if we don't have it or if we need fresh data
+    if (
+      attendanceData?.groupId &&
+      (!dailyReport || dailyReport.groupId !== attendanceData.groupId)
+    ) {
+      console.log("Fetching daily report for post creation...");
+      try {
+        await fetchDailyReport(attendanceData.groupId);
+      } catch (error) {
+        console.error("Failed to fetch daily report for post creation:", error);
+        // Continue even if daily report fetch fails
+      }
     }
   };
 
@@ -342,7 +366,10 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
 
             {/* Floating Action Button for Mobile */}
             {showFloatingButton && postTypeHandler && (
-              <FeedFloatingButton onPostTypeSelect={postTypeHandler} />
+              <FeedFloatingButton
+                onPostTypeSelect={postTypeHandler}
+                onOpen={handleFloatingButtonOpen}
+              />
             )}
           </Box>
         </Box>
@@ -451,7 +478,10 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
 
             {/* Floating Action Button for Desktop */}
             {showFloatingButton && postTypeHandler && (
-              <FeedFloatingButton onPostTypeSelect={postTypeHandler} />
+              <FeedFloatingButton
+                onPostTypeSelect={postTypeHandler}
+                onOpen={handleFloatingButtonOpen}
+              />
             )}
           </Box>
         </Box>
@@ -471,6 +501,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
           children={childrenData}
           groupName={attendanceData?.groupName || "גן א"}
           groupId={dailyReport?.groupId || attendanceData?.groupId || "group1"}
+          isLoadingDailyReport={isDailyReportLoading}
         />
       </SleepPostErrorBoundary>
     </Box>

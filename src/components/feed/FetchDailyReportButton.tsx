@@ -63,8 +63,8 @@ const FetchDailyReportButton: React.FC<FetchDailyReportButtonProps> = ({
 
       {dailyReport && (
         <Alert severity="success" sx={{ mt: 2 }}>
-          דוח יומי נטען בהצלחה! {dailyReport.children?.length || 0} ילדים נמצאו
-          בדוח.
+          דוח יומי נטען בהצלחה! {dailyReport.childrenSleepData?.length || 0}{" "}
+          ילדים נמצאו בדוח.
         </Alert>
       )}
     </Box>

@@ -5,6 +5,8 @@ import axios, {
   AxiosRequestConfig,
 } from "axios";
 import { logger } from "../utils/logger";
+import { SleepStatus } from "../types/enums";
+import { ApiAttendanceStatus } from "../types/attendance";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
@@ -660,8 +662,9 @@ export interface DailyReportChild {
   childId: string;
   firstName: string;
   lastName: string;
-  status: string;
-  timestamp: string;
+  status: SleepStatus;
+  startTimestamp: string;
+  endTimestamp: string;
   updatedByUserId: string;
   updatedByUserName: string;
 }
@@ -673,7 +676,7 @@ export interface DailyReport {
   groupId: string;
   createdById: string;
   date: string;
-  children: DailyReportChild[];
+  childrenSleepData: DailyReportChild[];
   isPublished: boolean;
   created: string;
   updated: string;
@@ -683,7 +686,7 @@ export interface AttendanceChild {
   childId: string;
   firstName: string;
   lastName: string;
-  status: string;
+  status: ApiAttendanceStatus;
   timestamp: string;
   updatedByUserId: string;
   dateOfBirth?: string;
@@ -828,6 +831,101 @@ export const attendanceApi = {
     );
     return response.data;
   },
+};
+
+// Sleep Post API functions
+export interface CreateSleepPostRequest {
+  title: string;
+  groupId: string;
+  groupName: string;
+  sleepDate: string;
+  children: {
+    childId: string;
+    firstName: string;
+    lastName: string;
+    sleepStartTime?: string;
+    sleepEndTime?: string;
+    sleepDuration?: number;
+    notes?: string;
+  }[];
+}
+
+export interface SleepPostResponse {
+  id: string;
+  title: string;
+  groupId: string;
+  groupName: string;
+  sleepDate: string;
+  children: {
+    childId: string;
+    firstName: string;
+    lastName: string;
+    sleepStartTime: string;
+    sleepEndTime: string;
+    sleepDuration: number;
+    notes: string;
+  }[];
+  totalChildren: number;
+  sleepingChildren: number;
+  averageSleepDuration: number;
+  status: "active" | "completed";
+  created: string;
+  updated: string;
+}
+
+// Update daily report with sleep data
+export interface UpdateDailyReportSleepData {
+  childrenSleepData: {
+    title: string;
+    children: {
+      childId: string;
+      status: SleepStatus;
+      comment?: string;
+    }[];
+  };
+}
+
+export const updateDailyReportSleepData = async (
+  dailyReportId: string,
+  sleepData: UpdateDailyReportSleepData
+): Promise<DailyReport> => {
+  try {
+    logger.info("Updating daily report sleep data", { dailyReportId });
+
+    const response = await api.patch(
+      `/api/v1/daily-reports/${dailyReportId}`,
+      sleepData
+    );
+
+    logger.info("Daily report sleep data updated successfully", {
+      dailyReportId,
+    });
+
+    return response.data;
+  } catch (error) {
+    logger.error("Failed to update daily report sleep data", error);
+    throw error;
+  }
+};
+
+export const createSleepPost = async (
+  data: CreateSleepPostRequest
+): Promise<SleepPostResponse> => {
+  try {
+    logger.info("Creating sleep post", { groupId: data.groupId });
+
+    const response = await api.post("/api/v1/sleep-posts", data);
+
+    logger.info("Sleep post created successfully", {
+      id: response.data.id,
+      groupId: data.groupId,
+    });
+
+    return response.data;
+  } catch (error) {
+    logger.error("Failed to create sleep post", error);
+    throw error;
+  }
 };
 
 export default api;

@@ -200,17 +200,9 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
         children: updatedSleepChildren.filter((child) => child.sleepStartTime),
       };
 
-      // Simulate API call delay
-      setTimeout(() => {
-        // Simulate potential API error for demonstration
-        if (Math.random() < 0.1) {
-          // 10% chance of error for testing
-          throw new Error("Network error: Failed to create sleep post");
-        }
-
-        onSubmit(formData);
-        setIsLoading(false);
-      }, 1200);
+      // Call the parent's onSubmit function
+      onSubmit(formData);
+      setIsLoading(false);
     } catch (error) {
       console.error("Error creating sleep post:", error);
       setErrors({
@@ -336,6 +328,27 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
                     >
                       צור פוסט שינה
                     </Typography>
+                    {isLoadingDailyReport && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          ml: 2,
+                        }}
+                      >
+                        <Skeleton variant="circular" width={16} height={16} />
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "text.secondary",
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          טוען נתונים...
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                   <IconButton
                     onClick={onClose}
@@ -609,7 +622,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
                 <Button
                   variant="contained"
                   onClick={handleSubmit}
-                  disabled={isLoading}
+                  disabled={isLoading || isLoadingDailyReport}
                   startIcon={
                     isLoading ? (
                       <Skeleton variant="circular" width={20} height={20} />
@@ -633,6 +646,8 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
                       <Skeleton variant="text" width={60} />
                       <Skeleton variant="circular" width={16} height={16} />
                     </Box>
+                  ) : isLoadingDailyReport ? (
+                    "טוען נתונים..."
                   ) : (
                     "צור פוסט שינה"
                   )}
