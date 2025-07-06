@@ -15,6 +15,8 @@ import {
 } from "@mui/icons-material";
 import PostContainer from "./PostContainer";
 import { SleepPost as SleepPostType } from "../../types/posts";
+import SleepTimer from "../SleepTimer";
+import { isChildSleeping } from "../../utils/sleepUtils";
 
 interface SleepPostProps extends SleepPostType {
   onViewDetails?: (id: string) => void;
@@ -265,53 +267,84 @@ const SleepPost: React.FC<SleepPostProps> = ({
         )}
       </Box>
 
-      {/* Children Avatars */}
+      {/* Children Sleep Timers */}
       {children.length > 0 && (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ mt: 2 }}>
           <Typography
             variant="body2"
             sx={{
               color: "text.secondary",
-              fontSize: "0.8rem",
-              fontWeight: 500,
+              fontSize: "0.9rem",
+              fontWeight: 600,
+              mb: 1,
             }}
           >
-            ילדים ישנים:
+            זמני שינה:
           </Typography>
-          <AvatarGroup
-            max={5}
+          <Box
             sx={{
-              "& .MuiAvatar-root": {
-                width: 28,
-                height: 28,
-                fontSize: "0.75rem",
-                border: "2px solid white",
-              },
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 1,
+              alignItems: "center",
             }}
           >
-            {children.slice(0, 5).map((child) => (
-              <Avatar
-                key={child.childId}
-                sx={{
-                  bgcolor: "#9C27B0",
-                  fontSize: "0.7rem",
-                }}
-              >
-                {child.firstName.charAt(0)}
-              </Avatar>
-            ))}
-          </AvatarGroup>
-          {children.length > 5 && (
-            <Typography
-              variant="caption"
-              sx={{
-                color: "text.secondary",
-                fontSize: "0.7rem",
-              }}
-            >
-              +{children.length - 5}
-            </Typography>
-          )}
+            {children.map((child) => {
+              const isSleeping = isChildSleeping(
+                child.sleepStartTime,
+                child.sleepEndTime
+              );
+              return (
+                <Box
+                  key={child.childId}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    p: 1,
+                    borderRadius: 1,
+                    bgcolor: isSleeping
+                      ? "rgba(156, 39, 176, 0.05)"
+                      : "background.paper",
+                    border: "1px solid",
+                    borderColor: isSleeping
+                      ? "rgba(156, 39, 176, 0.2)"
+                      : "divider",
+                  }}
+                >
+                  <Avatar
+                    sx={{
+                      width: 24,
+                      height: 24,
+                      fontSize: "0.7rem",
+                      bgcolor: isSleeping ? "#9C27B0" : "#ccc",
+                    }}
+                  >
+                    {child.firstName.charAt(0)}
+                  </Avatar>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                      color: "text.primary",
+                    }}
+                  >
+                    {child.firstName}
+                  </Typography>
+                  <SleepTimer
+                    key={`${child.childId}-${id}`}
+                    startTime={child.sleepStartTime || ""}
+                    endTime={child.sleepEndTime}
+                    isSleeping={isSleeping}
+                    size="small"
+                    showPulse={isSleeping}
+                    animationIntensity="subtle"
+                  />
+                </Box>
+              );
+            })}
+          </Box>
         </Box>
       )}
     </PostContainer>

@@ -28,11 +28,13 @@ interface PostTypeOption {
 interface FeedFloatingButtonProps {
   onPostTypeSelect: (postType: string) => Promise<void>;
   onOpen?: () => Promise<void>;
+  isLoading?: boolean;
 }
 
 const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
   onPostTypeSelect,
   onOpen,
+  isLoading: externalLoading = false,
 }) => {
   const theme = useTheme();
   const [isOpen, setIsOpen] = useState(false);
@@ -100,7 +102,7 @@ const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
         color="primary"
         aria-label="add post"
         onClick={handleOpen}
-        disabled={isLoading}
+        disabled={isLoading || externalLoading}
         sx={{
           position: "absolute",
           bottom: { xs: 80, sm: 24 }, // More space from bottom nav on mobile, 24px on desktop
@@ -118,7 +120,7 @@ const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
           zIndex: 1000,
         }}
       >
-        {isLoading ? (
+        {isLoading || externalLoading ? (
           <CircularProgress size={24} color="inherit" />
         ) : (
           <AddIcon />
@@ -210,15 +212,33 @@ const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
                   mb: 2,
                 }}
               >
-                <Typography
-                  variant="h5"
-                  sx={{
-                    fontWeight: 700,
-                    color: "text.primary",
-                  }}
-                >
-                  צור פוסט חדש
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 700,
+                      color: "text.primary",
+                    }}
+                  >
+                    צור פוסט חדש
+                  </Typography>
+                  {externalLoading && (
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                    >
+                      <CircularProgress size={16} />
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        מרענן נתונים...
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
                 <IconButton
                   onClick={handleClose}
                   sx={{

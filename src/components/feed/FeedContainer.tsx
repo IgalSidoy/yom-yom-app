@@ -47,6 +47,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
   // State for sleep post creation
   const [isSleepModalOpen, setIsSleepModalOpen] = useState(false);
   const [isCreatingPost, setIsCreatingPost] = useState(false);
+  const [isPreparingData, setIsPreparingData] = useState(false);
 
   // Get children data from daily report or attendance context
   const childrenData: Child[] =
@@ -139,17 +140,17 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
 
   // Function to prepare data when floating button is opened
   const handleFloatingButtonOpen = async () => {
-    // Fetch daily report if we don't have it or if we need fresh data
-    if (
-      attendanceData?.groupId &&
-      (!dailyReport || dailyReport.groupId !== attendanceData.groupId)
-    ) {
-      try {
+    setIsPreparingData(true);
+    try {
+      // Always fetch fresh daily report data when creating a new post
+      if (attendanceData?.groupId) {
         await fetchDailyReport(attendanceData.groupId);
-      } catch (error) {
-        console.error("Failed to fetch daily report for post creation:", error);
-        // Continue even if daily report fetch fails
       }
+    } catch (error) {
+      console.error("Failed to fetch daily report for post creation:", error);
+      // Continue even if daily report fetch fails
+    } finally {
+      setIsPreparingData(false);
     }
   };
 
@@ -355,6 +356,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
               <FeedFloatingButton
                 onPostTypeSelect={postTypeHandler}
                 onOpen={handleFloatingButtonOpen}
+                isLoading={isPreparingData}
               />
             )}
           </Box>
@@ -467,6 +469,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
               <FeedFloatingButton
                 onPostTypeSelect={postTypeHandler}
                 onOpen={handleFloatingButtonOpen}
+                isLoading={isPreparingData}
               />
             )}
           </Box>
