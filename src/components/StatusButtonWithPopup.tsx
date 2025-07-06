@@ -28,7 +28,6 @@ const StatusButtonWithPopup: React.FC<StatusButtonWithPopupProps> = ({
   getStatusTextColor,
   getStatusText,
 }) => {
-  console.log("StatusButtonWithPopup disabled:", disabled);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
   const handleStatusUpdate = (status: ApiAttendanceStatus) => {

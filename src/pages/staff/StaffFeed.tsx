@@ -59,21 +59,14 @@ const StaffFeed: React.FC = () => {
     },
   ];
 
-  const handleViewDetails = (id: string) => {
-    console.log("View details for post:", id);
-  };
+  const handleViewDetails = (id: string) => {};
 
-  const handleEdit = (id: string) => {
-    console.log("Edit post:", id);
-  };
+  const handleEdit = (id: string) => {};
 
-  const handleLike = (id: string) => {
-    console.log("Like post:", id);
-  };
+  const handleLike = (id: string) => {};
 
   // Post type selection handler
   const handlePostTypeSelect = async (postType: string) => {
-    console.log("StaffFeed: Post type selected:", postType);
     // This will be handled by FeedContainer
   };
 
@@ -95,7 +88,7 @@ const StaffFeed: React.FC = () => {
             setSleepPosts((prev) => prev.filter((p) => p.id !== post.id));
           }}
           onRetry={() => {
-            console.log("Retrying sleep post render:", post.id);
+            // Retry logic here
           }}
         >
           <SleepPost

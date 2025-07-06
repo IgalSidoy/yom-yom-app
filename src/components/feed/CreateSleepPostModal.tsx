@@ -29,7 +29,8 @@ import {
   Add as AddIcon,
 } from "@mui/icons-material";
 import { CreateSleepPostData, SleepChild } from "../../types/posts";
-import { Child } from "../../services/api";
+import { Child, DailyReport } from "../../services/api";
+import { SleepStatus } from "../../types/enums";
 
 interface CreateSleepPostModalProps {
   isOpen: boolean;
@@ -39,6 +40,7 @@ interface CreateSleepPostModalProps {
   groupName: string;
   groupId: string;
   isLoadingDailyReport?: boolean;
+  dailyReport?: DailyReport | null;
 }
 
 const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
@@ -49,6 +51,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
   groupName,
   groupId,
   isLoadingDailyReport = false,
+  dailyReport,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -68,21 +71,33 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  // Initialize sleep children from the children list
+  // Debug: Log when sleepChildren state changes
+
+  // Initialize sleep children from the children list and daily report data
   useEffect(() => {
     if (children.length > 0) {
-      const initialSleepChildren: SleepChild[] = children.map((child) => ({
-        childId: child.id || "",
-        firstName: child.firstName,
-        lastName: child.lastName,
-        sleepStartTime: "",
-        sleepEndTime: "",
-        sleepDuration: 0,
-        notes: "",
-      }));
+      const initialSleepChildren: SleepChild[] = children.map((child) => {
+        // Find existing sleep data for this child from daily report
+        const existingSleepData = dailyReport?.sleepData?.children?.find(
+          (sleepChild) => sleepChild.childId === child.id
+        );
+
+        // Compare with enum value since status is now properly mapped
+        const isSleeping = existingSleepData?.status === SleepStatus.Sleeping;
+
+        return {
+          childId: child.id || "",
+          firstName: child.firstName,
+          lastName: child.lastName,
+          sleepStartTime: isSleeping ? "now" : "",
+          sleepEndTime: "",
+          sleepDuration: 0,
+          notes: existingSleepData?.comment || "",
+        };
+      });
       setSleepChildren(initialSleepChildren);
     }
-  }, [children]);
+  }, [children, dailyReport]);
 
   // Set initial title when modal opens
   useEffect(() => {
@@ -533,7 +548,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
                           const isSleeping = !!child.sleepStartTime;
                           return (
                             <Fade in={true} timeout={300} key={child.childId}>
-                              <ListItem
+                              <Box
                                 sx={{
                                   border: "1px solid",
                                   borderColor: isSleeping
@@ -547,58 +562,60 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
                                   transition: "all 0.2s ease",
                                 }}
                               >
-                                <ListItemAvatar>
-                                  <Avatar
-                                    sx={{
-                                      bgcolor: isSleeping ? "#9C27B0" : "#ccc",
-                                      border: isSleeping
-                                        ? "2px solid #9C27B0"
-                                        : "none",
-                                    }}
-                                  >
-                                    {child.firstName.charAt(0)}
-                                  </Avatar>
-                                </ListItemAvatar>
+                                <ListItem>
+                                  <ListItemAvatar>
+                                    <Avatar
+                                      sx={{
+                                        bgcolor: isSleeping
+                                          ? "#9C27B0"
+                                          : "#ccc",
+                                        border: isSleeping
+                                          ? "2px solid #9C27B0"
+                                          : "none",
+                                      }}
+                                    >
+                                      {child.firstName.charAt(0)}
+                                    </Avatar>
+                                  </ListItemAvatar>
 
-                                <ListItemText
-                                  primary={`${child.firstName} ${child.lastName}`}
-                                  secondary={
-                                    isSleeping ? (
-                                      <Box sx={{ mt: 1, pr: 6 }}>
-                                        <TextField
-                                          size="small"
-                                          label="הערות"
-                                          value={child.notes}
-                                          onChange={(e) =>
-                                            handleChildUpdate(
-                                              child.childId,
-                                              "notes",
-                                              e.target.value
-                                            )
-                                          }
-                                          sx={{ width: "100%" }}
-                                          placeholder="הערות נוספות..."
-                                        />
-                                      </Box>
-                                    ) : (
-                                      "לא ישן"
-                                    )
-                                  }
-                                />
-
-                                <ListItemSecondaryAction>
-                                  <Switch
-                                    checked={isSleeping}
-                                    onChange={(e) =>
-                                      handleChildSleepToggle(
-                                        child.childId,
-                                        e.target.checked
-                                      )
-                                    }
-                                    color="primary"
+                                  <ListItemText
+                                    primary={`${child.firstName} ${child.lastName}`}
+                                    secondary={isSleeping ? "ישן" : "לא ישן"}
                                   />
-                                </ListItemSecondaryAction>
-                              </ListItem>
+
+                                  <ListItemSecondaryAction>
+                                    <Switch
+                                      checked={isSleeping}
+                                      onChange={(e) =>
+                                        handleChildSleepToggle(
+                                          child.childId,
+                                          e.target.checked
+                                        )
+                                      }
+                                      color="primary"
+                                    />
+                                  </ListItemSecondaryAction>
+                                </ListItem>
+
+                                {isSleeping && (
+                                  <Box sx={{ px: 2, pb: 2 }}>
+                                    <TextField
+                                      size="small"
+                                      label="הערות"
+                                      value={child.notes}
+                                      onChange={(e) =>
+                                        handleChildUpdate(
+                                          child.childId,
+                                          "notes",
+                                          e.target.value
+                                        )
+                                      }
+                                      sx={{ width: "100%" }}
+                                      placeholder="הערות נוספות..."
+                                    />
+                                  </Box>
+                                )}
+                              </Box>
                             </Fade>
                           );
                         })}
@@ -648,6 +665,8 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
                     </Box>
                   ) : isLoadingDailyReport ? (
                     "טוען נתונים..."
+                  ) : dailyReport?.sleepData?.status === "Updated" ? (
+                    "עדכן פוסט"
                   ) : (
                     "צור פוסט שינה"
                   )}

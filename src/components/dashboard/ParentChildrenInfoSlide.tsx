@@ -107,9 +107,7 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
       case ApiAttendanceStatus.LATE:
       case "Late":
         return <ScheduleIcon sx={{ color: "#3A6EA5", fontSize: 20 }} />;
-      case ApiAttendanceStatus.AWAKE:
-      case "Awake":
-        return <CheckCircleIcon sx={{ color: "#2E7D32", fontSize: 20 }} />;
+
       case ApiAttendanceStatus.MISSING:
       case "Missing":
       case ApiAttendanceStatus.SICK:
@@ -131,9 +129,7 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
       case ApiAttendanceStatus.LATE:
       case "Late":
         return "מאחר";
-      case ApiAttendanceStatus.AWAKE:
-      case "Awake":
-        return "ער";
+
       case ApiAttendanceStatus.MISSING:
       case "Missing":
         return "נעדר";
@@ -161,9 +157,7 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
       case ApiAttendanceStatus.LATE:
       case "Late":
         return "#E3F0FF"; // MILD_BLUE
-      case ApiAttendanceStatus.AWAKE:
-      case "Awake":
-        return "#E8F5E8"; // Light green for awake
+
       case ApiAttendanceStatus.SICK:
       case "Sick":
         return "#FFE6A7"; // MILD_YELLOW
@@ -190,9 +184,7 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
       case ApiAttendanceStatus.LATE:
       case "Late":
         return "#3A6EA5"; // Dark blue text
-      case ApiAttendanceStatus.AWAKE:
-      case "Awake":
-        return "#2E7D32"; // Dark green text for awake
+
       case ApiAttendanceStatus.SICK:
       case "Sick":
         return "#B88B2A"; // Dark yellow text
@@ -226,8 +218,7 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
         return ApiAttendanceStatus.ARRIVED;
       case "Late":
         return ApiAttendanceStatus.LATE;
-      case "Awake":
-        return ApiAttendanceStatus.AWAKE;
+
       case "Sick":
         return ApiAttendanceStatus.SICK;
       case "Vacation":

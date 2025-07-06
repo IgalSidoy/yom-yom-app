@@ -22,12 +22,9 @@ const FetchDailyReportButton: React.FC<FetchDailyReportButtonProps> = ({
   }
 
   const handleFetchReport = async () => {
-    console.log("FetchDailyReportButton clicked, user:", user);
     if (user?.groupId) {
-      console.log("Fetching daily report for groupId:", user.groupId);
       await fetchDailyReport(user.groupId);
     } else {
-      console.log("No groupId available for user:", user);
     }
   };
 
@@ -63,7 +60,7 @@ const FetchDailyReportButton: React.FC<FetchDailyReportButtonProps> = ({
 
       {dailyReport && (
         <Alert severity="success" sx={{ mt: 2 }}>
-          דוח יומי נטען בהצלחה! {dailyReport.childrenSleepData?.length || 0}{" "}
+          דוח יומי נטען בהצלחה! {dailyReport.sleepData?.children?.length || 0}{" "}
           ילדים נמצאו בדוח.
         </Alert>
       )}

@@ -43,18 +43,11 @@ export const DailyReportProvider: React.FC<DailyReportProviderProps> = ({
 
       try {
         const targetDate = date || new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
-        console.log(
-          "Fetching daily report for groupId:",
-          groupId,
-          "date:",
-          targetDate
-        );
 
         const report = await dailyReportsApi.getDailyReport(
           groupId,
           targetDate
         );
-        console.log("Daily report received:", report);
 
         setDailyReport(report);
       } catch (error) {

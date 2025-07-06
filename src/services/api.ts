@@ -5,7 +5,7 @@ import axios, {
   AxiosRequestConfig,
 } from "axios";
 import { logger } from "../utils/logger";
-import { SleepStatus } from "../types/enums";
+import { SleepStatus, EntityStatus } from "../types/enums";
 import { ApiAttendanceStatus } from "../types/attendance";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL;
@@ -667,7 +667,46 @@ export interface DailyReportChild {
   endTimestamp: string;
   updatedByUserId: string;
   updatedByUserName: string;
+  comment?: string;
 }
+
+export interface SleepData {
+  title: string;
+  status: EntityStatus;
+  children: DailyReportChild[];
+}
+
+// Map API string status to SleepStatus enum
+export const mapApiStatusToSleepStatus = (apiStatus: string): SleepStatus => {
+  switch (apiStatus.toLowerCase()) {
+    case "sleeping":
+      return SleepStatus.Sleeping;
+    case "awake":
+      return SleepStatus.Awake;
+    default:
+      console.warn(
+        `Unknown sleep status from API: ${apiStatus}, defaulting to Awake`
+      );
+      return SleepStatus.Awake;
+  }
+};
+
+// Map API string status to EntityStatus enum
+export const mapApiStatusToEntityStatus = (apiStatus: string): EntityStatus => {
+  switch (apiStatus) {
+    case "Created":
+      return EntityStatus.Created;
+    case "Updated":
+      return EntityStatus.Updated;
+    case "Deleted":
+      return EntityStatus.Deleted;
+    default:
+      console.warn(
+        `Unknown entity status from API: ${apiStatus}, defaulting to Created`
+      );
+      return EntityStatus.Created;
+  }
+};
 
 export interface DailyReport {
   id: string;
@@ -676,7 +715,7 @@ export interface DailyReport {
   groupId: string;
   createdById: string;
   date: string;
-  childrenSleepData: DailyReportChild[];
+  sleepData: SleepData;
   isPublished: boolean;
   created: string;
   updated: string;
@@ -708,7 +747,6 @@ export interface GroupAttendance {
 // Daily Reports API functions
 export const dailyReportsApi = {
   getDailyReport: async (groupId: string, date: string) => {
-    console.log("API call: getDailyReport", { groupId, date });
     const response = await api.get(
       `/api/v1/daily-reports?groupId=${groupId}&date=${date}`,
       {
@@ -719,13 +757,27 @@ export const dailyReportsApi = {
         withCredentials: true,
       }
     );
-    console.log("API response:", response.data);
-    return response.data;
+
+    // Map the API response to use proper enums
+    const mappedData = {
+      ...response.data,
+      sleepData: response.data.sleepData
+        ? {
+            ...response.data.sleepData,
+            status: mapApiStatusToEntityStatus(response.data.sleepData.status),
+            children:
+              response.data.sleepData.children?.map((child: any) => ({
+                ...child,
+                status: mapApiStatusToSleepStatus(child.status),
+              })) || [],
+          }
+        : null,
+    };
+    return mappedData;
   },
 
   // Get daily reports for all groups on a specific date (for admin users)
   getDailyReportsByDate: async (date: string) => {
-    console.log("API call: getDailyReportsByDate", { date });
     const response = await api.get(`/api/v1/daily-reports?date=${date}`, {
       headers: {
         Accept: "application/json",
@@ -733,13 +785,11 @@ export const dailyReportsApi = {
       },
       withCredentials: true,
     });
-    console.log("API response:", response.data);
     return response.data;
   },
 
   // Get daily reports for user's children's groups (for parent users)
   getDailyReportsForUser: async (date: string) => {
-    console.log("API call: getDailyReportsForUser", { date });
     const response = await api.get(`/api/v1/daily-reports/user?date=${date}`, {
       headers: {
         Accept: "application/json",
@@ -747,7 +797,6 @@ export const dailyReportsApi = {
       },
       withCredentials: true,
     });
-    console.log("API response:", response.data);
     return response.data;
   },
 };

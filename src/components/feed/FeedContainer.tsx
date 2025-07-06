@@ -50,7 +50,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
 
   // Get children data from daily report or attendance context
   const childrenData: Child[] =
-    dailyReport?.childrenSleepData?.map((reportChild) => ({
+    dailyReport?.sleepData?.children?.map((reportChild) => ({
       id: reportChild.childId,
       firstName: reportChild.firstName,
       lastName: reportChild.lastName,
@@ -76,8 +76,6 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
     try {
       setIsCreatingPost(true);
 
-      console.log("Creating sleep post with data:", data);
-
       // Check if we have the daily report
       if (!dailyReport?.id) {
         throw new Error("Daily report not found. Please try again.");
@@ -95,12 +93,6 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
         };
       });
 
-      console.log("Prepared sleep data:", {
-        title: data.title,
-        children: allChildrenData,
-        dailyReportId: dailyReport.id,
-      });
-
       // Make API call to update daily report with sleep data
       const response = await updateDailyReportSleepData(dailyReport.id, {
         childrenSleepData: {
@@ -108,8 +100,6 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
           children: allChildrenData,
         },
       });
-
-      console.log("Daily report sleep data updated successfully:", response);
 
       // TODO: Add the new sleep post to the feed state
       // This should be handled by the parent component
@@ -125,8 +115,6 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
   };
 
   const handlePostTypeSelect = async (postType: string) => {
-    console.log("FeedContainer: Selected post type:", postType);
-
     // Call the parent's onPostTypeSelect if provided
     if (onPostTypeSelect) {
       await onPostTypeSelect(postType);
@@ -138,15 +126,14 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
         setIsSleepModalOpen(true);
         break;
       case "snack":
-        console.log("Creating snack post...");
         // TODO: Implement snack post creation
         break;
       case "activity":
-        console.log("Creating activity post...");
         // TODO: Implement activity post creation
         break;
       default:
-        console.log("Unknown post type:", postType);
+        // Unknown post type
+        break;
     }
   };
 
@@ -157,7 +144,6 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
       attendanceData?.groupId &&
       (!dailyReport || dailyReport.groupId !== attendanceData.groupId)
     ) {
-      console.log("Fetching daily report for post creation...");
       try {
         await fetchDailyReport(attendanceData.groupId);
       } catch (error) {
@@ -490,9 +476,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
       {/* Sleep Post Creation Modal with Error Boundary */}
       <SleepPostErrorBoundary
         onClose={() => setIsSleepModalOpen(false)}
-        onRetry={() => {
-          console.log("Retrying sleep post creation...");
-        }}
+        onRetry={() => {}}
       >
         <CreateSleepPostModal
           isOpen={isSleepModalOpen}
@@ -502,6 +486,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
           groupName={attendanceData?.groupName || "גן א"}
           groupId={dailyReport?.groupId || attendanceData?.groupId || "group1"}
           isLoadingDailyReport={isDailyReportLoading}
+          dailyReport={dailyReport}
         />
       </SleepPostErrorBoundary>
     </Box>

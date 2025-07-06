@@ -11,6 +11,13 @@ export enum SleepStatus {
   Sleeping = "Sleeping",
 }
 
+// Entity status enum - used for sleep data lifecycle
+export enum EntityStatus {
+  Created = "Created",
+  Updated = "Updated",
+  Deleted = "Deleted",
+}
+
 // Post status enum - used for post lifecycle management
 export enum PostStatus {
   Active = "active",

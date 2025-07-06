@@ -19,7 +19,7 @@ const Dashboard: React.FC = () => {
   const { user, isLoadingUser } = useApp();
 
   if (isLoadingUser || !user) {
-    return <div>Loading...</div>;
+    return null; // Don't show anything while loading to avoid flash
   }
 
   switch (user.role) {
@@ -39,7 +39,7 @@ const RoleBasedFeed: React.FC = () => {
   const { user, isLoadingUser } = useApp();
 
   if (isLoadingUser || !user) {
-    return <div>Loading...</div>;
+    return null; // Don't show anything while loading to avoid flash
   }
 
   switch (user.role) {
