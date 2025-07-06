@@ -101,14 +101,28 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
           // Compare with enum value since status is now properly mapped
           const isSleeping = existingSleepData?.status === SleepStatus.Sleeping;
 
+          // Check if child has finished sleeping (has both start and end times, but not minimal dates)
+          const hasFinishedSleeping =
+            existingSleepData?.startTimestamp &&
+            existingSleepData?.endTimestamp &&
+            existingSleepData.startTimestamp !== "0001-01-01T00:00:00" &&
+            existingSleepData.endTimestamp !== "0001-01-01T00:00:00" &&
+            !isSleeping;
+
           return {
             childId: child.id!, // Safe to use ! since we filtered for valid IDs
             firstName: child.firstName,
             lastName: child.lastName,
-            sleepStartTime:
-              existingSleepData?.startTimestamp ||
-              (isSleeping ? new Date().toISOString() : ""),
-            sleepEndTime: existingSleepData?.endTimestamp || "",
+            sleepStartTime: isSleeping
+              ? existingSleepData?.startTimestamp || "0001-01-01T00:00:00"
+              : hasFinishedSleeping
+              ? existingSleepData?.startTimestamp || ""
+              : "",
+            sleepEndTime: isSleeping
+              ? ""
+              : hasFinishedSleeping
+              ? existingSleepData?.endTimestamp || ""
+              : "",
             sleepDuration: 0,
             notes: existingSleepData?.comment || "",
           };
@@ -184,15 +198,50 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
     );
   };
 
-  const handleSelectNoneAsleep = () => {
+  const handleFinishAllSleep = () => {
+    const currentTime = new Date().toISOString();
     setSleepChildren((prev) =>
-      prev.map((child) => ({
-        ...child,
-        sleepStartTime: "",
-        sleepEndTime: "",
-        sleepDuration: 0,
-      }))
+      prev.map((child) => {
+        const isCurrentlySleeping = isChildSleeping(
+          child.sleepStartTime,
+          child.sleepEndTime
+        );
+
+        if (isCurrentlySleeping) {
+          // Mark as finished sleeping
+          return {
+            ...child,
+            sleepEndTime: currentTime,
+            sleepDuration: child.sleepStartTime
+              ? calculateSleepDuration(child.sleepStartTime, currentTime)
+              : 0,
+          };
+        }
+
+        // Keep existing state for non-sleeping children
+        return child;
+      })
     );
+
+    // Add animation for all children that were sleeping
+    const sleepingChildIds = sleepChildren
+      .filter((child) =>
+        isChildSleeping(child.sleepStartTime, child.sleepEndTime)
+      )
+      .map((child) => child.childId);
+
+    setCompletedSleepChildren(
+      (prev) => new Set(Array.from(prev).concat(sleepingChildIds))
+    );
+
+    // Remove from completed set after animation
+    setTimeout(() => {
+      setCompletedSleepChildren((prev) => {
+        const newSet = new Set(prev);
+        sleepingChildIds.forEach((id) => newSet.delete(id));
+        return newSet;
+      });
+    }, 2000); // Animation duration
   };
 
   const handleNextTitle = () => {
@@ -264,7 +313,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
         groupId,
         groupName,
         sleepDate: new Date().toISOString().split("T")[0], // Use today's date
-        children: updatedSleepChildren.filter((child) => child.sleepStartTime),
+        children: updatedSleepChildren, // Send ALL children, not just sleeping ones
       };
 
       // Call the parent's onSubmit function
@@ -280,8 +329,8 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
     }
   };
 
-  const sleepingChildrenCount = sleepChildren.filter(
-    (child) => child.sleepStartTime
+  const sleepingChildrenCount = sleepChildren.filter((child) =>
+    isChildSleeping(child.sleepStartTime, child.sleepEndTime)
   ).length;
 
   // Dynamic height calculation for virtualized items
@@ -314,8 +363,8 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
     [sleepChildren, isMobile]
   );
 
-  // Virtualized child item component
-  const ChildItem = useCallback(
+  // Memoized child item component to prevent unnecessary re-renders
+  const ChildItem = React.memo(
     ({ index, style }: { index: number; style: React.CSSProperties }) => {
       const child = sleepChildren[index];
       if (!child) return null;
@@ -476,14 +525,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
           </Fade>
         </div>
       );
-    },
-    [
-      sleepChildren,
-      completedSleepChildren,
-      isOpen,
-      handleChildSleepToggle,
-      handleChildUpdate,
-    ]
+    }
   );
 
   if (!isOpen) return null;
@@ -732,17 +774,17 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
                     <Button
                       variant="outlined"
                       size="small"
-                      onClick={handleSelectNoneAsleep}
+                      onClick={handleFinishAllSleep}
                       sx={{
-                        borderColor: "text.secondary",
-                        color: "text.secondary",
+                        borderColor: "#4CAF50",
+                        color: "#4CAF50",
                         "&:hover": {
-                          borderColor: "text.primary",
-                          bgcolor: "action.hover",
+                          borderColor: "#388E3C",
+                          bgcolor: "#4CAF5010",
                         },
                       }}
                     >
-                      בטל בחירה
+                      סיים שינה לכולם
                     </Button>
                   </Box>
 
@@ -824,17 +866,21 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
                         p: isMobile ? 0.5 : 1,
                       }}
                     >
-                      <VirtualList
-                        height={isMobile ? 500 : 600} // Increased height to utilize more screen space
-                        itemCount={sleepChildren.length}
-                        itemSize={getItemSize}
-                        width="100%"
-                        itemData={sleepChildren}
-                        overscanCount={5} // Render extra items for smooth scrolling
-                        ref={virtualListRef}
+                      <Box
+                        sx={{
+                          height: isMobile ? 400 : 500,
+                          overflow: "auto",
+                          pr: 1,
+                        }}
                       >
-                        {ChildItem}
-                      </VirtualList>
+                        {sleepChildren.map((child, index) => (
+                          <ChildItem
+                            key={child.childId}
+                            index={index}
+                            style={{}}
+                          />
+                        ))}
+                      </Box>
                     </Box>
                   )}
                 </Box>

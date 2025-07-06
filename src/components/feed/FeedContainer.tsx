@@ -85,9 +85,16 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
       // Prepare sleep data for all children in the group
       const allChildrenData = childrenData.map((child) => {
         const sleepingChild = data.children.find((c) => c.childId === child.id);
+
+        // Determine if child is currently sleeping
+        const isCurrentlySleeping =
+          sleepingChild &&
+          sleepingChild.sleepStartTime &&
+          !sleepingChild.sleepEndTime; // Child is sleeping if they have start time but no end time
+
         return {
           childId: child.id || "",
-          status: sleepingChild?.sleepStartTime
+          status: isCurrentlySleeping
             ? SleepStatus.Sleeping
             : SleepStatus.Awake,
           comment: sleepingChild?.notes || "",
