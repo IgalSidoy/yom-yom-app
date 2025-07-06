@@ -27,6 +27,7 @@ import {
   Close as CloseIcon,
   Bedtime as SleepIcon,
   Add as AddIcon,
+  AccessTime as TimerIcon,
 } from "@mui/icons-material";
 import { CreateSleepPostData, SleepChild } from "../../types/posts";
 import { Child, DailyReport } from "../../services/api";
@@ -42,6 +43,102 @@ interface CreateSleepPostModalProps {
   isLoadingDailyReport?: boolean;
   dailyReport?: DailyReport | null;
 }
+
+// Timer component for displaying sleep duration
+interface SleepTimerProps {
+  startTime: string;
+  endTime?: string;
+  isSleeping: boolean;
+}
+
+const SleepTimer: React.FC<SleepTimerProps> = ({
+  startTime,
+  endTime,
+  isSleeping,
+}) => {
+  const [elapsedTime, setElapsedTime] = useState<number>(0);
+
+  useEffect(() => {
+    if (!startTime) {
+      setElapsedTime(0);
+      return;
+    }
+
+    const calculateElapsedTime = () => {
+      const start = new Date(startTime);
+      const end = endTime ? new Date(endTime) : new Date();
+      const diffMs = end.getTime() - start.getTime();
+      return Math.max(0, Math.floor(diffMs / (1000 * 60))); // Convert to minutes
+    };
+
+    // Set initial elapsed time
+    setElapsedTime(calculateElapsedTime());
+
+    // If child is still sleeping, update timer every second
+    if (isSleeping && !endTime) {
+      const interval = setInterval(() => {
+        setElapsedTime(calculateElapsedTime());
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [startTime, endTime, isSleeping]);
+
+  const formatDuration = (minutes: number) => {
+    if (minutes === 0) return "0 דקות";
+
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+
+    if (hours > 0) {
+      return `${hours}ש${mins > 0 ? ` ${mins}ד` : ""}`;
+    }
+    return `${mins} דקות`;
+  };
+
+  if (!startTime) return null;
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 0.5,
+        color: isSleeping ? "#9C27B0" : "text.secondary",
+        fontSize: "0.875rem",
+        fontWeight: 500,
+      }}
+    >
+      <TimerIcon sx={{ fontSize: 16 }} />
+      <Typography
+        variant="body2"
+        sx={{
+          color: "inherit",
+          fontWeight: 600,
+          fontFamily: "monospace",
+        }}
+      >
+        {formatDuration(elapsedTime)}
+      </Typography>
+      {isSleeping && (
+        <Box
+          sx={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            bgcolor: "#9C27B0",
+            animation: "pulse 2s infinite",
+            "@keyframes pulse": {
+              "0%": { opacity: 1 },
+              "50%": { opacity: 0.3 },
+              "100%": { opacity: 1 },
+            },
+          }}
+        />
+      )}
+    </Box>
+  );
+};
 
 const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
   isOpen,
@@ -599,6 +696,11 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
 
                                 {isSleeping && (
                                   <Box sx={{ px: 2, pb: 2 }}>
+                                    <SleepTimer
+                                      startTime={child.sleepStartTime}
+                                      endTime={child.sleepEndTime}
+                                      isSleeping={isSleeping}
+                                    />
                                     <TextField
                                       size="small"
                                       label="הערות"
