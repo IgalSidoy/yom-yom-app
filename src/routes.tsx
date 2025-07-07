@@ -1,9 +1,12 @@
 import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { ROUTES } from "./config/routes";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/shared/Login";
 import Onboarding from "./pages/shared/Onboarding";
 import Settings from "./pages/shared/Settings";
+import CreateSleepPostPage from "./pages/shared/CreateSleepPostPage";
+import NotFound from "./pages/shared/NotFound";
 import BottomNav from "./components/BottomNav";
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import StaffFeed from "./pages/staff/StaffFeed";
@@ -71,10 +74,10 @@ const AppRoutes: React.FC = () => {
   return (
     <>
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path={ROUTES.LOGIN} element={<Login />} />
+        <Route path={ROUTES.ONBOARDING} element={<Onboarding />} />
         <Route
-          path="/dashboard"
+          path={ROUTES.DASHBOARD}
           element={
             <ProtectedRoute>
               <Dashboard />
@@ -82,7 +85,7 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
-          path="/settings"
+          path={ROUTES.SETTINGS}
           element={
             <ProtectedRoute>
               <Settings />
@@ -90,7 +93,7 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
-          path="/feed"
+          path={ROUTES.FEED}
           element={
             <ProtectedRoute>
               <RoleBasedFeed />
@@ -98,7 +101,7 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
-          path="/attendance"
+          path={ROUTES.ATTENDANCE}
           element={
             <ProtectedRoute>
               <StaffOnly>
@@ -107,7 +110,18 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route
+          path={ROUTES.CREATE_SLEEP_POST}
+          element={
+            <ProtectedRoute>
+              <StaffOnly>
+                <CreateSleepPostPage />
+              </StaffOnly>
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+        <Route path={ROUTES.NOT_FOUND} element={<NotFound />} />
       </Routes>
       <BottomNav />
     </>

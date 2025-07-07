@@ -3,6 +3,7 @@ import React, {
   useContext,
   useState,
   useCallback,
+  useEffect,
   ReactNode,
 } from "react";
 import { DailyReport, dailyReportsApi } from "../services/api";
@@ -31,9 +32,27 @@ export const DailyReportProvider: React.FC<DailyReportProviderProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Debug logging for state changes
+  useEffect(() => {
+    console.log("🔄 [DailyReportContext] State changed:", {
+      hasDailyReport: !!dailyReport,
+      reportId: dailyReport?.id,
+      hasSleepData: !!dailyReport?.sleepData,
+      sleepDataChildrenCount: dailyReport?.sleepData?.children?.length || 0,
+      isLoading,
+      error,
+    });
+  }, [dailyReport, isLoading, error]);
+
   const fetchDailyReport = useCallback(
     async (groupId: string, date?: string) => {
+      console.log("🔄 [DailyReportContext] fetchDailyReport called:", {
+        groupId,
+        date,
+      });
+
       if (!groupId) {
+        console.error("❌ [DailyReportContext] No groupId provided");
         setError("Group ID is required");
         return;
       }
@@ -43,18 +62,42 @@ export const DailyReportProvider: React.FC<DailyReportProviderProps> = ({
 
       try {
         const targetDate = date || new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+        console.log("📅 [DailyReportContext] Fetching daily report:", {
+          groupId,
+          targetDate,
+        });
 
         const report = await dailyReportsApi.getDailyReport(
           groupId,
           targetDate
         );
 
+        console.log(
+          "✅ [DailyReportContext] Daily report fetched successfully:",
+          {
+            reportId: report?.id,
+            hasSleepData: !!report?.sleepData,
+            sleepDataStatus: report?.sleepData?.status,
+            childrenCount: report?.sleepData?.children?.length || 0,
+          }
+        );
+
+        console.log("📊 [DailyReportContext] Setting daily report state:", {
+          reportId: report?.id,
+          hasSleepData: !!report?.sleepData,
+          sleepDataChildrenCount: report?.sleepData?.children?.length || 0,
+        });
+
         setDailyReport(report);
       } catch (error) {
-        console.error("Failed to fetch daily report:", error);
+        console.error(
+          "💥 [DailyReportContext] Failed to fetch daily report:",
+          error
+        );
         setError("Failed to fetch daily report. Please try again.");
       } finally {
         setIsLoading(false);
+        console.log("🏁 [DailyReportContext] fetchDailyReport completed");
       }
     },
     []

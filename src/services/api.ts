@@ -747,33 +747,68 @@ export interface GroupAttendance {
 // Daily Reports API functions
 export const dailyReportsApi = {
   getDailyReport: async (groupId: string, date: string) => {
-    const response = await api.get(
-      `/api/v1/daily-reports?groupId=${groupId}&date=${date}`,
-      {
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      }
+    console.log("🌐 [API] getDailyReport called:", { groupId, date });
+    console.log(
+      "🌐 [API] Request URL:",
+      `/api/v1/daily-reports?groupId=${groupId}&date=${date}`
     );
 
-    // Map the API response to use proper enums
-    const mappedData = {
-      ...response.data,
-      sleepData: response.data.sleepData
-        ? {
-            ...response.data.sleepData,
-            status: mapApiStatusToEntityStatus(response.data.sleepData.status),
-            children:
-              response.data.sleepData.children?.map((child: any) => ({
-                ...child,
-                status: mapApiStatusToSleepStatus(child.status),
-              })) || [],
-          }
-        : null,
-    };
-    return mappedData;
+    try {
+      const response = await api.get(
+        `/api/v1/daily-reports?groupId=${groupId}&date=${date}`,
+        {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        }
+      );
+
+      console.log("✅ [API] getDailyReport response received:", {
+        status: response.status,
+        hasData: !!response.data,
+        dataKeys: response.data ? Object.keys(response.data) : [],
+        hasSleepData: !!response.data?.sleepData,
+        sleepDataStatus: response.data?.sleepData?.status,
+        childrenCount: response.data?.sleepData?.children?.length || 0,
+      });
+
+      // Map the API response to use proper enums
+      const mappedData = {
+        ...response.data,
+        sleepData: response.data.sleepData
+          ? {
+              ...response.data.sleepData,
+              status: mapApiStatusToEntityStatus(
+                response.data.sleepData.status
+              ),
+              children:
+                response.data.sleepData.children?.map((child: any) => ({
+                  ...child,
+                  status: mapApiStatusToSleepStatus(child.status),
+                })) || [],
+            }
+          : null,
+      };
+
+      console.log("🔄 [API] getDailyReport data mapped:", {
+        reportId: mappedData?.id,
+        hasSleepData: !!mappedData?.sleepData,
+        sleepDataStatus: mappedData?.sleepData?.status,
+        childrenCount: mappedData?.sleepData?.children?.length || 0,
+      });
+
+      return mappedData;
+    } catch (error: any) {
+      console.error("💥 [API] getDailyReport error:", {
+        error: error,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+      });
+      throw error;
+    }
   },
 
   // Get daily reports for all groups on a specific date (for admin users)

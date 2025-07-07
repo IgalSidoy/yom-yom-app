@@ -8,6 +8,7 @@ import {
   Slide,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../config/routes";
 import { useApp } from "../../contexts/AppContext";
 import { useAttendance } from "../../contexts/AttendanceContext";
 import { ApiAttendanceStatus } from "../../types/attendance";
@@ -74,7 +75,7 @@ const StaffDashboard: React.FC = () => {
   }, [attendanceData]);
 
   const handleStartAttendance = () => {
-    navigate("/attendance");
+    navigate(ROUTES.ATTENDANCE);
   };
 
   // Create slides array

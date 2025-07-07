@@ -1,39 +1,49 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { createPortal } from "react-dom";
-import { VariableSizeList as VirtualList } from "react-window";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Box,
-  Typography,
-  TextField,
   Button,
-  IconButton,
-  useTheme,
-  Chip,
-  Avatar,
-  List,
+  TextField,
+  Typography,
+  Modal,
   ListItem,
   ListItemAvatar,
   ListItemText,
   ListItemSecondaryAction,
+  Avatar,
   Switch,
-  Divider,
+  Chip,
   Alert,
   AlertTitle,
-  Skeleton,
+  Divider,
   Fade,
-  Slide,
-  useMediaQuery,
+  Skeleton,
 } from "@mui/material";
-import {
-  Close as CloseIcon,
-  Bedtime as SleepIcon,
-  Add as AddIcon,
-} from "@mui/icons-material";
-import { CreateSleepPostData, SleepChild } from "../../types/posts";
+import { useTheme } from "@mui/material/styles";
+import { useMediaQuery } from "@mui/material";
+import { createPortal } from "react-dom";
+import AddIcon from "@mui/icons-material/Add";
+import { isChildSleeping } from "../../utils/sleepUtils";
+import SleepTimer from "../SleepTimer";
 import { Child, DailyReport } from "../../services/api";
 import { SleepStatus } from "../../types/enums";
-import SleepTimer from "../SleepTimer";
-import { isChildSleeping } from "../../utils/sleepUtils";
+
+interface SleepChild {
+  childId: string;
+  firstName: string;
+  lastName: string;
+  sleepStartTime: string;
+  sleepEndTime: string;
+  sleepDuration: number;
+  notes: string;
+}
+
+interface CreateSleepPostData {
+  title: string;
+  groupId: string;
+  groupName: string;
+  sleepDate: string;
+  children: SleepChild[];
+}
 
 interface CreateSleepPostModalProps {
   isOpen: boolean;
@@ -59,7 +69,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  // Default title variations for sleep posts
+  // Default title variations
   const defaultTitles = [
     "שינת צהריים - " + groupName,
     "דיווח שינה יומי - " + groupName,
@@ -68,233 +78,184 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
     "דיווח שנת צהריים - " + groupName,
   ];
 
+  // Internal state - only for UI rendering
   const [title, setTitle] = useState("");
   const [titleIndex, setTitleIndex] = useState(0);
-  const [sleepChildren, setSleepChildren] = useState<SleepChild[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [completedSleepChildren, setCompletedSleepChildren] = useState<
-    Set<string>
-  >(new Set());
+  const [completedChildren, setCompletedChildren] = useState<Set<string>>(
+    new Set()
+  );
 
-  // Ref for virtual list to reset cache when heights change
-  const virtualListRef = React.useRef<VirtualList>(null);
+  // Internal refs for all data - no re-renders
+  const titleRef = useRef("");
+  const childrenRef = useRef<SleepChild[]>([]);
+  const sleepStatesRef = useRef<{
+    [childId: string]: { startTime: string; endTime: string };
+  }>({});
+  const notesRef = useRef<{ [childId: string]: string }>({});
+  const bulkActionTriggerRef = useRef(0);
 
-  // Reset virtual list cache when sleep children change
+  // Initialize children from props only once when modal opens
   useEffect(() => {
-    if (virtualListRef.current) {
-      virtualListRef.current.resetAfterIndex(0);
-    }
-  }, [sleepChildren, completedSleepChildren]);
-
-  // Initialize sleep children from the children list and daily report data
-  useEffect(() => {
-    if (children.length > 0) {
-      const initialSleepChildren: SleepChild[] = children
-        .filter((child) => child.id) // Only include children with valid IDs
+    if (isOpen && children.length > 0) {
+      const initialChildren: SleepChild[] = children
+        .filter((child) => child.id)
         .map((child) => {
-          // Find existing sleep data for this child from daily report
-          const existingSleepData = dailyReport?.sleepData?.children?.find(
+          // Find existing sleep data from daily report
+          const existingData = dailyReport?.sleepData?.children?.find(
             (sleepChild) => sleepChild.childId === child.id
           );
 
-          // Compare with enum value since status is now properly mapped
-          const isSleeping = existingSleepData?.status === SleepStatus.Sleeping;
+          // Handle minimal dates properly
+          let startTime = existingData?.startTimestamp || "";
+          let endTime = existingData?.endTimestamp || "";
 
-          // Check if child has finished sleeping (has both start and end times, but not minimal dates)
-          const hasFinishedSleeping =
-            existingSleepData?.startTimestamp &&
-            existingSleepData?.endTimestamp &&
-            existingSleepData.startTimestamp !== "0001-01-01T00:00:00" &&
-            existingSleepData.endTimestamp !== "0001-01-01T00:00:00" &&
-            !isSleeping;
+          if (startTime === "0001-01-01T00:00:00") startTime = "";
+          if (endTime === "0001-01-01T00:00:00") endTime = "";
 
-          return {
-            childId: child.id!, // Safe to use ! since we filtered for valid IDs
+          const isSleeping = isChildSleeping(startTime, endTime);
+          const hasFinishedSleeping = startTime && endTime && !isSleeping;
+
+          const sleepChild: SleepChild = {
+            childId: child.id!,
             firstName: child.firstName,
             lastName: child.lastName,
             sleepStartTime: isSleeping
-              ? existingSleepData?.startTimestamp || "0001-01-01T00:00:00"
+              ? startTime || new Date().toISOString()
               : hasFinishedSleeping
-              ? existingSleepData?.startTimestamp || ""
+              ? startTime
               : "",
-            sleepEndTime: isSleeping
-              ? ""
-              : hasFinishedSleeping
-              ? existingSleepData?.endTimestamp || ""
-              : "",
+            sleepEndTime: isSleeping ? "" : hasFinishedSleeping ? endTime : "",
             sleepDuration: 0,
-            notes: existingSleepData?.comment || "",
+            notes: existingData?.comment || "",
           };
+
+          // Initialize refs
+          sleepStatesRef.current[child.id!] = {
+            startTime: sleepChild.sleepStartTime,
+            endTime: sleepChild.sleepEndTime,
+          };
+          notesRef.current[child.id!] = sleepChild.notes;
+
+          return sleepChild;
         });
-      setSleepChildren(initialSleepChildren);
-    }
-  }, [children, dailyReport]);
 
-  // Set initial title when modal opens
+      childrenRef.current = initialChildren;
+    }
+  }, [isOpen, children, dailyReport]);
+
+  // Initialize title when modal opens
   useEffect(() => {
-    if (isOpen && !title) {
-      setTitle(defaultTitles[titleIndex]);
+    if (isOpen && !titleRef.current) {
+      const initialTitle = defaultTitles[titleIndex];
+      setTitle(initialTitle);
+      titleRef.current = initialTitle;
     }
-  }, [isOpen, title, defaultTitles, titleIndex]);
+  }, [isOpen, defaultTitles, titleIndex]);
 
-  // Cleanup effect when modal closes
+  // Cleanup when modal closes
   useEffect(() => {
     if (!isOpen) {
-      // Reset form state when modal closes
       setTitle("");
       setErrors({});
       setIsLoading(false);
-      setCompletedSleepChildren(new Set());
-      // Sleep children state will be reset when modal opens again
+      setCompletedChildren(new Set());
+      titleRef.current = "";
+      childrenRef.current = [];
+      sleepStatesRef.current = {};
+      notesRef.current = {};
+      bulkActionTriggerRef.current = 0;
     }
   }, [isOpen]);
 
-  const handleChildSleepToggle = (childId: string, isSleeping: boolean) => {
-    setSleepChildren((prev) =>
-      prev.map((child) =>
-        child.childId === childId
-          ? {
-              ...child,
-              sleepStartTime: isSleeping
-                ? new Date().toISOString()
-                : child.sleepStartTime,
-              sleepEndTime: isSleeping ? "" : new Date().toISOString(),
-              sleepDuration: isSleeping
-                ? 0
-                : child.sleepStartTime
-                ? calculateSleepDuration(
-                    child.sleepStartTime,
-                    new Date().toISOString()
-                  )
-                : 0,
-            }
-          : child
-      )
-    );
+  // Title change handler
+  const handleTitleChange = useCallback((newTitle: string) => {
+    setTitle(newTitle);
+    titleRef.current = newTitle;
+  }, []);
 
-    // Track completed sleep for animation
-    if (!isSleeping) {
-      setCompletedSleepChildren((prev) => new Set(prev).add(childId));
-      // Remove from completed set after animation
-      setTimeout(() => {
-        setCompletedSleepChildren((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(childId);
-          return newSet;
-        });
-      }, 2000); // Animation duration
-    }
-  };
-
-  const handleSelectAllAsleep = () => {
-    setSleepChildren((prev) =>
-      prev.map((child) => ({
-        ...child,
-        sleepStartTime: new Date().toISOString(),
-        sleepEndTime: "",
-        sleepDuration: 0,
-      }))
-    );
-  };
-
-  const handleFinishAllSleep = () => {
-    const currentTime = new Date().toISOString();
-    setSleepChildren((prev) =>
-      prev.map((child) => {
-        const isCurrentlySleeping = isChildSleeping(
-          child.sleepStartTime,
-          child.sleepEndTime
-        );
-
-        if (isCurrentlySleeping) {
-          // Mark as finished sleeping
-          return {
-            ...child,
-            sleepEndTime: currentTime,
-            sleepDuration: child.sleepStartTime
-              ? calculateSleepDuration(child.sleepStartTime, currentTime)
-              : 0,
-          };
-        }
-
-        // Keep existing state for non-sleeping children
-        return child;
-      })
-    );
-
-    // Add animation for all children that were sleeping
-    const sleepingChildIds = sleepChildren
-      .filter((child) =>
-        isChildSleeping(child.sleepStartTime, child.sleepEndTime)
-      )
-      .map((child) => child.childId);
-
-    setCompletedSleepChildren(
-      (prev) => new Set(Array.from(prev).concat(sleepingChildIds))
-    );
-
-    // Remove from completed set after animation
-    setTimeout(() => {
-      setCompletedSleepChildren((prev) => {
-        const newSet = new Set(prev);
-        sleepingChildIds.forEach((id) => newSet.delete(id));
-        return newSet;
-      });
-    }, 2000); // Animation duration
-  };
-
-  const handleNextTitle = () => {
+  // Next title handler
+  const handleNextTitle = useCallback(() => {
     const nextIndex = (titleIndex + 1) % defaultTitles.length;
     setTitleIndex(nextIndex);
-    setTitle(defaultTitles[nextIndex]);
-  };
+    const newTitle = defaultTitles[nextIndex];
+    setTitle(newTitle);
+    titleRef.current = newTitle;
+  }, [titleIndex, defaultTitles]);
 
-  const handleChildUpdate = (
-    childId: string,
-    field: keyof SleepChild,
-    value: any
-  ) => {
-    setSleepChildren((prev) =>
-      prev.map((child) =>
-        child.childId === childId ? { ...child, [field]: value } : child
-      )
-    );
-  };
+  // Select all asleep handler
+  const handleSelectAllAsleep = useCallback(() => {
+    const currentTime = new Date().toISOString();
 
-  const calculateSleepDuration = (
-    startTime: string,
-    endTime: string
-  ): number => {
-    if (!startTime || !endTime) return 0;
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-    return Math.round((end.getTime() - start.getTime()) / (1000 * 60)); // Convert to minutes
-  };
+    childrenRef.current.forEach((child) => {
+      sleepStatesRef.current[child.childId] = {
+        startTime: currentTime,
+        endTime: "",
+      };
+    });
 
-  const handleSubmit = () => {
+    bulkActionTriggerRef.current += 1;
+  }, []);
+
+  // Finish all sleep handler
+  const handleFinishAllSleep = useCallback(() => {
+    const currentTime = new Date().toISOString();
+    const completedIds: string[] = [];
+
+    childrenRef.current.forEach((child) => {
+      const currentState = sleepStatesRef.current[child.childId];
+      let startTime = currentState?.startTime || child.sleepStartTime || "";
+      let endTime = currentState?.endTime || child.sleepEndTime || "";
+
+      if (startTime === "0001-01-01T00:00:00") startTime = "";
+      if (endTime === "0001-01-01T00:00:00") endTime = "";
+
+      const isCurrentlySleeping = isChildSleeping(startTime, endTime);
+
+      if (isCurrentlySleeping) {
+        sleepStatesRef.current[child.childId] = {
+          startTime: startTime,
+          endTime: currentTime,
+        };
+        completedIds.push(child.childId);
+      }
+    });
+
+    setCompletedChildren(new Set(completedIds));
+    setTimeout(() => setCompletedChildren(new Set()), 2000);
+
+    bulkActionTriggerRef.current += 1;
+  }, []);
+
+  // Submit handler
+  const handleSubmit = useCallback(() => {
     try {
       setIsLoading(true);
+      setErrors({});
 
       // Validation
       const newErrors: { [key: string]: string } = {};
 
-      if (!title.trim()) {
+      if (!titleRef.current.trim()) {
         newErrors.title = "כותרת היא שדה חובה";
       }
 
-      const sleepingChildren = sleepChildren.filter(
-        (child) => child.sleepStartTime
-      );
-      if (sleepingChildren.length === 0) {
+      // Count sleeping children
+      const sleepingCount = childrenRef.current.filter((child) => {
+        const state = sleepStatesRef.current[child.childId];
+        let startTime = state?.startTime || child.sleepStartTime || "";
+        let endTime = state?.endTime || child.sleepEndTime || "";
+
+        if (startTime === "0001-01-01T00:00:00") startTime = "";
+        if (endTime === "0001-01-01T00:00:00") endTime = "";
+
+        return isChildSleeping(startTime, endTime);
+      }).length;
+
+      if (sleepingCount === 0) {
         newErrors.children = "יש לבחור לפחות ילד אחד שישן";
       }
-
-      // Validate sleeping children have required fields
-      // Note: Start and end times will be handled by the backend
-      sleepingChildren.forEach((child) => {
-        // Add any additional validation here if needed
-      });
 
       if (Object.keys(newErrors).length > 0) {
         setErrors(newErrors);
@@ -302,21 +263,24 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
         return;
       }
 
-      // Sleep durations will be calculated by the backend
-      const updatedSleepChildren = sleepChildren.map((child) => ({
-        ...child,
-        sleepDuration: 0, // Will be calculated by backend
-      }));
-
+      // Prepare form data
       const formData: CreateSleepPostData = {
-        title: title.trim(),
+        title: titleRef.current.trim(),
         groupId,
         groupName,
-        sleepDate: new Date().toISOString().split("T")[0], // Use today's date
-        children: updatedSleepChildren, // Send ALL children, not just sleeping ones
+        sleepDate: new Date().toISOString().split("T")[0],
+        children: childrenRef.current.map((child) => {
+          const state = sleepStatesRef.current[child.childId];
+          return {
+            ...child,
+            sleepStartTime: state?.startTime || child.sleepStartTime || "",
+            sleepEndTime: state?.endTime || child.sleepEndTime || "",
+            notes: notesRef.current[child.childId] || child.notes || "",
+            sleepDuration: 0,
+          };
+        }),
       };
 
-      // Call the parent's onSubmit function
       onSubmit(formData);
       setIsLoading(false);
     } catch (error) {
@@ -327,206 +291,203 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
       });
       setIsLoading(false);
     }
-  };
+  }, [groupId, groupName, onSubmit]);
 
-  const sleepingChildrenCount = sleepChildren.filter((child) =>
-    isChildSleeping(child.sleepStartTime, child.sleepEndTime)
-  ).length;
+  // Isolated child component
+  const ChildItem = React.memo<{
+    child: SleepChild;
+    isCompleted: boolean;
+    bulkActionTrigger: number;
+  }>(({ child, isCompleted, bulkActionTrigger }) => {
+    const [localStartTime, setLocalStartTime] = useState(
+      child.sleepStartTime || ""
+    );
+    const [localEndTime, setLocalEndTime] = useState(child.sleepEndTime || "");
 
-  // Dynamic height calculation for virtualized items
-  const getItemSize = useCallback(
-    (index: number) => {
-      const child = sleepChildren[index];
-      if (!child) return isMobile ? 120 : 140;
-
-      const isSleeping = isChildSleeping(
-        child.sleepStartTime,
-        child.sleepEndTime
-      );
-      const hasSleepData = child.sleepStartTime && child.sleepEndTime;
-      const isCompletedSleep = hasSleepData && !isSleeping;
-      const isExpanded = isSleeping || isCompletedSleep;
-
-      // Base height for collapsed state
-      let height = isMobile ? 80 : 100;
-
-      // Add height for expanded state (sleep timer + notes)
-      if (isExpanded) {
-        height += isMobile ? 120 : 140; // Sleep timer + notes field
+    // Listen for bulk action changes
+    useEffect(() => {
+      const state = sleepStatesRef.current[child.childId];
+      if (state) {
+        setLocalStartTime(state.startTime);
+        setLocalEndTime(state.endTime);
       }
+    }, [bulkActionTrigger, child.childId]);
 
-      // Add margin and container padding
-      height += 24; // mb: 2 (16px) + container padding (8px)
+    // Update refs when local state changes
+    useEffect(() => {
+      sleepStatesRef.current[child.childId] = {
+        startTime: localStartTime,
+        endTime: localEndTime,
+      };
+    }, [localStartTime, localEndTime, child.childId]);
 
-      return height;
-    },
-    [sleepChildren, isMobile]
-  );
+    const isSleeping = isChildSleeping(localStartTime, localEndTime);
+    const hasSleepData = localStartTime && localEndTime;
+    const isCompletedSleep = hasSleepData && !isSleeping;
+    const isExpanded = isSleeping || isCompletedSleep;
 
-  // Memoized child item component to prevent unnecessary re-renders
-  const ChildItem = React.memo(
-    ({ index, style }: { index: number; style: React.CSSProperties }) => {
-      const child = sleepChildren[index];
-      if (!child) return null;
+    const handleToggle = useCallback((newIsSleeping: boolean) => {
+      if (newIsSleeping) {
+        setLocalStartTime(new Date().toISOString());
+        setLocalEndTime("");
+      } else {
+        setLocalEndTime(new Date().toISOString());
+      }
+    }, []);
 
-      const isSleeping = isChildSleeping(
-        child.sleepStartTime,
-        child.sleepEndTime
-      );
-      const hasSleepData = child.sleepStartTime && child.sleepEndTime;
-      const isCompletedSleep = hasSleepData && !isSleeping;
-      const justCompleted = completedSleepChildren.has(child.childId);
-      const isExpanded = isSleeping || isCompletedSleep;
-
-      return (
-        <div style={style}>
-          <Fade in={true} timeout={300}>
-            <Box
+    return (
+      <Box
+        sx={{
+          border: "1px solid",
+          borderColor: isSleeping
+            ? "#9C27B0"
+            : isCompletedSleep
+            ? "#4CAF50"
+            : "divider",
+          borderRadius: 1,
+          mb: 2,
+          p: 0.25,
+          position: "relative",
+          bgcolor: isSleeping
+            ? "#9C27B005"
+            : isCompletedSleep
+            ? "#4CAF5005"
+            : "background.paper",
+          transition: "all 0.3s ease",
+          boxShadow: isCompleted
+            ? "0 4px 16px rgba(76, 175, 80, 0.25)"
+            : "none",
+          animation: isCompleted ? "pulse 2s ease-in-out" : "none",
+          "@keyframes pulse": {
+            "0%": { opacity: 1 },
+            "50%": { opacity: 0.8 },
+            "100%": { opacity: 1 },
+          },
+        }}
+      >
+        <ListItem>
+          <ListItemAvatar>
+            <Avatar
               sx={{
-                border: "1px solid",
-                borderColor: isSleeping
+                bgcolor: isSleeping
                   ? "#9C27B0"
                   : isCompletedSleep
                   ? "#4CAF50"
-                  : "divider",
-                borderRadius: 1,
-                mb: 2,
-                p: 0.25,
-                position: "relative",
-                bgcolor: isSleeping
-                  ? "#9C27B005"
+                  : "#ccc",
+                border: isSleeping
+                  ? "2px solid #9C27B0"
                   : isCompletedSleep
-                  ? "#4CAF5005"
-                  : "background.paper",
-                transition: "all 0.3s ease",
-                boxShadow: justCompleted
-                  ? "0 4px 16px rgba(76, 175, 80, 0.25)"
-                  : isCompletedSleep
-                  ? "0 2px 8px rgba(76, 175, 80, 0.15)"
+                  ? "2px solid #4CAF50"
                   : "none",
-                animation: justCompleted ? "pulse 2s ease-in-out" : "none",
-                "@keyframes pulse": {
-                  "0%": { opacity: 1 },
-                  "50%": { opacity: 0.8 },
-                  "100%": { opacity: 1 },
-                },
+                transition: "all 0.3s ease",
+                transform: isCompleted
+                  ? "rotate(720deg) scale(1.2)"
+                  : isCompletedSleep
+                  ? "rotate(360deg)"
+                  : "rotate(0deg)",
               }}
             >
-              <ListItem>
-                <ListItemAvatar>
-                  <Avatar
-                    sx={{
-                      bgcolor: isSleeping
-                        ? "#9C27B0"
-                        : isCompletedSleep
-                        ? "#4CAF50"
-                        : "#ccc",
-                      border: isSleeping
-                        ? "2px solid #9C27B0"
-                        : isCompletedSleep
-                        ? "2px solid #4CAF50"
-                        : "none",
-                      transition: "all 0.3s ease",
-                      transform: justCompleted
-                        ? "rotate(720deg) scale(1.2)"
-                        : isCompletedSleep
-                        ? "rotate(360deg)"
-                        : "rotate(0deg)",
-                    }}
-                  >
-                    {child.firstName.charAt(0)}
-                  </Avatar>
-                </ListItemAvatar>
+              {child.firstName.charAt(0)}
+            </Avatar>
+          </ListItemAvatar>
 
-                <ListItemText
-                  primary={`${child.firstName} ${child.lastName}`}
-                  secondary={
-                    isSleeping
-                      ? "ישן"
-                      : isCompletedSleep
-                      ? "סיים לישון"
-                      : "לא ישן"
-                  }
-                />
+          <ListItemText
+            primary={`${child.firstName} ${child.lastName}`}
+            secondary={
+              isSleeping ? "ישן" : isCompletedSleep ? "סיים לישון" : "לא ישן"
+            }
+          />
 
-                <ListItemSecondaryAction>
-                  <Switch
-                    checked={isSleeping}
-                    onChange={(e) =>
-                      handleChildSleepToggle(child.childId, e.target.checked)
-                    }
-                    color="primary"
-                  />
-                </ListItemSecondaryAction>
-              </ListItem>
+          <ListItemSecondaryAction>
+            <Switch
+              checked={isSleeping}
+              onChange={(e) => handleToggle(e.target.checked)}
+              color="primary"
+            />
+          </ListItemSecondaryAction>
+        </ListItem>
 
-              {(isSleeping || isCompletedSleep) && (
-                <Box sx={{ px: 1, pb: 1 }}>
-                  {justCompleted && (
-                    <Fade in={justCompleted} timeout={500}>
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          top: -8,
-                          left: 8,
-                          right: 8,
-                          p: 1,
-                          bgcolor: "#4CAF50",
-                          color: "white",
-                          borderRadius: 1,
-                          textAlign: "center",
-                          fontSize: "0.875rem",
-                          fontWeight: 600,
-                          zIndex: 10,
-                          animation: "slideIn 0.5s ease-out",
-                          "@keyframes slideIn": {
-                            "0%": {
-                              opacity: 0,
-                              transform: "translateY(-10px)",
-                            },
-                            "100%": {
-                              opacity: 1,
-                              transform: "translateY(0)",
-                            },
-                          },
-                        }}
-                      >
-                        🎉 {child.firstName} סיים לישון!
-                      </Box>
-                    </Fade>
-                  )}
-                  <SleepTimer
-                    key={`${child.childId}-${isOpen}`}
-                    startTime={child.sleepStartTime || ""}
-                    endTime={child.sleepEndTime}
-                    isSleeping={isSleeping}
-                    size="medium"
-                    animationIntensity={isSleeping ? "prominent" : "subtle"}
-                  />
-                  <Box sx={{ mt: 1 }}>
-                    <TextField
-                      size="small"
-                      label="הערות"
-                      value={child.notes}
-                      onChange={(e) =>
-                        handleChildUpdate(
-                          child.childId,
-                          "notes",
-                          e.target.value
-                        )
-                      }
-                      sx={{ width: "100%" }}
-                      placeholder="הערות נוספות..."
-                    />
-                  </Box>
+        {isExpanded && (
+          <Box sx={{ px: 1, pb: 1 }}>
+            {isCompleted && (
+              <Fade in={isCompleted} timeout={500}>
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: -8,
+                    left: 8,
+                    right: 8,
+                    p: 1,
+                    bgcolor: "#4CAF50",
+                    color: "white",
+                    borderRadius: 1,
+                    textAlign: "center",
+                    fontSize: "0.875rem",
+                    fontWeight: 600,
+                    zIndex: 10,
+                    animation: "slideIn 0.5s ease-out",
+                    "@keyframes slideIn": {
+                      "0%": { opacity: 0, transform: "translateY(-10px)" },
+                      "100%": { opacity: 1, transform: "translateY(0)" },
+                    },
+                  }}
+                >
+                  🎉 {child.firstName} סיים לישון!
                 </Box>
-              )}
+              </Fade>
+            )}
+
+            <SleepTimer
+              key={`${child.childId}-${isOpen}`}
+              startTime={localStartTime}
+              endTime={localEndTime}
+              isSleeping={isSleeping}
+              size="medium"
+              animationIntensity={isSleeping ? "prominent" : "subtle"}
+            />
+
+            <Box sx={{ mt: 1 }}>
+              <NotesField childId={child.childId} initialNotes={child.notes} />
             </Box>
-          </Fade>
-        </div>
+          </Box>
+        )}
+      </Box>
+    );
+  });
+
+  // Isolated notes field component
+  const NotesField = React.memo<{ childId: string; initialNotes: string }>(
+    ({ childId, initialNotes }) => {
+      const [notes, setNotes] = useState(initialNotes || "");
+
+      useEffect(() => {
+        notesRef.current[childId] = notes;
+      }, [notes, childId]);
+
+      return (
+        <TextField
+          size="small"
+          label="הערות"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          sx={{ width: "100%" }}
+          placeholder="הערות נוספות..."
+        />
       );
     }
   );
+
+  // Calculate sleeping children count
+  const sleepingChildrenCount = childrenRef.current.filter((child) => {
+    const state = sleepStatesRef.current[child.childId];
+    let startTime = state?.startTime || child.sleepStartTime || "";
+    let endTime = state?.endTime || child.sleepEndTime || "";
+
+    if (startTime === "0001-01-01T00:00:00") startTime = "";
+    if (endTime === "0001-01-01T00:00:00") endTime = "";
+
+    return isChildSleeping(startTime, endTime);
+  }).length;
 
   if (!isOpen) return null;
 
@@ -539,86 +500,100 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          backgroundColor: isMobile
+            ? "background.default"
+            : "rgba(0, 0, 0, 0.5)",
           zIndex: 99999,
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
           p: isMobile ? 0 : 2,
         }}
-        onClick={onClose}
       >
-        <Fade in={isOpen} timeout={100}>
+        <Fade in={isOpen} timeout={300}>
           <Box
             sx={{
-              transform: isOpen ? "translateY(0)" : "translateY(-100vh)",
-              transition: "transform 1s cubic-bezier(0.68, -0.55, 0.265, 1.55)",
               width: "100%",
               maxWidth: isMobile ? "100%" : 600,
-              willChange: "transform",
+              maxHeight: isMobile ? "100%" : "90vh",
+              bgcolor: "background.paper",
+              borderRadius: isMobile ? 0 : 2,
+              boxShadow: isMobile ? "none" : 24,
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
             }}
           >
+            {/* Header */}
             <Box
               sx={{
-                backgroundColor: "background.paper",
-                borderRadius: isMobile ? 0 : 3,
-                padding: isMobile ? 1 : 3,
-                boxShadow: isMobile
-                  ? "0 8px 32px rgba(0, 0, 0, 0.4)"
-                  : "0 20px 60px rgba(0, 0, 0, 0.3)",
+                p: isMobile ? 1.5 : 2,
+                borderBottom: "1px solid",
+                borderColor: "divider",
+                bgcolor: "#9C27B0",
+                color: "white",
+              }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                {dailyReport?.sleepData?.status === "Updated"
+                  ? "עדכן פוסט שינה"
+                  : "צור פוסט שינה חדש"}
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.8, mt: 0.5 }}>
+                {groupName}
+              </Typography>
+            </Box>
+
+            {/* Content */}
+            <Box
+              sx={{
+                flex: 1,
                 display: "flex",
                 flexDirection: "column",
-                gap: isMobile ? 1 : 2,
-                width: "100%",
-                maxWidth: isMobile ? "100%" : 600,
-                maxHeight: isMobile ? "100vh" : "90vh",
                 overflow: "hidden",
-                position: "relative",
-                transform: "none",
-                ...(isMobile && {
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
-                  marginTop: 0,
-                }),
               }}
-              onClick={(e) => e.stopPropagation()}
             >
-              {/* Loading overlay */}
-              {isLoading && (
-                <Fade in={isLoading} timeout={300}>
-                  <Box
+              {/* Basic Details */}
+              <Box sx={{ p: isMobile ? 1.5 : 2 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                  פרטים בסיסיים
+                </Typography>
+
+                <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
+                  <TextField
+                    fullWidth
+                    label="כותרת הפוסט"
+                    value={title}
+                    onChange={(e) => handleTitleChange(e.target.value)}
+                    error={!!errors.title}
+                    helperText={errors.title}
+                    size="small"
+                  />
+                  <Button
+                    variant="outlined"
+                    onClick={handleNextTitle}
                     sx={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      bgcolor: "rgba(0, 0, 0, 0.1)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      zIndex: 10,
-                      borderRadius: 3,
+                      minWidth: "auto",
+                      px: 2,
+                      borderColor: "#9C27B0",
+                      color: "#9C27B0",
+                      "&:hover": {
+                        borderColor: "#7B1FA2",
+                        bgcolor: "#9C27B010",
+                      },
                     }}
+                    title="כותרת הבאה"
                   >
-                    <Box sx={{ textAlign: "center" }}>
-                      <Skeleton
-                        variant="circular"
-                        width={60}
-                        height={60}
-                        sx={{ mb: 2 }}
-                      />
-                      <Skeleton variant="text" width={120} sx={{ mb: 1 }} />
-                      <Skeleton variant="text" width={80} />
-                    </Box>
-                  </Box>
-                </Fade>
-              )}
-              {/* Header */}
-              <Fade
-                in={isOpen}
-                timeout={400}
-                style={{ transitionDelay: "100ms" }}
+                    ↻
+                  </Button>
+                </Box>
+              </Box>
+
+              <Divider sx={{ my: 1 }} />
+
+              {/* Children List Header */}
+              <Box
+                sx={{ pr: isMobile ? 0.5 : 1, pl: isMobile ? 0.5 : 0, mb: 1 }}
               >
                 <Box
                   sx={{
@@ -628,314 +603,201 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
                     mb: 1,
                   }}
                 >
+                  <Typography
+                    variant="h6"
+                    sx={{ fontWeight: 600, color: "text.primary" }}
+                  >
+                    ילדים בקבוצה
+                  </Typography>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <SleepIcon sx={{ color: "#9C27B0", fontSize: 28 }} />
-                    <Typography
-                      variant="h5"
-                      sx={{
-                        fontWeight: 700,
-                        color: "text.primary",
-                      }}
-                    >
-                      צור פוסט שינה
-                    </Typography>
-                    {isLoadingDailyReport && (
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                          ml: 2,
-                        }}
-                      >
-                        <Skeleton variant="circular" width={16} height={16} />
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: "text.secondary",
-                            fontSize: "0.875rem",
-                          }}
-                        >
-                          טוען נתונים...
-                        </Typography>
-                      </Box>
-                    )}
+                    <Chip
+                      label={`${sleepingChildrenCount} ילדים ישנים`}
+                      color="primary"
+                      size="small"
+                    />
                   </Box>
-                  <IconButton
-                    onClick={onClose}
+                </Box>
+
+                {/* Quick Selection Buttons */}
+                <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handleSelectAllAsleep}
                     sx={{
-                      color: "text.secondary",
+                      borderColor: "#9C27B0",
+                      color: "#9C27B0",
                       "&:hover": {
-                        bgcolor: "action.hover",
+                        borderColor: "#7B1FA2",
+                        bgcolor: "#9C27B010",
                       },
                     }}
                   >
-                    <CloseIcon />
-                  </IconButton>
-                </Box>
-              </Fade>
-
-              {/* Form Content */}
-              <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                {/* Basic Info - Fixed */}
-                <Box
-                  sx={{ mb: 2, pr: isMobile ? 0.5 : 1, pl: isMobile ? 0.5 : 0 }}
-                >
-                  <Typography
-                    variant="h6"
+                    בחר הכל ישנים
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handleFinishAllSleep}
                     sx={{
-                      fontWeight: 600,
-                      color: "text.primary",
-                      mb: 1,
+                      borderColor: "#4CAF50",
+                      color: "#4CAF50",
+                      "&:hover": {
+                        borderColor: "#388E3C",
+                        bgcolor: "#4CAF5010",
+                      },
                     }}
                   >
-                    פרטים בסיסיים
-                  </Typography>
-
-                  <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
-                    <TextField
-                      fullWidth
-                      label="כותרת הפוסט"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      error={!!errors.title}
-                      helperText={errors.title}
-                      size="small"
-                    />
-                    <Button
-                      variant="outlined"
-                      onClick={handleNextTitle}
-                      sx={{
-                        minWidth: "auto",
-                        px: 2,
-                        borderColor: "#9C27B0",
-                        color: "#9C27B0",
-                        "&:hover": {
-                          borderColor: "#7B1FA2",
-                          bgcolor: "#9C27B010",
-                        },
-                      }}
-                      title="כותרת הבאה"
-                    >
-                      ↻
-                    </Button>
-                  </Box>
+                    סיים שינה לכולם
+                  </Button>
                 </Box>
 
-                <Divider sx={{ my: 1 }} />
+                {errors.children && (
+                  <Alert severity="error" sx={{ mb: 1 }}>
+                    {errors.children}
+                  </Alert>
+                )}
 
-                {/* Children List Header - Fixed */}
-                <Box
-                  sx={{ pr: isMobile ? 0.5 : 1, pl: isMobile ? 0.5 : 0, mb: 1 }}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      mb: 1,
-                    }}
-                  >
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 600,
-                        color: "text.primary",
-                      }}
-                    >
-                      ילדים בקבוצה
-                    </Typography>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Chip
-                        label={`${sleepingChildrenCount} ילדים ישנים`}
-                        color="primary"
-                        size="small"
-                      />
-                    </Box>
-                  </Box>
-
-                  {/* Quick Selection Buttons */}
-                  <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={handleSelectAllAsleep}
-                      sx={{
-                        borderColor: "#9C27B0",
-                        color: "#9C27B0",
-                        "&:hover": {
-                          borderColor: "#7B1FA2",
-                          bgcolor: "#9C27B010",
-                        },
-                      }}
-                    >
-                      בחר הכל ישנים
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={handleFinishAllSleep}
-                      sx={{
-                        borderColor: "#4CAF50",
-                        color: "#4CAF50",
-                        "&:hover": {
-                          borderColor: "#388E3C",
-                          bgcolor: "#4CAF5010",
-                        },
-                      }}
-                    >
-                      סיים שינה לכולם
-                    </Button>
-                  </Box>
-
-                  {errors.children && (
-                    <Alert severity="error" sx={{ mb: 1 }}>
-                      {errors.children}
-                    </Alert>
-                  )}
-
-                  {errors.submit && (
-                    <Alert severity="error" sx={{ mb: 1 }}>
-                      <AlertTitle>שגיאה ביצירת הפוסט</AlertTitle>
-                      {errors.submit}
-                    </Alert>
-                  )}
-                </Box>
-
-                {/* Children List - Virtualized */}
-                <Box
-                  sx={{
-                    flex: 1,
-                    overflow: "hidden",
-                    pr: isMobile ? 0.5 : 1,
-                    pl: isMobile ? 0.5 : 0,
-                    minHeight: 0,
-                  }}
-                >
-                  {isLoadingDailyReport ? (
-                    // Loading skeleton for children
-                    <Box
-                      sx={{
-                        bgcolor: "background.default",
-                        borderRadius: 2,
-                        p: 2,
-                      }}
-                    >
-                      {Array.from({ length: 3 }).map((_, index) => (
-                        <Fade in={true} timeout={300 + index * 100} key={index}>
-                          <ListItem
-                            sx={{
-                              border: "1px solid",
-                              borderColor: "divider",
-                              borderRadius: 1,
-                              mb: 1,
-                              bgcolor: "background.paper",
-                            }}
-                          >
-                            <ListItemAvatar>
-                              <Skeleton
-                                variant="circular"
-                                width={40}
-                                height={40}
-                              />
-                            </ListItemAvatar>
-                            <ListItemText
-                              primary={<Skeleton variant="text" width="60%" />}
-                              secondary={
-                                <Skeleton variant="text" width="40%" />
-                              }
-                            />
-                            <ListItemSecondaryAction>
-                              <Skeleton
-                                variant="rectangular"
-                                width={44}
-                                height={24}
-                                sx={{ borderRadius: 12 }}
-                              />
-                            </ListItemSecondaryAction>
-                          </ListItem>
-                        </Fade>
-                      ))}
-                    </Box>
-                  ) : (
-                    <Box
-                      sx={{
-                        bgcolor: "background.default",
-                        borderRadius: 2,
-                        height: "100%",
-                        p: isMobile ? 0.5 : 1,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          height: isMobile ? 400 : 500,
-                          overflow: "auto",
-                          pr: 1,
-                        }}
-                      >
-                        {sleepChildren.map((child, index) => (
-                          <ChildItem
-                            key={child.childId}
-                            index={index}
-                            style={{}}
-                          />
-                        ))}
-                      </Box>
-                    </Box>
-                  )}
-                </Box>
+                {errors.submit && (
+                  <Alert severity="error" sx={{ mb: 1 }}>
+                    <AlertTitle>שגיאה ביצירת הפוסט</AlertTitle>
+                    {errors.submit}
+                  </Alert>
+                )}
               </Box>
 
-              {/* Footer */}
+              {/* Children List */}
               <Box
                 sx={{
-                  display: "flex",
-                  gap: 2,
-                  pt: 1,
-                  pb: isMobile ? 1 : 0,
-                  borderTop: "1px solid",
-                  borderColor: "divider",
+                  flex: 1,
+                  overflow: "hidden",
+                  pr: isMobile ? 0.5 : 1,
+                  pl: isMobile ? 0.5 : 0,
+                  minHeight: 0,
                 }}
               >
-                <Button variant="outlined" onClick={onClose} sx={{ flex: 1 }}>
-                  ביטול
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={handleSubmit}
-                  disabled={isLoading || isLoadingDailyReport}
-                  startIcon={
-                    isLoading ? (
-                      <Skeleton variant="circular" width={20} height={20} />
-                    ) : (
-                      <AddIcon />
-                    )
-                  }
-                  sx={{
-                    flex: 1,
-                    bgcolor: "#9C27B0",
-                    "&:hover": {
-                      bgcolor: "#7B1FA2",
-                    },
-                    "&:disabled": {
-                      bgcolor: "#9C27B080",
-                    },
-                  }}
-                >
-                  {isLoading ? (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Skeleton variant="text" width={60} />
-                      <Skeleton variant="circular" width={16} height={16} />
+                {isLoadingDailyReport ? (
+                  <Box
+                    sx={{
+                      bgcolor: "background.default",
+                      borderRadius: 2,
+                      p: 2,
+                    }}
+                  >
+                    {Array.from({ length: 3 }).map((_, index) => (
+                      <Fade in={true} timeout={300 + index * 100} key={index}>
+                        <ListItem
+                          sx={{
+                            border: "1px solid",
+                            borderColor: "divider",
+                            borderRadius: 1,
+                            mb: 1,
+                            bgcolor: "background.paper",
+                          }}
+                        >
+                          <ListItemAvatar>
+                            <Skeleton
+                              variant="circular"
+                              width={40}
+                              height={40}
+                            />
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={<Skeleton variant="text" width="60%" />}
+                            secondary={<Skeleton variant="text" width="40%" />}
+                          />
+                          <ListItemSecondaryAction>
+                            <Skeleton
+                              variant="rectangular"
+                              width={44}
+                              height={24}
+                              sx={{ borderRadius: 12 }}
+                            />
+                          </ListItemSecondaryAction>
+                        </ListItem>
+                      </Fade>
+                    ))}
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      bgcolor: "background.default",
+                      borderRadius: 2,
+                      height: "100%",
+                      p: isMobile ? 0.5 : 1,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        height: isMobile ? 400 : 500,
+                        overflow: "auto",
+                        pr: 1,
+                      }}
+                    >
+                      {childrenRef.current.map((child) => (
+                        <ChildItem
+                          key={child.childId}
+                          child={child}
+                          isCompleted={completedChildren.has(child.childId)}
+                          bulkActionTrigger={bulkActionTriggerRef.current}
+                        />
+                      ))}
                     </Box>
-                  ) : isLoadingDailyReport ? (
-                    "טוען נתונים..."
-                  ) : dailyReport?.sleepData?.status === "Updated" ? (
-                    "עדכן פוסט"
-                  ) : (
-                    "צור פוסט שינה"
-                  )}
-                </Button>
+                  </Box>
+                )}
               </Box>
+            </Box>
+
+            {/* Footer */}
+            <Box
+              sx={{
+                display: "flex",
+                gap: 2,
+                pt: 1,
+                pb: isMobile ? 1 : 0,
+                borderTop: "1px solid",
+                borderColor: "divider",
+                p: isMobile ? 1.5 : 2,
+              }}
+            >
+              <Button variant="outlined" onClick={onClose} sx={{ flex: 1 }}>
+                ביטול
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleSubmit}
+                disabled={isLoading || isLoadingDailyReport}
+                startIcon={
+                  isLoading ? (
+                    <Skeleton variant="circular" width={20} height={20} />
+                  ) : (
+                    <AddIcon />
+                  )
+                }
+                sx={{
+                  flex: 1,
+                  bgcolor: "#9C27B0",
+                  "&:hover": {
+                    bgcolor: "#7B1FA2",
+                  },
+                  "&:disabled": {
+                    bgcolor: "#9C27B080",
+                  },
+                }}
+              >
+                {isLoading ? (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Skeleton variant="text" width={60} />
+                    <Skeleton variant="circular" width={16} height={16} />
+                  </Box>
+                ) : isLoadingDailyReport ? (
+                  "טוען נתונים..."
+                ) : dailyReport?.sleepData?.status === "Updated" ? (
+                  "עדכן פוסט"
+                ) : (
+                  "צור פוסט שינה"
+                )}
+              </Button>
             </Box>
           </Box>
         </Fade>

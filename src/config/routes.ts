@@ -1,0 +1,50 @@
+// Routes Configuration
+// This file centralizes all route definitions to avoid duplication
+
+export const ROUTES = {
+  // Public routes
+  LOGIN: "/login",
+  ONBOARDING: "/onboarding",
+
+  // Protected routes
+  DASHBOARD: "/dashboard",
+  SETTINGS: "/settings",
+  FEED: "/feed",
+  ATTENDANCE: "/attendance",
+
+  // Feed sub-routes
+  CREATE_SLEEP_POST: "/feed/sleep-post/",
+
+  // Catch-all route
+  NOT_FOUND: "*",
+} as const;
+
+// Route groups for easier management
+export const ROUTE_GROUPS = {
+  PUBLIC: [ROUTES.LOGIN, ROUTES.ONBOARDING],
+  PROTECTED: [
+    ROUTES.DASHBOARD,
+    ROUTES.SETTINGS,
+    ROUTES.FEED,
+    ROUTES.ATTENDANCE,
+  ],
+  FEED_ROUTES: [ROUTES.CREATE_SLEEP_POST],
+} as const;
+
+// Helper function to build dynamic routes
+export const buildRoute = (
+  baseRoute: string,
+  params?: Record<string, string>
+): string => {
+  if (!params) return baseRoute;
+
+  let route = baseRoute;
+  Object.entries(params).forEach(([key, value]) => {
+    route = route.replace(`:${key}`, value);
+  });
+
+  return route;
+};
+
+// Type for route keys
+export type RouteKey = keyof typeof ROUTES;

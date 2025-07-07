@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Typography, Box, useTheme, useMediaQuery } from "@mui/material";
 import { Skeleton, Fade, Slide, Box as MuiBox } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../config/routes";
 import Container from "../Container";
 import { FeedFloatingButton } from "./index";
 import CreateSleepPostModal from "./CreateSleepPostModal";
@@ -35,6 +37,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
   showFloatingButton = false,
   onPostTypeSelect,
 }) => {
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { attendanceData } = useAttendance();
@@ -47,7 +50,6 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
   // State for sleep post creation
   const [isSleepModalOpen, setIsSleepModalOpen] = useState(false);
   const [isCreatingPost, setIsCreatingPost] = useState(false);
-  const [isPreparingData, setIsPreparingData] = useState(false);
 
   // Get children data from daily report or attendance context
   const childrenData: Child[] =
@@ -131,7 +133,15 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
     // Handle post type selection
     switch (postType) {
       case "sleep":
-        setIsSleepModalOpen(true);
+        // Navigate to the sleep post creation page
+        navigate(ROUTES.CREATE_SLEEP_POST, {
+          state: {
+            groupId: dailyReport?.groupId || attendanceData?.groupId,
+            groupName: attendanceData?.groupName,
+            children: childrenData,
+            dailyReport: dailyReport,
+          },
+        });
         break;
       case "snack":
         // TODO: Implement snack post creation
@@ -147,18 +157,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
 
   // Function to prepare data when floating button is opened
   const handleFloatingButtonOpen = async () => {
-    setIsPreparingData(true);
-    try {
-      // Always fetch fresh daily report data when creating a new post
-      if (attendanceData?.groupId) {
-        await fetchDailyReport(attendanceData.groupId);
-      }
-    } catch (error) {
-      console.error("Failed to fetch daily report for post creation:", error);
-      // Continue even if daily report fetch fails
-    } finally {
-      setIsPreparingData(false);
-    }
+    // No longer need to fetch daily report here since the page will handle it
   };
 
   // Get post creation handler from context or prop
@@ -363,7 +362,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
               <FeedFloatingButton
                 onPostTypeSelect={postTypeHandler}
                 onOpen={handleFloatingButtonOpen}
-                isLoading={isPreparingData}
+                isLoading={false}
               />
             )}
           </Box>
@@ -476,7 +475,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
               <FeedFloatingButton
                 onPostTypeSelect={postTypeHandler}
                 onOpen={handleFloatingButtonOpen}
-                isLoading={isPreparingData}
+                isLoading={false}
               />
             )}
           </Box>

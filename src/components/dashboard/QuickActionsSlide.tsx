@@ -1,4 +1,6 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../config/routes";
 import {
   Typography,
   Card,
@@ -15,6 +17,7 @@ import {
   Group as GroupIcon,
   AccountCircle as AccountIcon,
   Today as TodayIcon,
+  Bedtime as BedtimeIcon,
 } from "@mui/icons-material";
 
 interface QuickActionsSlideProps {
@@ -31,6 +34,7 @@ const QuickActionsSlide: React.FC<QuickActionsSlideProps> = ({
   isAttendanceClosed = false,
 }) => {
   const theme = useTheme();
+  const navigate = useNavigate();
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("he-IL", {
@@ -193,6 +197,71 @@ const QuickActionsSlide: React.FC<QuickActionsSlideProps> = ({
               </Typography>
             </Box>
           </Box>
+        </CardContent>
+      </Card>
+
+      {/* Sleep Report Card */}
+      <Card
+        sx={{
+          bgcolor: "background.paper",
+          border: "1px solid",
+          borderColor: "divider",
+          cursor: "pointer",
+          transition: "all 0.3s ease",
+          mb: 3,
+          "&:hover": {
+            transform: "translateY(-2px)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+          },
+        }}
+        onClick={() => navigate(ROUTES.CREATE_SLEEP_POST)}
+      >
+        <CardContent sx={{ p: 2.5 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              mb: 1.5,
+            }}
+          >
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                bgcolor: "#9C27B0",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <BedtimeIcon sx={{ fontSize: 28 }} />
+            </Box>
+            <IconButton
+              sx={{
+                color: "text.secondary",
+                "&:hover": { bgcolor: "action.hover" },
+              }}
+            >
+              <ArrowForwardIcon />
+            </IconButton>
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+            דוח שינה
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            צור דוח שינה עבור הילדים
+          </Typography>
+          <Chip
+            label="חדש"
+            size="small"
+            sx={{
+              bgcolor: "#9C27B0",
+              color: "white",
+              fontWeight: 500,
+            }}
+          />
         </CardContent>
       </Card>
     </>
