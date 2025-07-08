@@ -29,6 +29,97 @@ import {
 } from "../../services/api";
 import { SleepStatus } from "../../types/enums";
 
+// ChildItem component defined outside to prevent recreation on every render
+const ChildItem = React.memo<{
+  child: SleepChild;
+  isCompleted: boolean;
+  onStartSleep: (childId: string) => void;
+  onEndSleep: (childId: string, startTime: string) => void;
+  onNotesChange: (childId: string, notes: string) => void;
+}>(({ child, isCompleted, onStartSleep, onEndSleep, onNotesChange }) => {
+  const isSleeping = isChildSleeping(child.sleepStartTime, child.sleepEndTime);
+
+  const handleStartSleep = () => {
+    onStartSleep(child.childId);
+  };
+
+  const handleEndSleep = () => {
+    onEndSleep(child.childId, child.sleepStartTime);
+  };
+
+  const handleNotesChange = (notes: string) => {
+    onNotesChange(child.childId, notes);
+  };
+
+  return (
+    <Fade in={true} timeout={300}>
+      <ListItem
+        sx={{
+          border: "1px solid",
+          borderColor: isCompleted ? "#4CAF50" : "divider",
+          borderRadius: 1,
+          mb: 1,
+          bgcolor: isCompleted ? "#4CAF5010" : "background.paper",
+          transition: "all 0.3s ease",
+        }}
+      >
+        <ListItemAvatar>
+          <Avatar
+            sx={{
+              bgcolor: isSleeping ? "#9C27B0" : "#757575",
+              width: 40,
+              height: 40,
+            }}
+          >
+            {child.firstName.charAt(0)}
+          </Avatar>
+        </ListItemAvatar>
+
+        <ListItemText
+          primary={
+            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              {child.firstName} {child.lastName}
+            </Typography>
+          }
+          secondary={
+            <Box sx={{ mt: 0.5 }}>
+              <SleepTimer
+                startTime={child.sleepStartTime}
+                endTime={child.sleepEndTime}
+                isSleeping={isSleeping}
+              />
+              <TextField
+                size="small"
+                label="הערות"
+                value={child.notes}
+                onChange={(e) => handleNotesChange(e.target.value)}
+                sx={{ width: "100%", mt: 1 }}
+                placeholder="הערות נוספות..."
+              />
+            </Box>
+          }
+        />
+
+        <ListItemSecondaryAction>
+          <Switch
+            checked={isSleeping}
+            onChange={isSleeping ? handleEndSleep : handleStartSleep}
+            color="primary"
+            sx={{
+              "& .MuiSwitch-switchBase.Mui-checked": {
+                color: "#9C27B0",
+              },
+              "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                backgroundColor: "#9C27B0",
+              },
+            }}
+          />
+        </ListItemSecondaryAction>
+      </ListItem>
+    </Fade>
+  );
+});
+
 interface SleepChild {
   childId: string;
   firstName: string;
@@ -71,14 +162,17 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  // Default title variations
-  const defaultTitles = [
-    "שינת צהריים - " + groupName,
-    "דיווח שינה יומי - " + groupName,
-    "מעקב שינת ילדים - " + groupName,
-    "שינת ילדים - " + groupName,
-    "דיווח שנת צהריים - " + groupName,
-  ];
+  // Default title variations - memoized to prevent infinite loops
+  const defaultTitles = React.useMemo(
+    () => [
+      "שינת צהריים - " + groupName,
+      "דיווח שינה יומי - " + groupName,
+      "מעקב שינת ילדים - " + groupName,
+      "שינת ילדים - " + groupName,
+      "דיווח שנת צהריים - " + groupName,
+    ],
+    [groupName]
+  );
 
   // Simple state management
   const [title, setTitle] = useState("");
@@ -90,14 +184,9 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
     new Set()
   );
 
-  // Initialize data when modal opens
+  // Initialize children when modal opens or data changes
   useEffect(() => {
     if (isOpen) {
-      // Initialize title
-      const initialTitle =
-        dailyReport?.sleepData?.title || defaultTitles[titleIndex];
-      setTitle(initialTitle);
-
       // Initialize children
       let initialChildren: SleepChild[] = [];
 
@@ -176,7 +265,16 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
 
       setSleepChildren(initialChildren);
     }
-  }, [isOpen, dailyReport?.sleepData, children, defaultTitles, titleIndex]);
+  }, [isOpen, dailyReport?.sleepData, children, groupName]);
+
+  // Initialize title when modal opens or title index changes
+  useEffect(() => {
+    if (isOpen) {
+      const initialTitle =
+        dailyReport?.sleepData?.title || defaultTitles[titleIndex];
+      setTitle(initialTitle);
+    }
+  }, [isOpen, dailyReport?.sleepData?.title, defaultTitles, titleIndex]);
 
   // Cleanup when modal closes
   useEffect(() => {
@@ -369,96 +467,28 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
     isChildSleeping(child.sleepStartTime, child.sleepEndTime)
   ).length;
 
-  // Individual child component
-  const ChildItem = React.memo<{ child: SleepChild; isCompleted: boolean }>(
-    ({ child, isCompleted }) => {
-      const isSleeping = isChildSleeping(
-        child.sleepStartTime,
-        child.sleepEndTime
-      );
+  // Memoize callback functions to prevent unnecessary re-renders
+  const handleStartSleep = React.useCallback(
+    (childId: string) => {
+      const currentTime = new Date().toISOString();
+      updateChildSleep(childId, currentTime, "");
+    },
+    [updateChildSleep]
+  );
 
-      const handleStartSleep = () => {
-        const currentTime = new Date().toISOString();
-        updateChildSleep(child.childId, currentTime, "");
-      };
+  const handleEndSleep = React.useCallback(
+    (childId: string, startTime: string) => {
+      const currentTime = new Date().toISOString();
+      updateChildSleep(childId, startTime, currentTime);
+    },
+    [updateChildSleep]
+  );
 
-      const handleEndSleep = () => {
-        const currentTime = new Date().toISOString();
-        updateChildSleep(child.childId, child.sleepStartTime, currentTime);
-      };
-
-      const handleNotesChange = (notes: string) => {
-        updateChildNotes(child.childId, notes);
-      };
-
-      return (
-        <Fade in={true} timeout={300}>
-          <ListItem
-            sx={{
-              border: "1px solid",
-              borderColor: isCompleted ? "#4CAF50" : "divider",
-              borderRadius: 1,
-              mb: 1,
-              bgcolor: isCompleted ? "#4CAF5010" : "background.paper",
-              transition: "all 0.3s ease",
-            }}
-          >
-            <ListItemAvatar>
-              <Avatar
-                sx={{
-                  bgcolor: isSleeping ? "#9C27B0" : "#757575",
-                  width: 40,
-                  height: 40,
-                }}
-              >
-                {child.firstName.charAt(0)}
-              </Avatar>
-            </ListItemAvatar>
-
-            <ListItemText
-              primary={
-                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  {child.firstName} {child.lastName}
-                </Typography>
-              }
-              secondary={
-                <Box sx={{ mt: 0.5 }}>
-                  <SleepTimer
-                    startTime={child.sleepStartTime}
-                    endTime={child.sleepEndTime}
-                    isSleeping={isSleeping}
-                  />
-                  <TextField
-                    size="small"
-                    label="הערות"
-                    value={child.notes}
-                    onChange={(e) => handleNotesChange(e.target.value)}
-                    sx={{ width: "100%", mt: 1 }}
-                    placeholder="הערות נוספות..."
-                  />
-                </Box>
-              }
-            />
-
-            <ListItemSecondaryAction>
-              <Switch
-                checked={isSleeping}
-                onChange={isSleeping ? handleEndSleep : handleStartSleep}
-                color="primary"
-                sx={{
-                  "& .MuiSwitch-switchBase.Mui-checked": {
-                    color: "#9C27B0",
-                  },
-                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                    backgroundColor: "#9C27B0",
-                  },
-                }}
-              />
-            </ListItemSecondaryAction>
-          </ListItem>
-        </Fade>
-      );
-    }
+  const handleNotesChange = React.useCallback(
+    (childId: string, notes: string) => {
+      updateChildNotes(childId, notes);
+    },
+    [updateChildNotes]
   );
 
   // Show loading state
@@ -710,6 +740,9 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
                   key={child.childId}
                   child={child}
                   isCompleted={completedChildren.has(child.childId)}
+                  onStartSleep={handleStartSleep}
+                  onEndSleep={handleEndSleep}
+                  onNotesChange={handleNotesChange}
                 />
               ))}
             </Box>
