@@ -71,6 +71,11 @@ const StaffOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const AppRoutes: React.FC = () => {
   const location = useLocation();
 
+  // Hide bottom navigation for create sleep post page
+  const shouldShowBottomNav = !location.pathname.includes(
+    ROUTES.CREATE_SLEEP_POST
+  );
+
   return (
     <>
       <Routes>
@@ -123,7 +128,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
         <Route path={ROUTES.NOT_FOUND} element={<NotFound />} />
       </Routes>
-      <BottomNav />
+      {shouldShowBottomNav && <BottomNav />}
     </>
   );
 };

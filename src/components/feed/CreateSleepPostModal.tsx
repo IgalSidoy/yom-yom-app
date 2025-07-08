@@ -33,92 +33,176 @@ import { SleepStatus } from "../../types/enums";
 const ChildItem = React.memo<{
   child: SleepChild;
   isCompleted: boolean;
+  isCelebrating: boolean;
   onStartSleep: (childId: string) => void;
   onEndSleep: (childId: string, startTime: string) => void;
   onNotesChange: (childId: string, notes: string) => void;
-}>(({ child, isCompleted, onStartSleep, onEndSleep, onNotesChange }) => {
-  const isSleeping = isChildSleeping(child.sleepStartTime, child.sleepEndTime);
+}>(
+  ({
+    child,
+    isCompleted,
+    isCelebrating,
+    onStartSleep,
+    onEndSleep,
+    onNotesChange,
+  }) => {
+    const isSleeping = isChildSleeping(
+      child.sleepStartTime,
+      child.sleepEndTime
+    );
+    const [showCelebration, setShowCelebration] = React.useState(false);
 
-  const handleStartSleep = () => {
-    onStartSleep(child.childId);
-  };
+    // Trigger celebration when isCelebrating prop changes
+    React.useEffect(() => {
+      if (isCelebrating && !showCelebration) {
+        setShowCelebration(true);
+        setTimeout(() => setShowCelebration(false), 700);
+      }
+    }, [isCelebrating, showCelebration]);
 
-  const handleEndSleep = () => {
-    onEndSleep(child.childId, child.sleepStartTime);
-  };
+    const handleStartSleep = () => {
+      onStartSleep(child.childId);
+    };
 
-  const handleNotesChange = (notes: string) => {
-    onNotesChange(child.childId, notes);
-  };
+    const handleEndSleep = () => {
+      onEndSleep(child.childId, child.sleepStartTime);
+      // Trigger celebration animation
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 700);
+    };
 
-  return (
-    <Fade in={true} timeout={300}>
-      <ListItem
-        sx={{
-          border: "1px solid",
-          borderColor: isCompleted ? "#4CAF50" : "divider",
-          borderRadius: 1,
-          mb: 1,
-          bgcolor: isCompleted ? "#4CAF5010" : "background.paper",
-          transition: "all 0.3s ease",
-        }}
-      >
-        <ListItemAvatar>
-          <Avatar
-            sx={{
-              bgcolor: isSleeping ? "#9C27B0" : "#757575",
-              width: 40,
-              height: 40,
-            }}
-          >
-            {child.firstName.charAt(0)}
-          </Avatar>
-        </ListItemAvatar>
+    const handleNotesChange = (notes: string) => {
+      onNotesChange(child.childId, notes);
+    };
 
-        <ListItemText
-          primary={
-            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-              {child.firstName} {child.lastName}
-            </Typography>
-          }
-          secondary={
-            <Box sx={{ mt: 0.5 }}>
-              <SleepTimer
-                startTime={child.sleepStartTime}
-                endTime={child.sleepEndTime}
-                isSleeping={isSleeping}
-              />
-              <TextField
-                size="small"
-                label="הערות"
-                value={child.notes}
-                onChange={(e) => handleNotesChange(e.target.value)}
-                sx={{ width: "100%", mt: 1 }}
-                placeholder="הערות נוספות..."
-              />
-            </Box>
-          }
-        />
+    return (
+      <Fade in={true} timeout={300}>
+        <ListItem
+          sx={{
+            border: "1px solid",
+            borderColor: isCompleted ? "#4CAF50" : "divider",
+            borderRadius: 1,
+            mb: 1,
+            bgcolor: isCompleted ? "#4CAF5010" : "background.paper",
+            transition: "all 0.3s ease",
+            position: "relative",
+            overflow: "hidden",
+            listStyle: "none",
+            "&::marker": {
+              display: "none",
+            },
+          }}
+        >
+          {/* Green swipe animation overlay */}
+          {showCelebration && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                zIndex: 10,
+                pointerEvents: "none",
+                background:
+                  "linear-gradient(90deg, rgba(76,175,80,0.15) 0%, rgba(76,175,80,0.35) 40%, rgba(76,175,80,0.15) 100%)",
+                animation: "swipeGreen 0.7s cubic-bezier(0.4,0,0.2,1) forwards",
+              }}
+            />
+          )}
 
-        <ListItemSecondaryAction>
-          <Switch
-            checked={isSleeping}
-            onChange={isSleeping ? handleEndSleep : handleStartSleep}
-            color="primary"
-            sx={{
-              "& .MuiSwitch-switchBase.Mui-checked": {
-                color: "#9C27B0",
-              },
-              "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                backgroundColor: "#9C27B0",
-              },
-            }}
+          <ListItemAvatar sx={{ position: "relative", zIndex: 2 }}>
+            <Avatar
+              sx={{
+                bgcolor: isSleeping ? "#9C27B0" : "#757575",
+                width: 40,
+                height: 40,
+                transition: "all 0.3s ease",
+                transform: showCelebration ? "scale(1.05)" : "scale(1)",
+                boxShadow: showCelebration
+                  ? "0 0 10px rgba(76, 175, 80, 0.25)"
+                  : "none",
+              }}
+            >
+              {child.firstName.charAt(0)}
+            </Avatar>
+          </ListItemAvatar>
+
+          <ListItemText
+            sx={{ position: "relative", zIndex: 2 }}
+            primary={
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 600,
+                  color: showCelebration ? "#388e3c" : "inherit",
+                  transition: "color 0.3s ease",
+                }}
+              >
+                {child.firstName} {child.lastName}
+              </Typography>
+            }
+            secondary={
+              <Box sx={{ mt: 0.5 }}>
+                <SleepTimer
+                  startTime={child.sleepStartTime}
+                  endTime={child.sleepEndTime}
+                  isSleeping={isSleeping}
+                />
+                <TextField
+                  size="small"
+                  label="הערות"
+                  value={child.notes}
+                  onChange={(e) => handleNotesChange(e.target.value)}
+                  sx={{ width: "100%", mt: 1 }}
+                  placeholder="הערות נוספות..."
+                />
+              </Box>
+            }
           />
-        </ListItemSecondaryAction>
-      </ListItem>
-    </Fade>
-  );
-});
+
+          <ListItemSecondaryAction sx={{ position: "relative", zIndex: 2 }}>
+            <Switch
+              checked={isSleeping}
+              onChange={isSleeping ? handleEndSleep : handleStartSleep}
+              color="primary"
+              sx={{
+                "& .MuiSwitch-switchBase.Mui-checked": {
+                  color: "#9C27B0",
+                },
+                "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                  backgroundColor: "#9C27B0",
+                },
+              }}
+            />
+          </ListItemSecondaryAction>
+
+          {/* CSS Animation for swipe */}
+          <style>
+            {`
+              @keyframes swipeGreen {
+                0% {
+                  transform: translateX(-100%);
+                  opacity: 0.7;
+                }
+                60% {
+                  opacity: 1;
+                }
+                80% {
+                  opacity: 0.7;
+                }
+                100% {
+                  transform: translateX(100%);
+                  opacity: 0;
+                }
+              }
+            `}
+          </style>
+        </ListItem>
+      </Fade>
+    );
+  }
+);
 
 interface SleepChild {
   childId: string;
@@ -181,6 +265,9 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [completedChildren, setCompletedChildren] = useState<Set<string>>(
+    new Set()
+  );
+  const [celebratingChildren, setCelebratingChildren] = useState<Set<string>>(
     new Set()
   );
 
@@ -338,6 +425,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
   const handleFinishAllSleep = useCallback(() => {
     const currentTime = new Date().toISOString();
     const completedIds: string[] = [];
+    const celebratingIds: string[] = [];
 
     setSleepChildren((prev) =>
       prev.map((child) => {
@@ -348,6 +436,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
 
         if (isCurrentlySleeping) {
           completedIds.push(child.childId);
+          celebratingIds.push(child.childId);
           return {
             ...child,
             sleepEndTime: currentTime,
@@ -358,7 +447,13 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
     );
 
     setCompletedChildren(new Set(completedIds));
-    setTimeout(() => setCompletedChildren(new Set()), 2000);
+    setCelebratingChildren(new Set(celebratingIds));
+
+    // Clear celebrations after animation
+    setTimeout(() => {
+      setCompletedChildren(new Set());
+      setCelebratingChildren(new Set());
+    }, 2000);
   }, []);
 
   // Submit handler
@@ -580,12 +675,47 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
           borderBottom: "1px solid",
           borderColor: "divider",
           bgcolor: "background.paper",
+          background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
+          position: "relative",
+          "&::after": {
+            content: '""',
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: "2px",
+            background: "linear-gradient(90deg, #9C27B0 0%, #4CAF50 100%)",
+          },
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 700,
+            mb: 1,
+            background: "linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)",
+            backgroundClip: "text",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            textAlign: "center",
+            letterSpacing: "0.5px",
+          }}
+        >
           יצירת פוסט שינה
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body1"
+          sx={{
+            color: "text.secondary",
+            textAlign: "center",
+            fontWeight: 500,
+            opacity: 0.8,
+            "&::before": {
+              content: '"🏠"',
+              marginRight: "8px",
+            },
+          }}
+        >
           {groupName}
         </Typography>
       </Box>
@@ -597,14 +727,11 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
+          pb: isMobile ? 1 : 0, // Add bottom padding to prevent overlap with sticky footer
         }}
       >
         {/* Basic Details */}
         <Box sx={{ p: isMobile ? 1.5 : 2 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-            פרטים בסיסיים
-          </Typography>
-
           <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
             <TextField
               fullWidth
@@ -649,7 +776,28 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
           >
             <Typography
               variant="h6"
-              sx={{ fontWeight: 600, color: "text.primary" }}
+              sx={{
+                fontWeight: 700,
+                color: "#2c3e50",
+                textAlign: "center",
+                position: "relative",
+                "&::before": {
+                  content: '"👶"',
+                  marginLeft: "8px",
+                  fontSize: "1.2em",
+                },
+                "&::after": {
+                  content: '""',
+                  position: "absolute",
+                  bottom: -4,
+                  left: 0,
+                  right: 0,
+                  height: "2px",
+                  background:
+                    "linear-gradient(90deg, #9C27B0 0%, #4CAF50 100%)",
+                  borderRadius: "1px",
+                },
+              }}
             >
               ילדים בקבוצה
             </Typography>
@@ -730,7 +878,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
           >
             <Box
               sx={{
-                height: isMobile ? 400 : 500,
+                height: "100%",
                 overflow: "auto",
                 pr: 1,
               }}
@@ -740,6 +888,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
                   key={child.childId}
                   child={child}
                   isCompleted={completedChildren.has(child.childId)}
+                  isCelebrating={celebratingChildren.has(child.childId)}
                   onStartSleep={handleStartSleep}
                   onEndSleep={handleEndSleep}
                   onNotesChange={handleNotesChange}
@@ -760,6 +909,11 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
           borderTop: "1px solid",
           borderColor: "divider",
           p: isMobile ? 1.5 : 2,
+          position: "sticky",
+          bottom: 0,
+          bgcolor: "background.default",
+          zIndex: 10,
+          boxShadow: "0 -2px 8px rgba(0,0,0,0.1)",
         }}
       >
         <Button variant="outlined" onClick={onClose} sx={{ flex: 1 }}>

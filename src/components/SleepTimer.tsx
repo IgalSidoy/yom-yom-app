@@ -50,7 +50,8 @@ const SleepTimer: React.FC<SleepTimerProps> = ({
     }
   }, [startTime, endTime, isSleeping]);
 
-  if (!startTime) return null;
+  // Always show timer, even when no sleep data
+  const displayTime = startTime ? formatDuration(elapsedTime) : "00:00";
 
   const getSizeStyles = () => {
     switch (size) {
@@ -118,7 +119,11 @@ const SleepTimer: React.FC<SleepTimerProps> = ({
         display: "flex",
         alignItems: "center",
         gap: 0.5,
-        color: isSleeping ? "#9C27B0" : "text.secondary",
+        color: startTime
+          ? isSleeping
+            ? "#9C27B0"
+            : "text.secondary"
+          : "text.disabled",
         fontSize: sizeStyles.fontSize,
         fontWeight: 500,
       }}
@@ -149,7 +154,7 @@ const SleepTimer: React.FC<SleepTimerProps> = ({
           },
         }}
       >
-        {formatDuration(elapsedTime)}
+        {displayTime}
       </Typography>
       {isSleeping && showPulse && (
         <Box
