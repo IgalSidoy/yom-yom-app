@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Box, Typography, CircularProgress } from "@mui/material";
+import {
+  Box,
+  Typography,
+  CircularProgress,
+  Button,
+  Alert,
+  AlertTitle,
+} from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import { useMediaQuery } from "@mui/material";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import { useApp } from "../../contexts/AppContext";
 import { useDailyReport } from "../../contexts/DailyReportContext";
 import { childApi, DailyReport, Child } from "../../services/api";
@@ -15,6 +25,8 @@ interface LocationState {
 
 const CreateSleepPostPage: React.FC = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { user, accountId, isLoadingUser } = useApp();
   const {
     dailyReport,
@@ -75,7 +87,7 @@ const CreateSleepPostPage: React.FC = () => {
           });
         } else {
           console.log(
-            "🔍 [CreateSleepPostPage] No navigation state, loading from user context"
+            "🔍 [CreateSleepPostPage] No navigation state, using user context"
           );
 
           console.log("👤 [CreateSleepPostPage] User context:", {
@@ -96,59 +108,20 @@ const CreateSleepPostPage: React.FC = () => {
             user.groupId
           );
           currentGroupId = user.groupId;
-          currentGroupName = "קבוצה"; // Will be updated when we load children
+          currentGroupName = "קבוצה"; // Default group name
 
           // Fetch daily report immediately with the groupId
           console.log(
-            "📅 [CreateSleepPostPage] Fetching daily report immediately with user.groupId:",
+            "📅 [CreateSleepPostPage] Fetching daily report with user.groupId:",
             currentGroupId
           );
           await fetchDailyReport(currentGroupId);
 
-          // Load children for groupName and other data if we have accountId
-          if (accountId) {
-            console.log(
-              "👶 [CreateSleepPostPage] Loading children for groupName:",
-              accountId
-            );
-            const childrenResponse = await childApi.getChildrenByAccount(
-              accountId
-            );
-            currentChildren =
-              (childrenResponse.children as unknown as Child[]) || [];
-
-            console.log("📈 [CreateSleepPostPage] Children loaded:", {
-              totalChildren: currentChildren.length,
-              firstChild: currentChildren[0]
-                ? {
-                    id: currentChildren[0].id,
-                    groupId: currentChildren[0].groupId,
-                    groupName: currentChildren[0].groupName,
-                  }
-                : null,
-            });
-
-            // Get groupName from children
-            if (
-              childrenResponse.children &&
-              childrenResponse.children.length > 0
-            ) {
-              console.log(
-                "🏷️ [CreateSleepPostPage] Getting groupName from children"
-              );
-              const firstChild = childrenResponse.children[0];
-              currentGroupName = firstChild.groupName || "קבוצה";
-              console.log(
-                "📝 [CreateSleepPostPage] GroupName from child:",
-                currentGroupName
-              );
-            }
-          } else {
-            console.log(
-              "⚠️ [CreateSleepPostPage] No accountId available, using default groupName"
-            );
-            currentChildren = [];
-          }
+          // Don't load children here - let the modal handle it
+          console.log(
+            "ℹ️ [CreateSleepPostPage] Skipping children API call - modal will handle children data"
+          );
+          currentChildren = [];
         }
 
         console.log(
@@ -228,23 +201,65 @@ const CreateSleepPostPage: React.FC = () => {
     }
   };
 
+  // Retry loading data
+  const handleRetry = () => {
+    setError(null);
+    setIsLoading(true);
+    // Trigger the useEffect by updating a dependency
+    window.location.reload();
+  };
+
   // Show loading state
   if (isLoading || isLoadingUser) {
     return (
       <Box
         sx={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          minHeight: "100vh",
           bgcolor: "background.default",
+          zIndex: 1,
+          p: isMobile ? 2 : 4,
         }}
       >
-        <CircularProgress size={60} sx={{ mb: 2 }} />
-        <Typography variant="h6" color="text.secondary">
-          טוען נתונים...
-        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 3,
+            maxWidth: 400,
+            textAlign: "center",
+          }}
+        >
+          <CircularProgress
+            size={isMobile ? 50 : 60}
+            sx={{
+              mb: 2,
+              color: "#9C27B0",
+            }}
+          />
+          <Typography
+            variant={isMobile ? "h6" : "h5"}
+            color="text.primary"
+            sx={{ fontWeight: 600, mb: 1 }}
+          >
+            טוען נתונים...
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ opacity: 0.8 }}
+          >
+            מכין את הטופס ליצירת פוסט שינה
+          </Typography>
+        </Box>
       </Box>
     );
   }
@@ -254,30 +269,70 @@ const CreateSleepPostPage: React.FC = () => {
     return (
       <Box
         sx={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          minHeight: "100vh",
           bgcolor: "background.default",
-          p: 3,
+          zIndex: 1,
+          p: isMobile ? 2 : 4,
         }}
       >
-        <Typography
-          variant="h6"
-          color="error"
-          sx={{ mb: 2, textAlign: "center" }}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 3,
+            maxWidth: 400,
+            textAlign: "center",
+          }}
         >
-          שגיאה בטעינת הנתונים
-        </Typography>
-        <Typography
-          variant="body1"
-          color="text.secondary"
-          sx={{ mb: 3, textAlign: "center" }}
-        >
-          {error}
-        </Typography>
-        <button onClick={() => window.location.reload()}>נסה שוב</button>
+          <Alert
+            severity="error"
+            sx={{
+              width: "100%",
+              mb: 2,
+              "& .MuiAlert-icon": {
+                fontSize: isMobile ? "2rem" : "2.5rem",
+              },
+            }}
+          >
+            <AlertTitle
+              sx={{
+                fontSize: isMobile ? "1.1rem" : "1.25rem",
+                fontWeight: 600,
+              }}
+            >
+              שגיאה בטעינת הנתונים
+            </AlertTitle>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              {error}
+            </Typography>
+          </Alert>
+
+          <Button
+            variant="contained"
+            onClick={handleRetry}
+            startIcon={<RefreshIcon />}
+            sx={{
+              bgcolor: "#9C27B0",
+              "&:hover": {
+                bgcolor: "#7B1FA2",
+              },
+              px: 3,
+              py: 1.5,
+              borderRadius: 2,
+            }}
+          >
+            נסה שוב
+          </Button>
+        </Box>
       </Box>
     );
   }
@@ -305,6 +360,10 @@ const CreateSleepPostPage: React.FC = () => {
         bottom: 0,
         bgcolor: "background.default",
         zIndex: 1,
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        overflow: "hidden",
       }}
     >
       <CreateSleepPostModal
