@@ -47,7 +47,11 @@ const SwipeableCards = forwardRef<SwipeableCardsRef, SwipeableCardsProps>(
     return (
       <Box
         sx={{
-          height: "calc(100vh - 190px)", // Account for bottom navigation
+          height: { xs: "calc(100vh - 210px)", sm: "calc(100vh - 240px)" }, // Responsive height for mobile/desktop
+          border: { xs: "none", sm: "1px solid" },
+          borderColor: { xs: "transparent", sm: "divider" },
+          borderRadius: { xs: 0, sm: 2 },
+          boxShadow: { xs: "none", sm: "0 2px 8px rgba(0, 0, 0, 0.1)" },
           "& .swiper-pagination": {
             bottom: "10px",
             "& .swiper-pagination-bullet": {

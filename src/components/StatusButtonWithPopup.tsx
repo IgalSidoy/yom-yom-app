@@ -28,7 +28,6 @@ const StatusButtonWithPopup: React.FC<StatusButtonWithPopupProps> = ({
   getStatusTextColor,
   getStatusText,
 }) => {
-  console.log("StatusButtonWithPopup disabled:", disabled);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
   const handleStatusUpdate = (status: ApiAttendanceStatus) => {
@@ -52,13 +51,11 @@ const StatusButtonWithPopup: React.FC<StatusButtonWithPopupProps> = ({
           py: 1,
           px: 2,
           minHeight: 40,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          boxShadow: "none",
           transition: "all 0.2s ease-in-out",
           "&:hover": {
             transform: disabled ? "none" : "scale(1.02)",
-            boxShadow: disabled
-              ? "0 2px 8px rgba(0,0,0,0.1)"
-              : "0 4px 12px rgba(0,0,0,0.15)",
+            boxShadow: "none",
           },
           "&:disabled": {
             bgcolor: "grey.400",
@@ -71,8 +68,8 @@ const StatusButtonWithPopup: React.FC<StatusButtonWithPopupProps> = ({
           label={getStatusText(currentStatus)}
           size="small"
           sx={{
-            bgcolor: "rgba(255,255,255,0.2)",
-            color: getStatusTextColor(currentStatus),
+            bgcolor: disabled ? "transparent" : "rgba(255,255,255,0.2)",
+            color: disabled ? "white" : getStatusTextColor(currentStatus),
             fontWeight: 600,
             fontSize: 12,
             height: 24,

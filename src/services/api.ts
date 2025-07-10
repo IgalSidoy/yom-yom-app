@@ -5,6 +5,8 @@ import axios, {
   AxiosRequestConfig,
 } from "axios";
 import { logger } from "../utils/logger";
+import { SleepStatus, EntityStatus } from "../types/enums";
+import { ApiAttendanceStatus } from "../types/attendance";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
@@ -655,11 +657,75 @@ export interface UserChildrenResponse {
 }
 
 // Attendance API interfaces
+// Daily Report interfaces
+export interface DailyReportChild {
+  childId: string;
+  firstName: string;
+  lastName: string;
+  status: SleepStatus;
+  startTimestamp: string;
+  endTimestamp: string;
+  updatedByUserId: string;
+  updatedByUserName: string;
+  comment?: string;
+}
+
+export interface SleepData {
+  title: string;
+  status: EntityStatus;
+  children: DailyReportChild[];
+}
+
+// Map API string status to SleepStatus enum
+export const mapApiStatusToSleepStatus = (apiStatus: string): SleepStatus => {
+  switch (apiStatus.toLowerCase()) {
+    case "sleeping":
+      return SleepStatus.Sleeping;
+    case "awake":
+      return SleepStatus.Awake;
+    default:
+      console.warn(
+        `Unknown sleep status from API: ${apiStatus}, defaulting to Awake`
+      );
+      return SleepStatus.Awake;
+  }
+};
+
+// Map API string status to EntityStatus enum
+export const mapApiStatusToEntityStatus = (apiStatus: string): EntityStatus => {
+  switch (apiStatus) {
+    case "Created":
+      return EntityStatus.Created;
+    case "Updated":
+      return EntityStatus.Updated;
+    case "Deleted":
+      return EntityStatus.Deleted;
+    default:
+      console.warn(
+        `Unknown entity status from API: ${apiStatus}, defaulting to Created`
+      );
+      return EntityStatus.Created;
+  }
+};
+
+export interface DailyReport {
+  id: string;
+  organizationId: string;
+  accountId: string;
+  groupId: string;
+  createdById: string;
+  date: string;
+  sleepData: SleepData;
+  isPublished: boolean;
+  created: string;
+  updated: string;
+}
+
 export interface AttendanceChild {
   childId: string;
   firstName: string;
   lastName: string;
-  status: string;
+  status: ApiAttendanceStatus;
   timestamp: string;
   updatedByUserId: string;
   dateOfBirth?: string;
@@ -677,6 +743,98 @@ export interface GroupAttendance {
   created: string;
   updated: string;
 }
+
+// Daily Reports API functions
+export const dailyReportsApi = {
+  getDailyReport: async (groupId: string, date: string) => {
+    console.log("🌐 [API] getDailyReport called:", { groupId, date });
+    console.log(
+      "🌐 [API] Request URL:",
+      `/api/v1/daily-reports?groupId=${groupId}&date=${date}`
+    );
+
+    try {
+      const response = await api.get(
+        `/api/v1/daily-reports?groupId=${groupId}&date=${date}`,
+        {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        }
+      );
+
+      console.log("✅ [API] getDailyReport response received:", {
+        status: response.status,
+        hasData: !!response.data,
+        dataKeys: response.data ? Object.keys(response.data) : [],
+        hasSleepData: !!response.data?.sleepData,
+        sleepDataStatus: response.data?.sleepData?.status,
+        childrenCount: response.data?.sleepData?.children?.length || 0,
+      });
+
+      // Map the API response to use proper enums
+      const mappedData = {
+        ...response.data,
+        sleepData: response.data.sleepData
+          ? {
+              ...response.data.sleepData,
+              status: mapApiStatusToEntityStatus(
+                response.data.sleepData.status
+              ),
+              children:
+                response.data.sleepData.children?.map((child: any) => ({
+                  ...child,
+                  status: mapApiStatusToSleepStatus(child.status),
+                })) || [],
+            }
+          : null,
+      };
+
+      console.log("🔄 [API] getDailyReport data mapped:", {
+        reportId: mappedData?.id,
+        hasSleepData: !!mappedData?.sleepData,
+        sleepDataStatus: mappedData?.sleepData?.status,
+        childrenCount: mappedData?.sleepData?.children?.length || 0,
+      });
+
+      return mappedData;
+    } catch (error: any) {
+      console.error("💥 [API] getDailyReport error:", {
+        error: error,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+      });
+      throw error;
+    }
+  },
+
+  // Get daily reports for all groups on a specific date (for admin users)
+  getDailyReportsByDate: async (date: string) => {
+    const response = await api.get(`/api/v1/daily-reports?date=${date}`, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  },
+
+  // Get daily reports for user's children's groups (for parent users)
+  getDailyReportsForUser: async (date: string) => {
+    const response = await api.get(`/api/v1/daily-reports/user?date=${date}`, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  },
+};
 
 // Attendance API functions
 export const attendanceApi = {
@@ -757,6 +915,101 @@ export const attendanceApi = {
     );
     return response.data;
   },
+};
+
+// Sleep Post API functions
+export interface CreateSleepPostRequest {
+  title: string;
+  groupId: string;
+  groupName: string;
+  sleepDate: string;
+  children: {
+    childId: string;
+    firstName: string;
+    lastName: string;
+    sleepStartTime?: string;
+    sleepEndTime?: string;
+    sleepDuration?: number;
+    notes?: string;
+  }[];
+}
+
+export interface SleepPostResponse {
+  id: string;
+  title: string;
+  groupId: string;
+  groupName: string;
+  sleepDate: string;
+  children: {
+    childId: string;
+    firstName: string;
+    lastName: string;
+    sleepStartTime: string;
+    sleepEndTime: string;
+    sleepDuration: number;
+    notes: string;
+  }[];
+  totalChildren: number;
+  sleepingChildren: number;
+  averageSleepDuration: number;
+  status: "active" | "completed";
+  created: string;
+  updated: string;
+}
+
+// Update daily report with sleep data
+export interface UpdateDailyReportSleepData {
+  childrenSleepData: {
+    title: string;
+    children: {
+      childId: string;
+      status: SleepStatus;
+      comment?: string;
+    }[];
+  };
+}
+
+export const updateDailyReportSleepData = async (
+  dailyReportId: string,
+  sleepData: UpdateDailyReportSleepData
+): Promise<DailyReport> => {
+  try {
+    logger.info("Updating daily report sleep data", { dailyReportId });
+
+    const response = await api.patch(
+      `/api/v1/daily-reports/${dailyReportId}`,
+      sleepData
+    );
+
+    logger.info("Daily report sleep data updated successfully", {
+      dailyReportId,
+    });
+
+    return response.data;
+  } catch (error) {
+    logger.error("Failed to update daily report sleep data", error);
+    throw error;
+  }
+};
+
+export const createSleepPost = async (
+  data: CreateSleepPostRequest
+): Promise<SleepPostResponse> => {
+  try {
+    logger.info("Creating sleep post", { groupId: data.groupId });
+
+    const response = await api.post("/api/v1/sleep-posts", data);
+
+    logger.info("Sleep post created successfully", {
+      id: response.data.id,
+      groupId: data.groupId,
+    });
+
+    return response.data;
+  } catch (error) {
+    logger.error("Failed to create sleep post", error);
+    throw error;
+  }
 };
 
 export default api;

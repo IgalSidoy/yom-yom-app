@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Box, Typography, useTheme } from "@mui/material";
+import {
+  Box,
+  Typography,
+  useTheme,
+  Skeleton,
+  Fade,
+  Slide,
+} from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../config/routes";
 import { useApp } from "../../contexts/AppContext";
 import { useAttendance } from "../../contexts/AttendanceContext";
 import { ApiAttendanceStatus } from "../../types/attendance";
@@ -9,12 +17,23 @@ import QuickActionsSlide from "../../components/dashboard/QuickActionsSlide";
 import StatisticsSlide from "../../components/dashboard/StatisticsSlide";
 import AdditionalInfoSlide from "../../components/dashboard/AdditionalInfoSlide";
 import DateTimeWidget from "../../components/DateTimeWidget";
+import DashboardContainer from "../../components/dashboard/DashboardContainer";
 
 const StaffDashboard: React.FC = () => {
-  const { user } = useApp();
+  const { user, isLoadingUser } = useApp();
   const navigate = useNavigate();
   const theme = useTheme();
-  const { attendanceData, isAttendanceClosed } = useAttendance();
+  const {
+    attendanceData,
+    isAttendanceClosed,
+    isLoading: isAttendanceLoading,
+  } = useAttendance();
+
+  // Check if all data is ready (user loaded and attendance data loaded)
+  const isDataReady = useMemo(() => {
+    // Only show content when user is loaded and attendance data is loaded
+    return !isLoadingUser && !isAttendanceLoading && user !== null;
+  }, [isLoadingUser, isAttendanceLoading, user]);
 
   // Check if attendance is closed (either from context error or attendance data)
   const isAttendanceClosedComputed = useMemo(() => {
@@ -56,7 +75,7 @@ const StaffDashboard: React.FC = () => {
   }, [attendanceData]);
 
   const handleStartAttendance = () => {
-    navigate("/attendance");
+    navigate(ROUTES.ATTENDANCE);
   };
 
   // Create slides array
@@ -72,34 +91,127 @@ const StaffDashboard: React.FC = () => {
     <AdditionalInfoSlide key="additional-info" />,
   ];
 
-  return (
+  // Skeleton components
+  const HeaderSkeleton = () => (
+    <Box sx={{ mb: 3 }}>
+      <Skeleton variant="rectangular" height={60} sx={{ borderRadius: 2 }} />
+    </Box>
+  );
+
+  const SwipeableCardsSkeleton = () => (
     <Box
       sx={{
-        minHeight: "100vh",
-        bgcolor: "background.default",
-        p: 2,
-        dir: "rtl",
-        overflow: "hidden", // Prevent scroll during swipe
+        height: { xs: "calc(100vh - 210px)", sm: "calc(100vh - 240px)" },
+        border: { xs: "none", sm: "1px solid" },
+        borderColor: { xs: "transparent", sm: "divider" },
+        borderRadius: { xs: 0, sm: 2 },
+        boxShadow: { xs: "none", sm: "0 2px 8px rgba(0, 0, 0, 0.1)" },
+        p: 3,
       }}
     >
-      {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <DateTimeWidget
-          showGreeting={true}
-          userName={user?.firstName}
-          variant="full"
-          size="large"
-        />
+      {/* Quick Actions Skeleton */}
+      <Box sx={{ mb: 4 }}>
+        <Skeleton variant="text" width="40%" height={32} sx={{ mb: 2 }} />
+        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 2 }}>
+          <Skeleton
+            variant="rectangular"
+            width={120}
+            height={80}
+            sx={{ borderRadius: 2 }}
+          />
+          <Skeleton
+            variant="rectangular"
+            width={120}
+            height={80}
+            sx={{ borderRadius: 2 }}
+          />
+          <Skeleton
+            variant="rectangular"
+            width={120}
+            height={80}
+            sx={{ borderRadius: 2 }}
+          />
+        </Box>
+        <Skeleton variant="rectangular" height={60} sx={{ borderRadius: 2 }} />
       </Box>
 
-      {/* Swipeable Content */}
-      <SwipeableCards
-        slides={slides}
-        autoplayDelay={8000}
-        spaceBetween={30}
-        className="dashboard-swiper"
-      />
+      {/* Statistics Skeleton */}
+      <Box sx={{ mb: 4 }}>
+        <Skeleton variant="text" width="30%" height={28} sx={{ mb: 2 }} />
+        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+          <Skeleton
+            variant="rectangular"
+            width={100}
+            height={80}
+            sx={{ borderRadius: 2 }}
+          />
+          <Skeleton
+            variant="rectangular"
+            width={100}
+            height={80}
+            sx={{ borderRadius: 2 }}
+          />
+          <Skeleton
+            variant="rectangular"
+            width={100}
+            height={80}
+            sx={{ borderRadius: 2 }}
+          />
+          <Skeleton
+            variant="rectangular"
+            width={100}
+            height={80}
+            sx={{ borderRadius: 2 }}
+          />
+        </Box>
+      </Box>
+
+      {/* Additional Info Skeleton */}
+      <Box>
+        <Skeleton variant="text" width="35%" height={28} sx={{ mb: 2 }} />
+        <Skeleton
+          variant="rectangular"
+          height={120}
+          sx={{ borderRadius: 2, mb: 2 }}
+        />
+        <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
+      </Box>
     </Box>
+  );
+
+  return (
+    <DashboardContainer>
+      {/* Skeleton Loading State */}
+      <Fade in={!isDataReady} timeout={300}>
+        <Box sx={{ display: isDataReady ? "none" : "block" }}>
+          <HeaderSkeleton />
+          <SwipeableCardsSkeleton />
+        </Box>
+      </Fade>
+
+      {/* Actual Dashboard Content */}
+      <Fade in={isDataReady} timeout={800}>
+        <Box sx={{ display: isDataReady ? "block" : "none" }}>
+          {/* Header */}
+          <Box sx={{ mb: 3 }}>
+            <DateTimeWidget
+              showGreeting={true}
+              userName={user?.firstName}
+              variant="full"
+              size="large"
+            />
+          </Box>
+
+          {/* Swipeable Content */}
+          <SwipeableCards
+            slides={slides}
+            autoplayDelay={8000}
+            spaceBetween={30}
+            className="dashboard-swiper"
+          />
+        </Box>
+      </Fade>
+    </DashboardContainer>
   );
 };
 

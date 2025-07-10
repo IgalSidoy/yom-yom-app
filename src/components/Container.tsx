@@ -17,7 +17,7 @@ const Container: React.FC<Props> = ({ children }) => {
     >
       {/* <Navbar /> */}
       <MUIContainer
-        maxWidth="xs"
+        maxWidth="md"
         sx={{
           mt: 2,
           mb: { xs: 10, sm: 8 },

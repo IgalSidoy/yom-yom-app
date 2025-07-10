@@ -49,7 +49,16 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         try {
           setIsLoadingUser(true);
           const response = await userApi.getUser();
-          setUser(response.data);
+          const userData = response.data;
+          setUser(userData);
+
+          // Sync accountId and organizationId from user data
+          if (userData.accountId) {
+            setAccountId(userData.accountId);
+          }
+          if (userData.organizationId) {
+            setOrganizationId(userData.organizationId);
+          }
         } catch (error) {
           // Don't clear the token here, let the auth context handle auth errors
         } finally {

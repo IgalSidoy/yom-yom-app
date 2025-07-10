@@ -132,6 +132,8 @@ const AttendanceChildListItem: React.FC<{
           return <CheckCircleIcon sx={{ color: "#FF9F43", fontSize: 20 }} />;
         case ComponentAttendanceStatus.LATE:
           return <ScheduleIcon sx={{ color: "#3A6EA5", fontSize: 20 }} />;
+
+          return <CheckCircleIcon sx={{ color: "#2E7D32", fontSize: 20 }} />;
         case ComponentAttendanceStatus.MISSING:
         case ComponentAttendanceStatus.SICK:
         case ComponentAttendanceStatus.VACATION:
@@ -148,6 +150,7 @@ const AttendanceChildListItem: React.FC<{
           px: { xs: 0.5, sm: 3 },
           borderBottom: "1px solid",
           borderColor: "rgba(0, 0, 0, 0.04)",
+          bgcolor: "background.default !important",
         }}
       >
         {/* Mobile Layout: Same line */}
@@ -182,6 +185,7 @@ const AttendanceChildListItem: React.FC<{
               availableStatuses={[
                 ApiAttendanceStatus.ARRIVED,
                 ApiAttendanceStatus.LATE,
+
                 ApiAttendanceStatus.SICK,
                 ApiAttendanceStatus.VACATION,
                 ApiAttendanceStatus.MISSING,

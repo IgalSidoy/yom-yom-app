@@ -11,6 +11,7 @@ import SwipeableCards, {
 import ParentQuickActionsSlide from "../../components/dashboard/ParentQuickActionsSlide";
 import ParentChildrenInfoSlide from "../../components/dashboard/ParentChildrenInfoSlide";
 import DateTimeWidget from "../../components/DateTimeWidget";
+import DashboardContainer from "../../components/dashboard/DashboardContainer";
 
 const ParentDashboard: React.FC = () => {
   const { user } = useApp();
@@ -131,15 +132,7 @@ const ParentDashboard: React.FC = () => {
   ];
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        bgcolor: "background.default",
-        p: 2,
-        dir: "rtl",
-        overflow: "hidden", // Prevent scroll during swipe
-      }}
-    >
+    <DashboardContainer>
       {/* Header */}
       <Box sx={{ mb: 3 }}>
         <DateTimeWidget
@@ -158,7 +151,7 @@ const ParentDashboard: React.FC = () => {
         spaceBetween={30}
         className="parent-dashboard-swiper"
       />
-    </Box>
+    </DashboardContainer>
   );
 };
 
