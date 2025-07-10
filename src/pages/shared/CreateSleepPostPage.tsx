@@ -184,19 +184,32 @@ const CreateSleepPostPage: React.FC = () => {
 
   // Handle modal close (cancel)
   const handleClose = () => {
-    navigate(-1); // Go back to previous page
+    navigate("/feed"); // Navigate to feed page
   };
 
   // Handle form submission
   const handleSubmit = async (data: any) => {
     try {
       // Here you would typically call your API to create/update the sleep post
-      console.log("Submitting sleep post data:", data);
+      console.log(
+        "🎯 [CreateSleepPostPage] handleSubmit called with data:",
+        data
+      );
+      console.log(
+        "🎯 [CreateSleepPostPage] Current location:",
+        window.location.pathname
+      );
+      console.log("🎯 [CreateSleepPostPage] About to navigate to feed...");
 
-      // For now, just navigate back
-      navigate(-1);
+      // Navigate to feed page regardless of where user came from
+      setTimeout(() => {
+        navigate("/feed");
+        console.log(
+          "🎯 [CreateSleepPostPage] navigate('/feed') called successfully"
+        );
+      }, 0);
     } catch (error) {
-      console.error("Error submitting sleep post:", error);
+      console.error("❌ [CreateSleepPostPage] Error in handleSubmit:", error);
       // Handle error appropriately
     }
   };

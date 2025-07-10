@@ -271,6 +271,9 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
     new Set()
   );
 
+  // Ref to track if title has been initialized
+  const titleInitializedRef = React.useRef(false);
+
   // Initialize children when modal opens or data changes
   useEffect(() => {
     if (isOpen) {
@@ -311,6 +314,14 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
               sleepDuration: 0,
               notes: sleepChild.comment || "",
             };
+          })
+          // Filter out children who have already finished sleeping
+          .filter((child) => {
+            const hasFinishedSleeping =
+              child.sleepStartTime &&
+              child.sleepEndTime &&
+              !isChildSleeping(child.sleepStartTime, child.sleepEndTime);
+            return !hasFinishedSleeping;
           });
       } else if (children.length > 0) {
         // Use props children
@@ -347,6 +358,14 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
               sleepDuration: 0,
               notes: existingData?.comment || "",
             };
+          })
+          // Filter out children who have already finished sleeping
+          .filter((child) => {
+            const hasFinishedSleeping =
+              child.sleepStartTime &&
+              child.sleepEndTime &&
+              !isChildSleeping(child.sleepStartTime, child.sleepEndTime);
+            return !hasFinishedSleeping;
           });
       }
 
@@ -356,10 +375,11 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
 
   // Initialize title when modal opens or title index changes
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !titleInitializedRef.current) {
       const initialTitle =
         dailyReport?.sleepData?.title || defaultTitles[titleIndex];
       setTitle(initialTitle);
+      titleInitializedRef.current = true;
     }
   }, [isOpen, dailyReport?.sleepData?.title, defaultTitles, titleIndex]);
 
@@ -371,6 +391,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
       setErrors({});
       setIsLoading(false);
       setCompletedChildren(new Set());
+      titleInitializedRef.current = false;
     }
   }, [isOpen]);
 
@@ -384,6 +405,8 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
     const nextIndex = (titleIndex + 1) % defaultTitles.length;
     setTitleIndex(nextIndex);
     setTitle(defaultTitles[nextIndex]);
+    // Reset the initialization flag so the title can be updated
+    titleInitializedRef.current = false;
   }, [titleIndex, defaultTitles]);
 
   // Update child sleep state
@@ -458,6 +481,14 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
 
   // Submit handler
   const handleSubmit = useCallback(async () => {
+    console.log("🎯 [CreateSleepPostModal] handleSubmit function called");
+
+    // Prevent multiple submissions
+    if (isLoading) {
+      console.log("🎯 [CreateSleepPostModal] Already loading, ignoring submit");
+      return;
+    }
+
     try {
       setIsLoading(true);
       setErrors({});
@@ -469,7 +500,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
         newErrors.title = "כותרת היא שדה חובה";
       }
 
-      // Count children with sleep data
+      // Count children with sleep data (only children who haven't finished sleeping are shown)
       const childrenWithSleepData = sleepChildren.filter((child) => {
         const isSleeping = isChildSleeping(
           child.sleepStartTime,
@@ -499,7 +530,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
         return;
       }
 
-      // Prepare sleep data for the API
+      // Prepare sleep data for the API (only children who haven't finished sleeping are included)
       const sleepData = {
         childrenSleepData: {
           title: title.trim(),
@@ -531,10 +562,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
         },
       };
 
-      // Update the daily report
-      await updateDailyReportSleepData(dailyReport.id, sleepData);
-
-      // Call the original onSubmit
+      // Call the original onSubmit first to ensure navigation happens
       const formData: CreateSleepPostData = {
         title: title.trim(),
         groupId,
@@ -543,8 +571,27 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
         children: sleepChildren,
       };
 
+      console.log(
+        "🎯 [CreateSleepPostModal] About to call onSubmit with data:",
+        formData
+      );
+
+      // Call onSubmit to trigger navigation immediately
       onSubmit(formData);
-      setIsLoading(false);
+
+      console.log("🎯 [CreateSleepPostModal] onSubmit called successfully");
+
+      // Update the daily report in the background
+      setTimeout(async () => {
+        try {
+          await updateDailyReportSleepData(dailyReport.id, sleepData);
+        } catch (apiError) {
+          console.error(
+            "API update failed but navigation should continue:",
+            apiError
+          );
+        }
+      }, 100);
     } catch (error) {
       console.error("Error updating sleep data:", error);
       setErrors({
@@ -555,12 +602,23 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
       });
       setIsLoading(false);
     }
-  }, [title, sleepChildren, dailyReport?.id, groupId, groupName, onSubmit]);
+  }, [
+    title,
+    sleepChildren,
+    dailyReport?.id,
+    groupId,
+    groupName,
+    onSubmit,
+    isLoading,
+  ]);
 
   // Count sleeping children
   const sleepingChildrenCount = sleepChildren.filter((child) =>
     isChildSleeping(child.sleepStartTime, child.sleepEndTime)
   ).length;
+
+  // Count total children available for sleep marking
+  const totalChildrenCount = sleepChildren.length;
 
   // Memoize callback functions to prevent unnecessary re-renders
   const handleStartSleep = React.useCallback(
@@ -803,7 +861,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Chip
-                label={`${sleepingChildrenCount} ילדים ישנים`}
+                label={`${sleepingChildrenCount}/${totalChildrenCount} ילדים ישנים`}
                 color="primary"
                 size="small"
               />
@@ -843,6 +901,22 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
               סיים שינה לכולם
             </Button>
           </Box>
+
+          {/* Info about filtered children */}
+          {dailyReport?.sleepData?.children &&
+            dailyReport.sleepData.children.some((child) => {
+              const hasFinishedSleeping =
+                child.startTimestamp &&
+                child.endTimestamp &&
+                child.startTimestamp !== "0001-01-01T00:00:00" &&
+                child.endTimestamp !== "0001-01-01T00:00:00" &&
+                !isChildSleeping(child.startTimestamp, child.endTimestamp);
+              return hasFinishedSleeping;
+            }) && (
+              <Alert severity="info" sx={{ mb: 1, fontSize: "0.875rem" }}>
+                ילדים שכבר סיימו לישון לא מוצגים ברשימה זו
+              </Alert>
+            )}
 
           {errors.children && (
             <Alert severity="error" sx={{ mb: 1 }}>

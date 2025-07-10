@@ -236,7 +236,7 @@ const QuickActionsSlide: React.FC<QuickActionsSlideProps> = ({
               boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
             },
           }}
-          onClick={() => navigate(ROUTES.CREATE_SLEEP_POST)}
+          onClick={() => navigate(ROUTES.SLEEP_POST)}
         >
           <CardContent sx={{ p: 2.5 }}>
             <Box

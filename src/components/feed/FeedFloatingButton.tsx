@@ -104,7 +104,7 @@ const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
         onClick={handleOpen}
         disabled={isLoading || externalLoading}
         sx={{
-          position: "absolute",
+          position: "fixed",
           bottom: { xs: 80, sm: 24 }, // More space from bottom nav on mobile, 24px on desktop
           right: 24, // Right side on both mobile and desktop
           left: "auto", // Auto on both mobile and desktop

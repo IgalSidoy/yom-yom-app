@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Alert } from "@mui/material";
+import React, { useState, useEffect } from "react";
+import { Alert, Box, Typography, Chip, Avatar } from "@mui/material";
 import {
   AttendancePost,
   SleepPost,
@@ -98,6 +98,7 @@ const ParentFeed: React.FC = () => {
       title="חדשות הילדים - הורים"
       subtitle="צפה בחדשות ועדכונים על ילדיך מהגן"
       isLoading={isFeedLoading}
+      showFloatingButton={false}
     >
       {/* Parent-specific info alert */}
       <Alert severity="info" sx={{ mb: 2 }}>

@@ -5,16 +5,9 @@ import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../config/routes";
 import Container from "../Container";
 import { FeedFloatingButton } from "./index";
-import CreateSleepPostModal from "./CreateSleepPostModal";
-import SleepPostErrorBoundary from "./SleepPostErrorBoundary";
 import { useAttendance } from "../../contexts/AttendanceContext";
 import { useDailyReport } from "../../contexts/DailyReportContext";
-import { Child, updateDailyReportSleepData } from "../../services/api";
-import {
-  CreateSleepPostData,
-  SleepPost as SleepPostType,
-} from "../../types/posts";
-import { SleepStatus } from "../../types/enums";
+import { Child } from "../../services/api";
 
 interface FeedContainerProps {
   title: string;
@@ -47,82 +40,8 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
     isLoading: isDailyReportLoading,
   } = useDailyReport();
 
-  // State for sleep post creation
-  const [isSleepModalOpen, setIsSleepModalOpen] = useState(false);
+  // State for post creation
   const [isCreatingPost, setIsCreatingPost] = useState(false);
-
-  // Get children data from daily report or attendance context
-  const childrenData: Child[] =
-    dailyReport?.sleepData?.children?.map((reportChild) => ({
-      id: reportChild.childId,
-      firstName: reportChild.firstName,
-      lastName: reportChild.lastName,
-      dateOfBirth: "", // Not available in daily report
-      accountId: dailyReport.accountId,
-      groupId: dailyReport.groupId,
-      groupName: attendanceData?.groupName || "גן א",
-      parents: [], // Parents data not available in daily report
-    })) ||
-    attendanceData?.children?.map((attendanceChild) => ({
-      id: attendanceChild.childId,
-      firstName: attendanceChild.firstName,
-      lastName: attendanceChild.lastName,
-      dateOfBirth: attendanceChild.dateOfBirth || "",
-      accountId: attendanceData.accountId,
-      groupId: attendanceData.groupId,
-      groupName: attendanceData.groupName,
-      parents: [], // Parents data not available in attendance context
-    })) ||
-    [];
-
-  const handleSleepPostSubmit = async (data: CreateSleepPostData) => {
-    try {
-      setIsCreatingPost(true);
-
-      // Check if we have the daily report
-      if (!dailyReport?.id) {
-        throw new Error("Daily report not found. Please try again.");
-      }
-
-      // Prepare sleep data for all children in the group
-      const allChildrenData = childrenData.map((child) => {
-        const sleepingChild = data.children.find((c) => c.childId === child.id);
-
-        // Determine if child is currently sleeping
-        const isCurrentlySleeping =
-          sleepingChild &&
-          sleepingChild.sleepStartTime &&
-          !sleepingChild.sleepEndTime; // Child is sleeping if they have start time but no end time
-
-        return {
-          childId: child.id || "",
-          status: isCurrentlySleeping
-            ? SleepStatus.Sleeping
-            : SleepStatus.Awake,
-          comment: sleepingChild?.notes || "",
-        };
-      });
-
-      // Make API call to update daily report with sleep data
-      const response = await updateDailyReportSleepData(dailyReport.id, {
-        childrenSleepData: {
-          title: data.title,
-          children: allChildrenData,
-        },
-      });
-
-      // TODO: Add the new sleep post to the feed state
-      // This should be handled by the parent component
-      // For now, we'll just close the modal
-
-      setIsSleepModalOpen(false);
-    } catch (error) {
-      console.error("Failed to update sleep data:", error);
-      // TODO: Show error message to user
-    } finally {
-      setIsCreatingPost(false);
-    }
-  };
 
   const handlePostTypeSelect = async (postType: string) => {
     // Call the parent's onPostTypeSelect if provided
@@ -134,14 +53,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
     switch (postType) {
       case "sleep":
         // Navigate to the sleep post creation page
-        navigate(ROUTES.CREATE_SLEEP_POST, {
-          state: {
-            groupId: dailyReport?.groupId || attendanceData?.groupId,
-            groupName: attendanceData?.groupName,
-            children: childrenData,
-            dailyReport: dailyReport,
-          },
-        });
+        navigate(ROUTES.SLEEP_POST);
         break;
       case "snack":
         // TODO: Implement snack post creation
@@ -481,23 +393,6 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
           </Box>
         </Box>
       )}
-
-      {/* Sleep Post Creation Modal with Error Boundary */}
-      <SleepPostErrorBoundary
-        onClose={() => setIsSleepModalOpen(false)}
-        onRetry={() => {}}
-      >
-        <CreateSleepPostModal
-          isOpen={isSleepModalOpen}
-          onClose={() => setIsSleepModalOpen(false)}
-          onSubmit={handleSleepPostSubmit}
-          children={childrenData}
-          groupName={attendanceData?.groupName || "גן א"}
-          groupId={dailyReport?.groupId || attendanceData?.groupId || "group1"}
-          isLoadingDailyReport={isDailyReportLoading}
-          dailyReport={dailyReport}
-        />
-      </SleepPostErrorBoundary>
     </Box>
   );
 };

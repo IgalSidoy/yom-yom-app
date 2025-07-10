@@ -71,10 +71,10 @@ const StaffOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const AppRoutes: React.FC = () => {
   const location = useLocation();
 
-  // Hide bottom navigation for create sleep post page
-  const shouldShowBottomNav = !location.pathname.includes(
-    ROUTES.CREATE_SLEEP_POST
-  );
+  // Hide bottom navigation for create sleep post page and login page
+  const shouldShowBottomNav =
+    !location.pathname.includes(ROUTES.SLEEP_POST) &&
+    !location.pathname.includes(ROUTES.LOGIN);
 
   return (
     <>
@@ -98,6 +98,17 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
+          path={ROUTES.SLEEP_POST}
+          element={
+            <ProtectedRoute>
+              <StaffOnly>
+                <CreateSleepPostPage />
+              </StaffOnly>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path={ROUTES.FEED}
           element={
             <ProtectedRoute>
@@ -105,22 +116,13 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
+
         <Route
           path={ROUTES.ATTENDANCE}
           element={
             <ProtectedRoute>
               <StaffOnly>
                 <Attendance />
-              </StaffOnly>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={ROUTES.CREATE_SLEEP_POST}
-          element={
-            <ProtectedRoute>
-              <StaffOnly>
-                <CreateSleepPostPage />
               </StaffOnly>
             </ProtectedRoute>
           }

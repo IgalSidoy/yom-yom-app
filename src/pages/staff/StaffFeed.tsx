@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Alert, Box, Typography, Chip, Avatar } from "@mui/material";
 import {
   AttendancePost,
   SleepPost,
@@ -14,18 +15,21 @@ import { Child } from "../../services/api";
 import { useAttendance } from "../../contexts/AttendanceContext";
 import { useApp } from "../../contexts/AppContext";
 import { useDailyReport } from "../../contexts/DailyReportContext";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../config/routes";
 
 const StaffFeed: React.FC = () => {
   const { attendanceData } = useAttendance();
   const { user } = useApp();
-  const { dailyReport } = useDailyReport();
-
-  // Mock sleep posts for demonstration
-  const [sleepPosts, setSleepPosts] = useState<SleepPostType[]>([]);
+  const { dailyReport, fetchDailyReport } = useDailyReport();
+  const navigate = useNavigate();
 
   // Loading states
   const [isFeedLoading, setIsFeedLoading] = useState(false);
   const [isPostsLoading, setIsPostsLoading] = useState(false);
+
+  // Mock sleep posts for demonstration
+  const [sleepPosts, setSleepPosts] = useState<SleepPostType[]>([]);
 
   // Mock data for staff's group only
   const mockStaffAttendancePosts = [
@@ -59,15 +63,69 @@ const StaffFeed: React.FC = () => {
     },
   ];
 
-  const handleViewDetails = (id: string) => {};
+  // Mock sleep posts for staff
+  const mockStaffSleepPosts = [
+    {
+      id: "1",
+      type: "sleep" as const,
+      title: "שנת צהריים - גן א",
+      groupName: "גן א",
+      sleepDate: "יום שני, 15 בינואר 2024",
+      children: [
+        {
+          childId: "child1",
+          firstName: "יוסי",
+          lastName: "כהן",
+          sleepDuration: 120,
+        },
+        {
+          childId: "child2",
+          firstName: "שרה",
+          lastName: "לוי",
+          sleepDuration: 90,
+        },
+      ],
+      totalChildren: 2,
+      sleepingChildren: 2,
+      averageSleepDuration: 105,
+      status: "active" as const,
+      teacherName: "שרה כהן",
+      teacherAvatar: "https://randomuser.me/api/portraits/women/32.jpg",
+      publishDate: "יום שני, 15 בינואר 2024 12:30",
+      isLiked: true,
+      likeCount: 8,
+    },
+  ];
 
-  const handleEdit = (id: string) => {};
+  useEffect(() => {
+    // Initialize sleep posts with mock data
+    setSleepPosts(mockStaffSleepPosts);
+  }, []);
 
-  const handleLike = (id: string) => {};
+  const handleViewDetails = (id: string) => {
+    console.log("View details for post:", id);
+  };
+
+  const handleEdit = (id: string) => {
+    console.log("Edit post:", id);
+  };
+
+  const handleLike = (id: string) => {
+    console.log("Like post:", id);
+  };
 
   // Post type selection handler
   const handlePostTypeSelect = async (postType: string) => {
-    // This will be handled by FeedContainer
+    switch (postType) {
+      case "sleep":
+        navigate(ROUTES.SLEEP_POST);
+        break;
+      case "attendance":
+        navigate(ROUTES.ATTENDANCE);
+        break;
+      default:
+        console.log("Unknown post type:", postType);
+    }
   };
 
   return (
@@ -80,6 +138,11 @@ const StaffFeed: React.FC = () => {
       onPostTypeSelect={handlePostTypeSelect}
       headerContent={<FetchDailyReportButton />}
     >
+      {/* Staff-specific info alert */}
+      <Alert severity="info" sx={{ mb: 2 }}>
+        כאן תוכלו לראות את כל המידע והעדכונים על קבוצתכם
+      </Alert>
+
       {/* Render sleep posts first */}
       {sleepPosts.map((post) => (
         <SleepPostErrorBoundary
@@ -88,7 +151,7 @@ const StaffFeed: React.FC = () => {
             setSleepPosts((prev) => prev.filter((p) => p.id !== post.id));
           }}
           onRetry={() => {
-            // Retry logic here
+            console.log("Retrying sleep post render:", post.id);
           }}
         >
           <SleepPost
@@ -110,6 +173,12 @@ const StaffFeed: React.FC = () => {
           onLike={handleLike}
         />
       ))}
+
+      {sleepPosts.length === 0 && mockStaffAttendancePosts.length === 0 && (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          אין עדיין חדשות להצגה
+        </Alert>
+      )}
     </FeedContainer>
   );
 };
