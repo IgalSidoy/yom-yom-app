@@ -729,8 +729,13 @@ const DailyAttendance: React.FC = () => {
       // Show success notification
       showNotification("נוכחות נסגרה בהצלחה", "success");
 
-      // Close dialog and navigate
+      // Close dialog and navigate to dashboard
       setShowCompleteDialog(false);
+
+      // Navigate to dashboard after a short delay to show the success message
+      setTimeout(() => {
+        navigate(ROUTES.DASHBOARD);
+      }, 1500);
     } catch (error) {
       console.error("Failed to close attendance session:", error);
 
