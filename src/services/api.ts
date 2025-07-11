@@ -7,6 +7,7 @@ import axios, {
 import { logger } from "../utils/logger";
 import { SleepStatus, EntityStatus } from "../types/enums";
 import { ApiAttendanceStatus } from "../types/attendance";
+import { FeedPost } from "../types/posts";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
@@ -1010,6 +1011,37 @@ export const createSleepPost = async (
     logger.error("Failed to create sleep post", error);
     throw error;
   }
+};
+
+// Feed API functions
+export const feedApi = {
+  getFeedByGroup: async (
+    groupId: string,
+    date: string
+  ): Promise<FeedPost[]> => {
+    try {
+      logger.info("Fetching feed for group", { groupId, date });
+
+      const response = await api.get(`/api/v1/feed/${groupId}?date=${date}`, {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      });
+
+      logger.info("Feed fetched successfully", {
+        groupId,
+        date,
+        postCount: response.data.length,
+      });
+
+      return response.data;
+    } catch (error) {
+      logger.error("Failed to fetch feed", error);
+      throw error;
+    }
+  },
 };
 
 export default api;

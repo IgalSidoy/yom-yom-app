@@ -1,25 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { Alert, Box, Typography, Chip, Avatar } from "@mui/material";
+import { Alert, Box } from "@mui/material";
 import {
-  AttendancePost,
-  SleepPost,
-  SleepPostErrorBoundary,
   FeedContainer,
   FetchDailyReportButton,
+  FeedDatePicker,
+  FeedPost,
 } from "../../components/feed";
-import {
-  CreateSleepPostData,
-  SleepPost as SleepPostType,
-} from "../../types/posts";
-import { Child } from "../../services/api";
-import { useAttendance } from "../../contexts/AttendanceContext";
 import { useApp } from "../../contexts/AppContext";
 import { useDailyReport } from "../../contexts/DailyReportContext";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../config/routes";
+import { feedApi } from "../../services/api";
+import { FeedPost as FeedPostType } from "../../types/posts";
+import dayjs, { Dayjs } from "dayjs";
 
 const StaffFeed: React.FC = () => {
-  const { attendanceData } = useAttendance();
   const { user } = useApp();
   const { dailyReport, fetchDailyReport } = useDailyReport();
   const navigate = useNavigate();
@@ -28,79 +23,42 @@ const StaffFeed: React.FC = () => {
   const [isFeedLoading, setIsFeedLoading] = useState(false);
   const [isPostsLoading, setIsPostsLoading] = useState(false);
 
-  // Mock sleep posts for demonstration
-  const [sleepPosts, setSleepPosts] = useState<SleepPostType[]>([]);
+  // Feed data state
+  const [feedPosts, setFeedPosts] = useState<FeedPostType[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
 
-  // Mock data for staff's group only
-  const mockStaffAttendancePosts = [
-    {
-      id: "1",
-      title: "נוכחות יומית - גן א",
-      groupName: "גן א",
-      attendanceDate: "יום שני, 15 בינואר 2024",
-      presentCount: 18,
-      totalCount: 22,
-      status: "completed" as const,
-      teacherName: "שרה כהן",
-      teacherAvatar: "https://randomuser.me/api/portraits/women/32.jpg",
-      publishDate: "יום שני, 15 בינואר 2024 08:30",
-      isLiked: true,
-      likeCount: 5,
-    },
-    {
-      id: "2",
-      title: "נוכחות בוקר - גן א",
-      groupName: "גן א",
-      attendanceDate: "יום שני, 15 בינואר 2024",
-      presentCount: 15,
-      totalCount: 20,
-      status: "in-progress" as const,
-      teacherName: "דוד לוי",
-      teacherAvatar: "https://randomuser.me/api/portraits/men/45.jpg",
-      publishDate: "יום שני, 15 בינואר 2024 09:15",
-      isLiked: false,
-      likeCount: 3,
-    },
-  ];
+  // Fetch feed data
+  const fetchFeedData = async (date: Dayjs) => {
+    if (!user?.groupId) {
+      console.warn("No group ID available for user");
+      return;
+    }
 
-  // Mock sleep posts for staff
-  const mockStaffSleepPosts = [
-    {
-      id: "1",
-      type: "sleep" as const,
-      title: "שנת צהריים - גן א",
-      groupName: "גן א",
-      sleepDate: "יום שני, 15 בינואר 2024",
-      children: [
-        {
-          childId: "child1",
-          firstName: "יוסי",
-          lastName: "כהן",
-          sleepDuration: 120,
-        },
-        {
-          childId: "child2",
-          firstName: "שרה",
-          lastName: "לוי",
-          sleepDuration: 90,
-        },
-      ],
-      totalChildren: 2,
-      sleepingChildren: 2,
-      averageSleepDuration: 105,
-      status: "active" as const,
-      teacherName: "שרה כהן",
-      teacherAvatar: "https://randomuser.me/api/portraits/women/32.jpg",
-      publishDate: "יום שני, 15 בינואר 2024 12:30",
-      isLiked: true,
-      likeCount: 8,
-    },
-  ];
+    setIsFeedLoading(true);
+    try {
+      const formattedDate = date.format("YYYY-MM-DD");
+      const posts = await feedApi.getFeedByGroup(user.groupId, formattedDate);
+      setFeedPosts(posts);
+    } catch (error) {
+      console.error("Failed to fetch feed data:", error);
+      setFeedPosts([]);
+    } finally {
+      setIsFeedLoading(false);
+    }
+  };
 
+  // Handle date change
+  const handleDateChange = (date: Dayjs) => {
+    setSelectedDate(date);
+    fetchFeedData(date);
+  };
+
+  // Initial data fetch
   useEffect(() => {
-    // Initialize sleep posts with mock data
-    setSleepPosts(mockStaffSleepPosts);
-  }, []);
+    if (user?.groupId) {
+      fetchFeedData(selectedDate);
+    }
+  }, [user?.groupId]);
 
   const handleViewDetails = (id: string) => {
     console.log("View details for post:", id);
@@ -128,6 +86,18 @@ const StaffFeed: React.FC = () => {
     }
   };
 
+  // Header content with date picker
+  const headerContent = (
+    <Box>
+      <FetchDailyReportButton />
+      <FeedDatePicker
+        selectedDate={selectedDate}
+        onDateChange={handleDateChange}
+        label="בחר תאריך לצפייה בפיד"
+      />
+    </Box>
+  );
+
   return (
     <FeedContainer
       title="הזנת חדשות - צוות"
@@ -136,47 +106,28 @@ const StaffFeed: React.FC = () => {
       isPostsLoading={isPostsLoading}
       showFloatingButton={true}
       onPostTypeSelect={handlePostTypeSelect}
-      headerContent={<FetchDailyReportButton />}
+      headerContent={headerContent}
     >
       {/* Staff-specific info alert */}
       <Alert severity="info" sx={{ mb: 2 }}>
         כאן תוכלו לראות את כל המידע והעדכונים על קבוצתכם
       </Alert>
 
-      {/* Render sleep posts first */}
-      {sleepPosts.map((post) => (
-        <SleepPostErrorBoundary
-          key={post.id}
-          onClose={() => {
-            setSleepPosts((prev) => prev.filter((p) => p.id !== post.id));
-          }}
-          onRetry={() => {
-            console.log("Retrying sleep post render:", post.id);
-          }}
-        >
-          <SleepPost
-            {...post}
+      {/* Render feed posts from API */}
+      {feedPosts.length > 0 ? (
+        feedPosts.map((post) => (
+          <FeedPost
+            key={post.id}
+            post={post}
             onViewDetails={handleViewDetails}
             onEdit={handleEdit}
             onLike={handleLike}
+            canEdit={true}
           />
-        </SleepPostErrorBoundary>
-      ))}
-
-      {/* Render attendance posts */}
-      {mockStaffAttendancePosts.map((post) => (
-        <AttendancePost
-          key={post.id}
-          {...post}
-          onViewDetails={handleViewDetails}
-          onEdit={handleEdit}
-          onLike={handleLike}
-        />
-      ))}
-
-      {sleepPosts.length === 0 && mockStaffAttendancePosts.length === 0 && (
+        ))
+      ) : (
         <Alert severity="info" sx={{ mt: 2 }}>
-          אין עדיין חדשות להצגה
+          אין עדיין חדשות להצגה לתאריך זה
         </Alert>
       )}
     </FeedContainer>

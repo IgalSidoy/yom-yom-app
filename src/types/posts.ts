@@ -10,6 +10,56 @@ export interface BasePost {
   groupName: string;
 }
 
+// Feed API response types
+export interface FeedChildSleepData {
+  childId: string;
+  childFirstName: string;
+  childLastName: string;
+  status: "Awake" | "Sleeping" | "Asleep";
+  startTimestamp: string;
+  endTimestamp: string;
+  updatedByUserId: string;
+}
+
+export interface FeedChildAttendanceData {
+  childId: string;
+  childFirstName: string;
+  childLastName: string;
+  status: "Present" | "Late" | "Sick" | "Absent";
+  checkInTime: string;
+  updatedByUserId: string;
+}
+
+export interface SleepMetadata {
+  childrenSleepData: FeedChildSleepData[];
+}
+
+export interface AttendanceMetadata {
+  childrenAttendanceData: FeedChildAttendanceData[];
+}
+
+export interface FeedPost {
+  id: string;
+  created: string;
+  updated: string;
+  organizationId: string;
+  accountId: string;
+  groupId: string;
+  createdById: string;
+  type: "SleepPost" | "AttendancePost";
+  title: string;
+  description: string;
+  activityDate: string;
+  isRead: boolean;
+  priority: number;
+  groupName: string;
+  sourceEntityId: string;
+  metadata: {
+    sleepMetadata?: SleepMetadata;
+    attendanceMetadata?: AttendanceMetadata;
+  };
+}
+
 // Sleep post specific types
 export interface SleepChild {
   childId: string;

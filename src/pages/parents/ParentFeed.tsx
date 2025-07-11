@@ -1,89 +1,53 @@
 import React, { useState, useEffect } from "react";
-import { Alert, Box, Typography, Chip, Avatar } from "@mui/material";
-import {
-  AttendancePost,
-  SleepPost,
-  SleepPostErrorBoundary,
-  FeedContainer,
-} from "../../components/feed";
-import { Child } from "../../services/api";
-import { useAttendance } from "../../contexts/AttendanceContext";
+import { Alert } from "@mui/material";
+import { FeedContainer, FeedDatePicker, FeedPost } from "../../components/feed";
 import { useApp } from "../../contexts/AppContext";
-import { useDailyReport } from "../../contexts/DailyReportContext";
+import { feedApi } from "../../services/api";
+import { FeedPost as FeedPostType } from "../../types/posts";
+import dayjs, { Dayjs } from "dayjs";
 
 const ParentFeed: React.FC = () => {
-  const { attendanceData } = useAttendance();
   const { user } = useApp();
-  const { dailyReport } = useDailyReport();
 
   // Loading states
   const [isFeedLoading, setIsFeedLoading] = useState(false);
 
-  // Mock data for parent's children's group
-  const mockParentAttendancePosts = [
-    {
-      id: "1",
-      title: "נוכחות יומית - גן א",
-      groupName: "גן א",
-      attendanceDate: "יום שני, 15 בינואר 2024",
-      presentCount: 18,
-      totalCount: 22,
-      status: "completed" as const,
-      teacherName: "שרה כהן",
-      teacherAvatar: "https://randomuser.me/api/portraits/women/32.jpg",
-      publishDate: "יום שני, 15 בינואר 2024 08:30",
-      isLiked: true,
-      likeCount: 5,
-    },
-    {
-      id: "2",
-      title: "נוכחות בוקר - גן א",
-      groupName: "גן א",
-      attendanceDate: "יום שני, 15 בינואר 2024",
-      presentCount: 15,
-      totalCount: 20,
-      status: "in-progress" as const,
-      teacherName: "דוד לוי",
-      teacherAvatar: "https://randomuser.me/api/portraits/men/45.jpg",
-      publishDate: "יום שני, 15 בינואר 2024 09:15",
-      isLiked: false,
-      likeCount: 3,
-    },
-  ];
+  // Feed data state
+  const [feedPosts, setFeedPosts] = useState<FeedPostType[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
 
-  // Mock sleep posts for parent's children
-  const mockParentSleepPosts = [
-    {
-      id: "1",
-      type: "sleep" as const,
-      title: "שנת צהריים - גן א",
-      groupName: "גן א",
-      sleepDate: "יום שני, 15 בינואר 2024",
-      children: [
-        {
-          childId: "child1",
-          firstName: "יוסי",
-          lastName: "כהן",
-          sleepDuration: 120,
-        },
-        {
-          childId: "child2",
-          firstName: "שרה",
-          lastName: "לוי",
-          sleepDuration: 90,
-        },
-      ],
-      totalChildren: 2,
-      sleepingChildren: 2,
-      averageSleepDuration: 105,
-      status: "active" as const,
-      teacherName: "שרה כהן",
-      teacherAvatar: "https://randomuser.me/api/portraits/women/32.jpg",
-      publishDate: "יום שני, 15 בינואר 2024 12:30",
-      isLiked: true,
-      likeCount: 8,
-    },
-  ];
+  // Fetch feed data for parent
+  const fetchFeedData = async (date: Dayjs) => {
+    if (!user?.groupId) {
+      console.warn("No group ID available for parent");
+      return;
+    }
+
+    setIsFeedLoading(true);
+    try {
+      const formattedDate = date.format("YYYY-MM-DD");
+      const posts = await feedApi.getFeedByGroup(user.groupId, formattedDate);
+      setFeedPosts(posts);
+    } catch (error) {
+      console.error("Failed to fetch feed data:", error);
+      setFeedPosts([]);
+    } finally {
+      setIsFeedLoading(false);
+    }
+  };
+
+  // Handle date change
+  const handleDateChange = (date: Dayjs) => {
+    setSelectedDate(date);
+    fetchFeedData(date);
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    if (user?.groupId) {
+      fetchFeedData(selectedDate);
+    }
+  }, [user?.groupId]);
 
   const handleViewDetails = (id: string) => {
     console.log("View details for post:", id);
@@ -93,55 +57,44 @@ const ParentFeed: React.FC = () => {
     console.log("Like post:", id);
   };
 
+  // Header content with date picker
+  const headerContent = (
+    <FeedDatePicker
+      selectedDate={selectedDate}
+      onDateChange={handleDateChange}
+      label="בחר תאריך לצפייה בפיד"
+    />
+  );
+
   return (
     <FeedContainer
       title="חדשות הילדים - הורים"
       subtitle="צפה בחדשות ועדכונים על ילדיך מהגן"
       isLoading={isFeedLoading}
       showFloatingButton={false}
+      headerContent={headerContent}
     >
       {/* Parent-specific info alert */}
       <Alert severity="info" sx={{ mb: 2 }}>
         צפה בחדשות ועדכונים על ילדיך מהגן
       </Alert>
 
-      {/* Render sleep posts first */}
-      {mockParentSleepPosts.map((post) => (
-        <SleepPostErrorBoundary
-          key={post.id}
-          onClose={() => {
-            console.log("Sleep post error, removing from view");
-          }}
-          onRetry={() => {
-            console.log("Retrying sleep post render:", post.id);
-          }}
-        >
-          <SleepPost
-            {...post}
+      {/* Render feed posts from API */}
+      {feedPosts.length > 0 ? (
+        feedPosts.map((post) => (
+          <FeedPost
+            key={post.id}
+            post={post}
             onViewDetails={handleViewDetails}
-            onEdit={() => {}} // Parents can't edit
             onLike={handleLike}
+            canEdit={false} // Parents can't edit posts
           />
-        </SleepPostErrorBoundary>
-      ))}
-
-      {/* Render attendance posts */}
-      {mockParentAttendancePosts.map((post) => (
-        <AttendancePost
-          key={post.id}
-          {...post}
-          onViewDetails={handleViewDetails}
-          onEdit={() => {}} // Parents can't edit
-          onLike={handleLike}
-        />
-      ))}
-
-      {mockParentSleepPosts.length === 0 &&
-        mockParentAttendancePosts.length === 0 && (
-          <Alert severity="info" sx={{ mt: 2 }}>
-            אין עדיין חדשות להצגה
-          </Alert>
-        )}
+        ))
+      ) : (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          אין עדיין חדשות להצגה לתאריך זה
+        </Alert>
+      )}
     </FeedContainer>
   );
 };
