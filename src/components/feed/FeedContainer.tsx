@@ -4,7 +4,7 @@ import { Skeleton, Fade, Slide, Box as MuiBox } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../config/routes";
 import Container from "../Container";
-import { FeedFloatingButton } from "./index";
+import FeedFloatingButton from "./FeedFloatingButton";
 import { useAttendance } from "../../contexts/AttendanceContext";
 import { useDailyReport } from "../../contexts/DailyReportContext";
 import { Child } from "../../services/api";

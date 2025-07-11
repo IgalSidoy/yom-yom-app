@@ -249,11 +249,14 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
   // Default title variations - memoized to prevent infinite loops
   const defaultTitles = React.useMemo(
     () => [
-      "שינת צהריים - " + groupName,
-      "דיווח שינה יומי - " + groupName,
-      "מעקב שינת ילדים - " + groupName,
-      "שינת ילדים - " + groupName,
-      "דיווח שנת צהריים - " + groupName,
+      "😴 שינת צהריים מתוקה - " + groupName,
+      "🌙 דיווח שינה יומי - " + groupName,
+      "💤 מעקב שינת ילדים - " + groupName,
+      "🛏️ שינת ילדים - " + groupName,
+      "✨ דיווח שנת צהריים - " + groupName,
+      "🌟 שינת ילדים מאושרים - " + groupName,
+      "💫 דיווח שינה יומי - " + groupName,
+      "🌠 שינת צהריים רגועה - " + groupName,
     ],
     [groupName]
   );
@@ -375,11 +378,17 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
 
   // Initialize title when modal opens or title index changes
   useEffect(() => {
-    if (isOpen && !titleInitializedRef.current) {
-      const initialTitle =
-        dailyReport?.sleepData?.title || defaultTitles[titleIndex];
-      setTitle(initialTitle);
-      titleInitializedRef.current = true;
+    if (isOpen) {
+      if (!titleInitializedRef.current) {
+        // Initial load - use daily report title or default title
+        const initialTitle =
+          dailyReport?.sleepData?.title || defaultTitles[titleIndex];
+        setTitle(initialTitle);
+        titleInitializedRef.current = true;
+      } else {
+        // Title index changed (random button clicked) - update title
+        setTitle(defaultTitles[titleIndex]);
+      }
     }
   }, [isOpen, dailyReport?.sleepData?.title, defaultTitles, titleIndex]);
 
@@ -391,6 +400,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
       setErrors({});
       setIsLoading(false);
       setCompletedChildren(new Set());
+      setCelebratingChildren(new Set());
       titleInitializedRef.current = false;
     }
   }, [isOpen]);
@@ -404,10 +414,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
   const handleNextTitle = useCallback(() => {
     const nextIndex = (titleIndex + 1) % defaultTitles.length;
     setTitleIndex(nextIndex);
-    setTitle(defaultTitles[nextIndex]);
-    // Reset the initialization flag so the title can be updated
-    titleInitializedRef.current = false;
-  }, [titleIndex, defaultTitles]);
+  }, [titleIndex, defaultTitles.length]);
 
   // Update child sleep state
   const updateChildSleep = useCallback(

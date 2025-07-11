@@ -70,13 +70,16 @@ const CreateSleepPostPage: React.FC = () => {
         let currentGroupName = "";
         let currentChildren: Child[] = [];
 
-        // If we have data from navigation state, use it
+        // If we have complete data from navigation state, use it
         if (
           locationState?.groupId &&
           locationState?.groupName &&
-          locationState?.children
+          locationState?.children &&
+          locationState.children.length > 0
         ) {
-          console.log("📍 [CreateSleepPostPage] Using navigation state data");
+          console.log(
+            "📍 [CreateSleepPostPage] Using complete navigation state data"
+          );
           currentGroupId = locationState.groupId;
           currentGroupName = locationState.groupName;
           currentChildren = locationState.children;
@@ -108,7 +111,7 @@ const CreateSleepPostPage: React.FC = () => {
             user.groupId
           );
           currentGroupId = user.groupId;
-          currentGroupName = "קבוצה"; // Default group name
+          currentGroupName = "קבוצה"; // Default, will be updated after daily report fetch
 
           // Fetch daily report immediately with the groupId
           console.log(
@@ -181,6 +184,17 @@ const CreateSleepPostPage: React.FC = () => {
       );
     }
   }, [locationState, fetchDailyReport, isLoadingUser, user?.groupId]);
+
+  // Update group name when daily report is loaded
+  useEffect(() => {
+    if (dailyReport?.groupName && dailyReport.groupName !== groupName) {
+      console.log(
+        "🏷️ [CreateSleepPostPage] Updating group name from daily report:",
+        dailyReport.groupName
+      );
+      setGroupName(dailyReport.groupName);
+    }
+  }, [dailyReport?.groupName, groupName]);
 
   // Handle modal close (cancel)
   const handleClose = () => {

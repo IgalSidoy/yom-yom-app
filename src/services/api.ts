@@ -714,6 +714,7 @@ export interface DailyReport {
   organizationId: string;
   accountId: string;
   groupId: string;
+  groupName: string;
   createdById: string;
   date: string;
   sleepData: SleepData;
@@ -1039,6 +1040,30 @@ export const feedApi = {
       return response.data;
     } catch (error) {
       logger.error("Failed to fetch feed", error);
+      throw error;
+    }
+  },
+
+  getFeedForUser: async (date: string): Promise<FeedPost[]> => {
+    try {
+      logger.info("Fetching feed for user", { date });
+
+      const response = await api.get(`/api/v1/feed/user?date=${date}`, {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      });
+
+      logger.info("User feed fetched successfully", {
+        date,
+        postCount: response.data.length,
+      });
+
+      return response.data;
+    } catch (error) {
+      logger.error("Failed to fetch user feed", error);
       throw error;
     }
   },

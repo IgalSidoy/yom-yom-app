@@ -19,6 +19,7 @@ export interface FeedChildSleepData {
   startTimestamp: string;
   endTimestamp: string;
   updatedByUserId: string;
+  comment?: string;
 }
 
 export interface FeedChildAttendanceData {
