@@ -16,6 +16,7 @@ export enum EntityStatus {
   Created = "Created",
   Updated = "Updated",
   Deleted = "Deleted",
+  Closed = "Closed",
 }
 
 // Post status enum - used for post lifecycle management

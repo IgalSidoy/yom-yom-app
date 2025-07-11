@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Alert } from "@mui/material";
+import { Alert, Box } from "@mui/material";
+import { useLocation } from "react-router-dom";
 import {
   FeedContainer,
-  FeedPost,
+  FetchDailyReportButton,
   FeedDateSelector,
+  FeedPost,
 } from "../../components/feed";
 import { useApp } from "../../contexts/AppContext";
+import { useDailyReport } from "../../contexts/DailyReportContext";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../config/routes";
 import { feedApi, userApi } from "../../services/api";
 import { FeedPost as FeedPostType } from "../../types/posts";
 import { UserChild } from "../../services/api";
@@ -13,15 +18,37 @@ import dayjs, { Dayjs } from "dayjs";
 
 const ParentFeed: React.FC = () => {
   const { user } = useApp();
+  const { dailyReport, fetchDailyReport } = useDailyReport();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Loading states
   const [isFeedLoading, setIsFeedLoading] = useState(false);
+  const [isPostsLoading, setIsPostsLoading] = useState(false);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
 
   // Feed data state
   const [feedPosts, setFeedPosts] = useState<FeedPostType[]>([]);
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [children, setChildren] = useState<UserChild[]>([]);
+
+  // Helper function to determine if a sleep post is closed
+  const isSleepPostClosed = (post: FeedPostType): boolean => {
+    if (post.type !== "SleepPost" || !post.metadata.sleepMetadata) {
+      return false;
+    }
+
+    const sleepData = post.metadata.sleepMetadata;
+
+    // Check if all children have finished sleeping (have both start and end timestamps)
+    return sleepData.childrenSleepData.every((child) => {
+      const hasStartTime =
+        child.startTimestamp && child.startTimestamp !== "0001-01-01T00:00:00";
+      const hasEndTime =
+        child.endTimestamp && child.endTimestamp !== "0001-01-01T00:00:00";
+      return hasStartTime && hasEndTime;
+    });
+  };
 
   // Fetch parent's children
   const fetchChildren = useCallback(async () => {
@@ -39,15 +66,9 @@ const ParentFeed: React.FC = () => {
     }
   }, []);
 
-  // Fetch feed data for parent's children's groups
+  // Fetch feed data for parent (all children's groups)
   const fetchFeedData = useCallback(
     async (date: Dayjs) => {
-      console.log(
-        "ParentFeed: fetchFeedData called with date:",
-        date.format("YYYY-MM-DD")
-      );
-      console.log("ParentFeed: children:", children);
-
       if (children.length === 0) {
         console.warn("No children available for parent");
         return;
@@ -57,32 +78,18 @@ const ParentFeed: React.FC = () => {
       try {
         const formattedDate = date.format("YYYY-MM-DD");
 
-        // Get unique group IDs from children
-        const groupIds = Array.from(
-          new Set(
-            children
-              .map((child) => child.groupId)
-              .filter((id): id is string => Boolean(id))
-          )
-        );
-        console.log("ParentFeed: Group IDs from children:", groupIds);
-
-        if (groupIds.length === 0) {
-          console.warn("No group IDs available from children");
-          setFeedPosts([]);
-          return;
-        }
+        // Get unique group IDs from all children
+        const groupIds = new Set<string>();
+        children.forEach((child) => {
+          if (child.groupId) {
+            groupIds.add(child.groupId);
+          }
+        });
 
         // Fetch feed data for all groups
         const allPosts: FeedPostType[] = [];
-        for (const groupId of groupIds) {
+        for (const groupId of Array.from(groupIds)) {
           try {
-            console.log(
-              "ParentFeed: Calling API for groupId:",
-              groupId,
-              "date:",
-              formattedDate
-            );
             const posts = await feedApi.getFeedByGroup(groupId, formattedDate);
             allPosts.push(...posts);
           } catch (error) {
@@ -90,7 +97,12 @@ const ParentFeed: React.FC = () => {
           }
         }
 
-        console.log("ParentFeed: All posts combined:", allPosts);
+        // Sort posts by creation date (newest first)
+        allPosts.sort(
+          (a, b) =>
+            new Date(b.created).getTime() - new Date(a.created).getTime()
+        );
+
         setFeedPosts(allPosts);
       } catch (error) {
         console.error("Failed to fetch feed data:", error);
@@ -104,22 +116,13 @@ const ParentFeed: React.FC = () => {
 
   // Handle date change
   const handleDateChange = (date: Dayjs) => {
-    console.log(
-      "ParentFeed: handleDateChange called with date:",
-      date.format("YYYY-MM-DD")
-    );
     setSelectedDate(date);
     fetchFeedData(date);
   };
 
-  // Single useEffect to handle all data fetching scenarios
+  // Fetch children first
   useEffect(() => {
     if (!user) return;
-
-    console.log("ParentFeed: useEffect triggered, user:", user);
-    console.log("ParentFeed: Initial fetch for user:", user.id);
-
-    // Fetch children first
     fetchChildren();
   }, [user, fetchChildren]);
 
@@ -127,7 +130,7 @@ const ParentFeed: React.FC = () => {
   useEffect(() => {
     if (children.length === 0) return;
 
-    // Initial feed fetch
+    // Initial fetch
     fetchFeedData(selectedDate);
 
     // Set up focus listener for refresh when returning from sleep post creation
@@ -154,19 +157,25 @@ const ParentFeed: React.FC = () => {
 
   return (
     <FeedContainer
-      title="חדשות הילדים - הורים"
-      subtitle="צפה בחדשות ועדכונים על ילדיך מהגן"
-      isLoading={isFeedLoading}
+      title="חדשות הילדים - הורה"
+      subtitle="צפה בחדשות ועדכונים מהילדים"
+      isLoading={isFeedLoading || isLoadingChildren}
       showFloatingButton={false}
       headerContent={headerContent}
     >
       <Alert severity="info" sx={{ mb: 2 }}>
-        צפה בחדשות ועדכונים על ילדיך מהגן
+        צפה בחדשות ועדכונים מהילדים שלך
       </Alert>
 
       {/* Render feed posts from API */}
       {feedPosts.length > 0 ? (
-        feedPosts.map((post) => <FeedPost key={post.id} post={post} />)
+        feedPosts.map((post) => (
+          <FeedPost
+            key={post.id}
+            post={post}
+            isClosed={isSleepPostClosed(post)}
+          />
+        ))
       ) : (
         <Alert severity="info" sx={{ mt: 2 }}>
           אין עדיין חדשות להצגה לתאריך זה

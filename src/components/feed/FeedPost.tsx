@@ -8,22 +8,19 @@ import {
   CardContent,
   Divider,
 } from "@mui/material";
-import { AccessTime, Group } from "@mui/icons-material";
+import { AccessTime, Group, Lock } from "@mui/icons-material";
 import { FeedPost as FeedPostType } from "../../types/posts";
 import SleepTimer from "../SleepTimer";
 import dayjs from "dayjs";
 
 interface FeedPostProps {
   post: FeedPostType;
+  isClosed?: boolean; // Add prop to indicate if sleep post is closed
 }
 
-const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
+const FeedPost: React.FC<FeedPostProps> = ({ post, isClosed = false }) => {
   const formatDate = (dateString: string) => {
     return dayjs(dateString).format("DD/MM/YYYY HH:mm");
-  };
-
-  const formatActivityDate = (dateString: string) => {
-    return dayjs(dateString).format("DD/MM/YYYY");
   };
 
   const getStatusColor = (status: string) => {
@@ -66,6 +63,28 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
     }
   };
 
+  const getPostTypeLabel = () => {
+    switch (post.type) {
+      case "SleepPost":
+        return "דיווח שינה";
+      case "AttendancePost":
+        return "דיווח נוכחות";
+      default:
+        return "פוסט";
+    }
+  };
+
+  const getPostTypeColor = () => {
+    switch (post.type) {
+      case "SleepPost":
+        return "primary";
+      case "AttendancePost":
+        return "secondary";
+      default:
+        return "default";
+    }
+  };
+
   const renderSleepPost = () => {
     const sleepData = post.metadata.sleepMetadata;
     if (!sleepData) return null;
@@ -80,18 +99,6 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
 
     return (
       <Box>
-        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-          <Chip
-            label="דיווח שינה"
-            color="primary"
-            size="small"
-            sx={{ mr: 1 }}
-          />
-          <Typography variant="body2" color="text.secondary">
-            {formatActivityDate(post.activityDate)}
-          </Typography>
-        </Box>
-
         <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
           {post.title}
         </Typography>
@@ -113,20 +120,21 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
                   p: 1.5,
                   borderRadius: 2,
                   border: "1px solid",
-                  borderColor: "divider",
-                  bgcolor: "background.paper",
+                  borderColor: isClosed ? "grey.300" : "divider",
+                  bgcolor: isClosed ? "grey.50" : "background.paper",
                   transition: "all 0.2s ease-in-out",
+                  opacity: isClosed ? 0.8 : 1,
                   "&:hover": {
-                    transform: "translateY(-2px)",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                    borderColor: "primary.main",
+                    transform: isClosed ? "none" : "translateY(-2px)",
+                    boxShadow: isClosed ? "none" : "0 4px 12px rgba(0,0,0,0.1)",
+                    borderColor: isClosed ? "grey.300" : "primary.main",
                   },
                   ...(child.comment &&
                     child.comment.trim() && {
-                      borderColor: "#9C27B0",
+                      borderColor: isClosed ? "grey.400" : "#9C27B0",
                       borderWidth: "2px",
                       "&:hover": {
-                        borderColor: "#7B1FA2",
+                        borderColor: isClosed ? "grey.400" : "#7B1FA2",
                       },
                     }),
                 }}
@@ -145,14 +153,17 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
                       child.status === "Sleeping" || child.status === "Asleep"
                         ? 600
                         : 400,
+                    opacity: isClosed ? 0.7 : 1,
                     ...(child.status === "Sleeping" || child.status === "Asleep"
                       ? {
-                          borderColor: "#9C27B0",
-                          color: "#9C27B0",
+                          borderColor: isClosed ? "grey.400" : "#9C27B0",
+                          color: isClosed ? "grey.600" : "#9C27B0",
                           "&:hover": {
-                            borderColor: "#7B1FA2",
-                            color: "#7B1FA2",
-                            backgroundColor: "#9C27B010",
+                            borderColor: isClosed ? "grey.400" : "#7B1FA2",
+                            color: isClosed ? "grey.600" : "#7B1FA2",
+                            backgroundColor: isClosed
+                              ? "transparent"
+                              : "#9C27B010",
                           },
                         }
                       : {}),
@@ -168,7 +179,8 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
                   size="small"
                   animationIntensity="subtle"
                   showPulse={
-                    child.status === "Sleeping" || child.status === "Asleep"
+                    !isClosed &&
+                    (child.status === "Sleeping" || child.status === "Asleep")
                   }
                 />
 
@@ -182,13 +194,17 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
                       width: 24,
                       height: 24,
                       borderRadius: "50%",
-                      background: "linear-gradient(135deg, #9C27B0, #E1BEE7)",
+                      background: isClosed
+                        ? "linear-gradient(135deg, #9E9E9E, #BDBDBD)"
+                        : "linear-gradient(135deg, #9C27B0, #E1BEE7)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      boxShadow: "0 2px 8px rgba(156, 39, 176, 0.3)",
+                      boxShadow: isClosed
+                        ? "0 2px 8px rgba(158, 158, 158, 0.3)"
+                        : "0 2px 8px rgba(156, 39, 176, 0.3)",
                       border: "2px solid white",
-                      animation: "pulse 2s infinite",
+                      animation: isClosed ? "none" : "pulse 2s infinite",
                       "@keyframes pulse": {
                         "0%": {
                           transform: "scale(1)",
@@ -231,10 +247,13 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
                 mt: 2,
                 p: 2,
                 borderRadius: 2,
-                background: "linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%)",
-                border: "1px solid #CE93D8",
+                background: isClosed
+                  ? "linear-gradient(135deg, #F5F5F5 0%, #E0E0E0 100%)"
+                  : "linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%)",
+                border: `1px solid ${isClosed ? "#BDBDBD" : "#CE93D8"}`,
                 position: "relative",
                 overflow: "hidden",
+                opacity: isClosed ? 0.8 : 1,
                 "&::before": {
                   content: '""',
                   position: "absolute",
@@ -242,8 +261,9 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
                   left: 0,
                   right: 0,
                   height: "2px",
-                  background:
-                    "linear-gradient(90deg, #9C27B0, #E1BEE7, #9C27B0)",
+                  background: isClosed
+                    ? "linear-gradient(90deg, #9E9E9E, #BDBDBD, #9E9E9E)"
+                    : "linear-gradient(90deg, #9C27B0, #E1BEE7, #9C27B0)",
                 },
               }}
             >
@@ -253,12 +273,16 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
                     width: 32,
                     height: 32,
                     borderRadius: "50%",
-                    background: "linear-gradient(135deg, #9C27B0, #7B1FA2)",
+                    background: isClosed
+                      ? "linear-gradient(135deg, #9E9E9E, #757575)"
+                      : "linear-gradient(135deg, #9C27B0, #7B1FA2)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     mr: 1.5,
-                    boxShadow: "0 2px 8px rgba(156, 39, 176, 0.3)",
+                    boxShadow: isClosed
+                      ? "0 2px 8px rgba(158, 158, 158, 0.3)"
+                      : "0 2px 8px rgba(156, 39, 176, 0.3)",
                   }}
                 >
                   <Typography
@@ -276,7 +300,7 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
                   variant="subtitle2"
                   sx={{
                     fontWeight: 600,
-                    color: "#4A148C",
+                    color: isClosed ? "#616161" : "#4A148C",
                     fontSize: "0.95rem",
                   }}
                 >
@@ -296,14 +320,24 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
                         gap: 1,
                         p: 1.5,
                         borderRadius: 1.5,
-                        bgcolor: "rgba(255, 255, 255, 0.7)",
-                        border: "1px solid rgba(156, 39, 176, 0.2)",
+                        bgcolor: isClosed
+                          ? "rgba(255, 255, 255, 0.5)"
+                          : "rgba(255, 255, 255, 0.7)",
+                        border: `1px solid ${
+                          isClosed
+                            ? "rgba(158, 158, 158, 0.2)"
+                            : "rgba(156, 39, 176, 0.2)"
+                        }`,
                         backdropFilter: "blur(10px)",
                         transition: "all 0.2s ease-in-out",
                         "&:hover": {
-                          bgcolor: "rgba(255, 255, 255, 0.9)",
-                          transform: "translateX(-4px)",
-                          boxShadow: "0 2px 8px rgba(156, 39, 176, 0.15)",
+                          bgcolor: isClosed
+                            ? "rgba(255, 255, 255, 0.6)"
+                            : "rgba(255, 255, 255, 0.9)",
+                          transform: isClosed ? "none" : "translateX(-4px)",
+                          boxShadow: isClosed
+                            ? "none"
+                            : "0 2px 8px rgba(156, 39, 176, 0.15)",
                         },
                       }}
                     >
@@ -312,17 +346,19 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
                           minWidth: 40,
                           height: 40,
                           borderRadius: "50%",
-                          background: `linear-gradient(135deg, ${
-                            child.status === "Sleeping" ||
-                            child.status === "Asleep"
-                              ? "#9C27B0"
-                              : "#2196F3"
-                          }, ${
-                            child.status === "Sleeping" ||
-                            child.status === "Asleep"
-                              ? "#7B1FA2"
-                              : "#1976D2"
-                          })`,
+                          background: isClosed
+                            ? "linear-gradient(135deg, #9E9E9E, #757575)"
+                            : `linear-gradient(135deg, ${
+                                child.status === "Sleeping" ||
+                                child.status === "Asleep"
+                                  ? "#9C27B0"
+                                  : "#2196F3"
+                              }, ${
+                                child.status === "Sleeping" ||
+                                child.status === "Asleep"
+                                  ? "#7B1FA2"
+                                  : "#1976D2"
+                              })`,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -330,6 +366,7 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
                           fontWeight: 600,
                           fontSize: "0.8rem",
                           boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+                          opacity: isClosed ? 0.7 : 1,
                         }}
                       >
                         {child.childFirstName.charAt(0)}
@@ -339,7 +376,7 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
                           variant="subtitle2"
                           sx={{
                             fontWeight: 600,
-                            color: "#4A148C",
+                            color: isClosed ? "#616161" : "#4A148C",
                             mb: 0.5,
                             fontSize: "0.9rem",
                           }}
@@ -349,7 +386,7 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
                         <Typography
                           variant="body2"
                           sx={{
-                            color: "#6A1B9A",
+                            color: isClosed ? "#757575" : "#6A1B9A",
                             fontSize: "0.85rem",
                             lineHeight: 1.5,
                             fontStyle: "italic",
@@ -373,7 +410,7 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
               color="secondary.main"
               sx={{
                 fontWeight: 600,
-                color: "#9C27B0", // Purple to match sleep theme
+                color: isClosed ? "#9E9E9E" : "#9C27B0", // Gray when closed, purple when open
                 fontSize: "0.9rem",
               }}
             >
@@ -399,18 +436,6 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
 
     return (
       <Box>
-        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-          <Chip
-            label="דיווח נוכחות"
-            color="secondary"
-            size="small"
-            sx={{ mr: 1 }}
-          />
-          <Typography variant="body2" color="text.secondary">
-            {formatActivityDate(post.activityDate)}
-          </Typography>
-        </Box>
-
         <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
           {post.title}
         </Typography>
@@ -473,9 +498,46 @@ const FeedPost: React.FC<FeedPostProps> = ({ post }) => {
             {post.groupName.charAt(0)}
           </Avatar>
           <Box sx={{ flex: 1 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              {post.groupName}
-            </Typography>
+            <Box
+              sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}
+            >
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                {post.groupName}
+              </Typography>
+              <Chip
+                label={getPostTypeLabel()}
+                color={getPostTypeColor() as any}
+                size="small"
+                sx={{ fontSize: "0.7rem", height: 20 }}
+              />
+              {/* Closed status badge - simplified */}
+              {isClosed && (
+                <Box
+                  sx={{
+                    bgcolor: "warning.main",
+                    color: "white",
+                    borderRadius: 1.5,
+                    px: 1.5,
+                    py: 0.5,
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                  }}
+                >
+                  <Lock sx={{ fontSize: "0.8rem" }} />
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: "0.7rem",
+                    }}
+                  >
+                    נסגר
+                  </Typography>
+                </Box>
+              )}
+            </Box>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <AccessTime sx={{ fontSize: 14, color: "text.secondary" }} />
               <Typography variant="caption" color="text.secondary">

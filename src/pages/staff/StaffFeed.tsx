@@ -29,6 +29,24 @@ const StaffFeed: React.FC = () => {
   const [feedPosts, setFeedPosts] = useState<FeedPostType[]>([]);
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
 
+  // Helper function to determine if a sleep post is closed
+  const isSleepPostClosed = (post: FeedPostType): boolean => {
+    if (post.type !== "SleepPost" || !post.metadata.sleepMetadata) {
+      return false;
+    }
+
+    const sleepData = post.metadata.sleepMetadata;
+
+    // Check if all children have finished sleeping (have both start and end timestamps)
+    return sleepData.childrenSleepData.every((child) => {
+      const hasStartTime =
+        child.startTimestamp && child.startTimestamp !== "0001-01-01T00:00:00";
+      const hasEndTime =
+        child.endTimestamp && child.endTimestamp !== "0001-01-01T00:00:00";
+      return hasStartTime && hasEndTime;
+    });
+  };
+
   // Fetch feed data
   const fetchFeedData = useCallback(
     async (date: Dayjs) => {
@@ -101,7 +119,13 @@ const StaffFeed: React.FC = () => {
 
       {/* Render feed posts from API */}
       {feedPosts.length > 0 ? (
-        feedPosts.map((post) => <FeedPost key={post.id} post={post} />)
+        feedPosts.map((post) => (
+          <FeedPost
+            key={post.id}
+            post={post}
+            isClosed={isSleepPostClosed(post)}
+          />
+        ))
       ) : (
         <Alert severity="info" sx={{ mt: 2 }}>
           אין עדיין חדשות להצגה לתאריך זה

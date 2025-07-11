@@ -701,6 +701,8 @@ export const mapApiStatusToEntityStatus = (apiStatus: string): EntityStatus => {
       return EntityStatus.Updated;
     case "Deleted":
       return EntityStatus.Deleted;
+    case "Closed":
+      return EntityStatus.Closed;
     default:
       console.warn(
         `Unknown entity status from API: ${apiStatus}, defaulting to Created`

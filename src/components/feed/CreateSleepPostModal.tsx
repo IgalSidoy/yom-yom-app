@@ -34,6 +34,7 @@ const ChildItem = React.memo<{
   child: SleepChild;
   isCompleted: boolean;
   isCelebrating: boolean;
+  isDisabled: boolean;
   onStartSleep: (childId: string) => void;
   onEndSleep: (childId: string, startTime: string) => void;
   onNotesChange: (childId: string, notes: string) => void;
@@ -42,6 +43,7 @@ const ChildItem = React.memo<{
     child,
     isCompleted,
     isCelebrating,
+    isDisabled,
     onStartSleep,
     onEndSleep,
     onNotesChange,
@@ -154,6 +156,7 @@ const ChildItem = React.memo<{
                   label="הערות"
                   value={child.notes}
                   onChange={(e) => handleNotesChange(e.target.value)}
+                  disabled={isDisabled}
                   sx={{ width: "100%", mt: 1 }}
                   placeholder="הערות נוספות..."
                 />
@@ -165,6 +168,7 @@ const ChildItem = React.memo<{
             <Switch
               checked={isSleeping}
               onChange={isSleeping ? handleEndSleep : handleStartSleep}
+              disabled={isDisabled}
               color="primary"
               sx={{
                 "& .MuiSwitch-switchBase.Mui-checked": {
@@ -172,6 +176,12 @@ const ChildItem = React.memo<{
                 },
                 "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
                   backgroundColor: "#9C27B0",
+                },
+                "& .MuiSwitch-switchBase.Mui-disabled": {
+                  color: "#9C27B080",
+                },
+                "& .MuiSwitch-switchBase.Mui-disabled + .MuiSwitch-track": {
+                  backgroundColor: "#9C27B040",
                 },
               }}
             />
@@ -881,12 +891,17 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
               variant="outlined"
               size="small"
               onClick={handleSelectAllAsleep}
+              disabled={dailyReport?.sleepData?.status === "Closed"}
               sx={{
                 borderColor: "#9C27B0",
                 color: "#9C27B0",
                 "&:hover": {
                   borderColor: "#7B1FA2",
                   bgcolor: "#9C27B010",
+                },
+                "&:disabled": {
+                  borderColor: "#6c757d",
+                  color: "#6c757d",
                 },
               }}
             >
@@ -896,12 +911,17 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
               variant="outlined"
               size="small"
               onClick={handleFinishAllSleep}
+              disabled={dailyReport?.sleepData?.status === "Closed"}
               sx={{
                 borderColor: "#4CAF50",
                 color: "#4CAF50",
                 "&:hover": {
                   borderColor: "#388E3C",
                   bgcolor: "#4CAF5010",
+                },
+                "&:disabled": {
+                  borderColor: "#6c757d",
+                  color: "#6c757d",
                 },
               }}
             >
@@ -928,6 +948,14 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
           {errors.children && (
             <Alert severity="error" sx={{ mb: 1 }}>
               {errors.children}
+            </Alert>
+          )}
+
+          {dailyReport?.sleepData?.status === "Closed" && (
+            <Alert severity="warning" sx={{ mb: 1 }}>
+              <AlertTitle>דיווח שינה נסגר</AlertTitle>
+              לא ניתן לערוך דיווח שינה שכבר נסגר. הדיווח הושלם ואין אפשרות
+              להוסיף או לשנות נתונים.
             </Alert>
           )}
 
@@ -970,6 +998,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
                   child={child}
                   isCompleted={completedChildren.has(child.childId)}
                   isCelebrating={celebratingChildren.has(child.childId)}
+                  isDisabled={dailyReport?.sleepData?.status === "Closed"}
                   onStartSleep={handleStartSleep}
                   onEndSleep={handleEndSleep}
                   onNotesChange={handleNotesChange}
@@ -1003,22 +1032,37 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
         <Button
           variant="contained"
           onClick={handleSubmit}
-          disabled={isLoading || isLoadingDailyReport}
+          disabled={
+            isLoading ||
+            isLoadingDailyReport ||
+            dailyReport?.sleepData?.status === "Closed"
+          }
           startIcon={
             isLoading ? (
               <Skeleton variant="circular" width={20} height={20} />
+            ) : dailyReport?.sleepData?.status === "Closed" ? (
+              <Box sx={{ color: "white", fontSize: "1.2rem" }}>🔒</Box>
             ) : (
               <AddIcon />
             )
           }
           sx={{
             flex: 1,
-            bgcolor: "#9C27B0",
+            bgcolor:
+              dailyReport?.sleepData?.status === "Closed"
+                ? "#6c757d"
+                : "#9C27B0",
             "&:hover": {
-              bgcolor: "#7B1FA2",
+              bgcolor:
+                dailyReport?.sleepData?.status === "Closed"
+                  ? "#6c757d"
+                  : "#7B1FA2",
             },
             "&:disabled": {
-              bgcolor: "#9C27B080",
+              bgcolor:
+                dailyReport?.sleepData?.status === "Closed"
+                  ? "#6c757d"
+                  : "#9C27B080",
             },
           }}
         >
@@ -1029,6 +1073,8 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
             </Box>
           ) : isLoadingDailyReport ? (
             "טוען נתונים..."
+          ) : dailyReport?.sleepData?.status === "Closed" ? (
+            "דיווח שינה נסגר"
           ) : dailyReport?.sleepData?.status === "Updated" ? (
             "עדכן פוסט שינה"
           ) : (

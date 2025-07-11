@@ -128,6 +128,7 @@ const ParentDashboard: React.FC = () => {
       onRefresh={fetchAttendanceData}
       onUpdateAttendance={handleUpdateAttendance}
       forceExpand={forceExpandAttendance}
+      attendanceDataByDate={attendanceDataByDate}
     />,
   ];
 

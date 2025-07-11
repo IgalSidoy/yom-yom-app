@@ -210,6 +210,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
               borderBottom: "1px solid",
               borderColor: "divider",
               bgcolor: "background.paper",
+              position: "relative",
             }}
           >
             <Typography
@@ -312,6 +313,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
               borderBottom: "1px solid",
               borderColor: "divider",
               bgcolor: "background.paper",
+              position: "relative",
             }}
           >
             <Typography
