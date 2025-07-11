@@ -692,6 +692,38 @@ export const mapApiStatusToSleepStatus = (apiStatus: string): SleepStatus => {
   }
 };
 
+// Map API attendance status to feed status format
+export const mapAttendanceStatusForFeed = (apiStatus: string): string => {
+  console.log(
+    `🔄 [API] Mapping attendance status: ${apiStatus} -> feed format`
+  );
+
+  const mappedStatus = (() => {
+    switch (apiStatus.toLowerCase()) {
+      case "arrived":
+        return "Present";
+      case "missing":
+        return "Absent";
+      case "sick":
+        return "Sick";
+      case "late":
+        return "Late";
+      case "vacation":
+        return "Absent"; // Map vacation to absent for feed display
+      case "unreported":
+        return "Unreported"; // Keep unreported as unreported
+      default:
+        console.warn(
+          `Unknown attendance status from API: ${apiStatus}, defaulting to Absent`
+        );
+        return "Absent";
+    }
+  })();
+
+  console.log(`✅ [API] Mapped status: ${apiStatus} -> ${mappedStatus}`);
+  return mappedStatus;
+};
+
 // Map API string status to EntityStatus enum
 export const mapApiStatusToEntityStatus = (apiStatus: string): EntityStatus => {
   switch (apiStatus) {
@@ -1039,7 +1071,40 @@ export const feedApi = {
         postCount: response.data.length,
       });
 
-      return response.data;
+      // Map the feed data to handle status mapping for attendance posts
+      const mappedData = response.data.map((post: any) => {
+        if (
+          post.type === "AttendancePost" &&
+          post.metadata?.attendanceMetadata
+        ) {
+          return {
+            ...post,
+            state: post.state || "Open", // Include state field
+            isClosed: post.state === "Closed", // Set isClosed based on state
+            metadata: {
+              ...post.metadata,
+              attendanceMetadata: {
+                ...post.metadata.attendanceMetadata,
+                childrenAttendanceData:
+                  post.metadata.attendanceMetadata.childrenAttendanceData?.map(
+                    (child: any) => ({
+                      ...child,
+                      status: mapAttendanceStatusForFeed(child.status),
+                    })
+                  ) || [],
+              },
+            },
+          };
+        }
+        // Handle other post types (like SleepPost)
+        return {
+          ...post,
+          state: post.state || "Open", // Include state field
+          isClosed: post.state === "Closed", // Set isClosed based on state
+        };
+      });
+
+      return mappedData;
     } catch (error) {
       logger.error("Failed to fetch feed", error);
       throw error;
@@ -1063,7 +1128,35 @@ export const feedApi = {
         postCount: response.data.length,
       });
 
-      return response.data;
+      // Map the feed data to handle status mapping for attendance posts
+      const mappedData = response.data.map((post: any) => {
+        if (
+          post.type === "AttendancePost" &&
+          post.metadata?.attendanceMetadata
+        ) {
+          return {
+            ...post,
+            state: post.state || "Open", // Include state field
+            isClosed: post.state === "Closed", // Set isClosed based on state
+            metadata: {
+              ...post.metadata,
+              attendanceMetadata: {
+                ...post.metadata.attendanceMetadata,
+                childrenAttendanceData:
+                  post.metadata.attendanceMetadata.childrenAttendanceData?.map(
+                    (child: any) => ({
+                      ...child,
+                      status: mapAttendanceStatusForFeed(child.status),
+                    })
+                  ) || [],
+              },
+            },
+          };
+        }
+        return post;
+      });
+
+      return mappedData;
     } catch (error) {
       logger.error("Failed to fetch user feed", error);
       throw error;

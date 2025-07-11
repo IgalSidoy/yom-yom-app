@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { FixedSizeList as VirtualList } from "react-window";
 import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../config/routes";
 import {
   Box,
   Typography,
@@ -734,7 +735,7 @@ const DailyAttendance: React.FC = () => {
 
       // Navigate to dashboard after a short delay to show the success message
       setTimeout(() => {
-        navigate(ROUTES.DASHBOARD);
+        navigate("/dashboard");
       }, 1500);
     } catch (error) {
       console.error("Failed to close attendance session:", error);

@@ -26,7 +26,7 @@ export interface FeedChildAttendanceData {
   childId: string;
   childFirstName: string;
   childLastName: string;
-  status: "Present" | "Late" | "Sick" | "Absent";
+  status: "Present" | "Late" | "Sick" | "Absent" | "Unreported";
   checkInTime: string;
   updatedByUserId: string;
 }
@@ -41,6 +41,7 @@ export interface AttendanceMetadata {
 
 export interface FeedPost {
   id: string;
+  state: string; // Add state field (e.g., "Closed", "Open")
   created: string;
   updated: string;
   organizationId: string;
@@ -55,6 +56,7 @@ export interface FeedPost {
   priority: number;
   groupName: string;
   sourceEntityId: string;
+  isClosed?: boolean; // Keep for backward compatibility
   metadata: {
     sleepMetadata?: SleepMetadata;
     attendanceMetadata?: AttendanceMetadata;

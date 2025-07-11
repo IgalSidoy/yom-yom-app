@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Typography,
@@ -18,10 +18,19 @@ import { ROUTES } from "../../config/routes";
 
 const Attendance = () => {
   const { user } = useApp();
-  const { attendanceData, isAttendanceClosed } = useAttendance();
+  const { attendanceData, isAttendanceClosed, fetchAttendance, isLoading } =
+    useAttendance();
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  // Load attendance data when component mounts
+  useEffect(() => {
+    if (user?.groupId) {
+      const today = new Date().toISOString().split("T")[0];
+      fetchAttendance(user.groupId, today);
+    }
+  }, [user?.groupId, fetchAttendance]);
 
   // Check if attendance is closed (either from context or attendance data)
   const isAttendanceClosedComputed =
@@ -275,6 +284,90 @@ const Attendance = () => {
   }
 
   // Show regular attendance component if not closed
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          bgcolor: "background.default",
+          zIndex: 1,
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          overflow: "auto",
+          p: isMobile ? 2 : 4,
+        }}
+      >
+        {/* Header */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            mb: 3,
+            pb: 2,
+            borderBottom: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <Button
+            variant="outlined"
+            onClick={handleGoBack}
+            startIcon={<ArrowBackIcon />}
+            sx={{
+              borderColor: "primary.main",
+              color: "primary.main",
+              "&:hover": {
+                borderColor: "primary.dark",
+                bgcolor: "primary.main",
+                color: "white",
+              },
+            }}
+          >
+            חזור
+          </Button>
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 700,
+              color: "text.primary",
+              flex: 1,
+            }}
+          >
+            נוכחות יומית
+          </Typography>
+        </Box>
+
+        {/* Loading Content */}
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+            py: 4,
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              color: "text.secondary",
+              mb: 2,
+            }}
+          >
+            טוען נתוני נוכחות...
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
+
   return <DailyAttendance />;
 };
 

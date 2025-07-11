@@ -1,17 +1,19 @@
 import React from "react";
-import {
-  Box,
-  Typography,
-  Chip,
-  Avatar,
-  Card,
-  CardContent,
-  Divider,
-} from "@mui/material";
+import { Box, Typography, Chip, Avatar, Divider } from "@mui/material";
 import { AccessTime, Group, Lock } from "@mui/icons-material";
 import { FeedPost as FeedPostType } from "../../types/posts";
 import SleepTimer from "../SleepTimer";
 import dayjs from "dayjs";
+import {
+  getAttendanceStatusColor,
+  getSleepStatusColor,
+  getChildColor,
+  getContrastTextColor,
+  ATTENDANCE_COLORS,
+} from "../../config/colors";
+import AttendanceChildCard from "./AttendanceChildCard";
+import AttendanceSummaryChips from "./AttendanceSummaryChips";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 interface FeedPostProps {
   post: FeedPostType;
@@ -19,6 +21,8 @@ interface FeedPostProps {
 }
 
 const FeedPost: React.FC<FeedPostProps> = ({ post, isClosed = false }) => {
+  const { language } = useLanguage();
+
   const formatDate = (dateString: string) => {
     return dayjs(dateString).format("DD/MM/YYYY HH:mm");
   };
@@ -43,35 +47,73 @@ const FeedPost: React.FC<FeedPostProps> = ({ post, isClosed = false }) => {
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
-      case "Present":
-        return "נוכח";
-      case "Late":
-        return "מאחר";
-      case "Sick":
-        return "חולה";
-      case "Absent":
-        return "נעדר";
-      case "Sleeping":
-        return "ישן";
-      case "Asleep":
-        return "ישן";
-      case "Awake":
-        return "ער";
-      default:
-        return status;
-    }
+    const statusLabels = {
+      heb: {
+        Present: "נוכח",
+        Arrived: "נוכח",
+        Late: "מאחר",
+        Sick: "חולה",
+        Absent: "נעדר",
+        Missing: "נעדר",
+        Sleeping: "ישן",
+        Asleep: "ישן",
+        Awake: "ער",
+        Vacation: "חופשה",
+        Unreported: "לא דווח",
+      },
+      rus: {
+        Present: "Присутствует",
+        Arrived: "Присутствует",
+        Late: "Опоздал",
+        Sick: "Болен",
+        Absent: "Отсутствует",
+        Missing: "Отсутствует",
+        Sleeping: "Спит",
+        Asleep: "Спит",
+        Awake: "Бодрствует",
+        Vacation: "Отпуск",
+        Unreported: "Не сообщено",
+      },
+      eng: {
+        Present: "Present",
+        Arrived: "Present",
+        Late: "Late",
+        Sick: "Sick",
+        Absent: "Absent",
+        Missing: "Absent",
+        Sleeping: "Sleeping",
+        Asleep: "Sleeping",
+        Awake: "Awake",
+        Vacation: "Vacation",
+        Unreported: "Unreported",
+      },
+    };
+
+    return (statusLabels[language] as any)[status] || status;
   };
 
   const getPostTypeLabel = () => {
-    switch (post.type) {
-      case "SleepPost":
-        return "דיווח שינה";
-      case "AttendancePost":
-        return "דיווח נוכחות";
-      default:
-        return "פוסט";
-    }
+    const postTypeLabels = {
+      heb: {
+        SleepPost: "דיווח שינה",
+        AttendancePost: "דיווח נוכחות",
+        default: "פוסט",
+      },
+      rus: {
+        SleepPost: "Отчет о сне",
+        AttendancePost: "Отчет о посещаемости",
+        default: "Пост",
+      },
+      eng: {
+        SleepPost: "Sleep Report",
+        AttendancePost: "Attendance Report",
+        default: "Post",
+      },
+    };
+
+    return (
+      postTypeLabels[language][post.type] || postTypeLabels[language].default
+    );
   };
 
   const getPostTypeColor = () => {
@@ -83,6 +125,91 @@ const FeedPost: React.FC<FeedPostProps> = ({ post, isClosed = false }) => {
       default:
         return "default";
     }
+  };
+
+  // Translation mapping for attendance post titles
+  const getAttendancePostTitle = (originalTitle: string) => {
+    // Default attendance post titles in different languages
+    const attendanceTitles = {
+      heb: [
+        "📊 דיווח נוכחות יומי",
+        "✅ מעקב נוכחות ילדים",
+        "👥 דיווח נוכחות קבוצה",
+        "📈 סטטיסטיקת נוכחות",
+        "🎯 דיווח נוכחות יומי",
+        "📋 מעקב נוכחות ילדים",
+        "👶 דיווח נוכחות ילדים",
+        "📊 נוכחות יומית",
+      ],
+      rus: [
+        "📊 Ежедневный отчет о посещаемости",
+        "✅ Отслеживание посещаемости детей",
+        "👥 Отчет о посещаемости группы",
+        "📈 Статистика посещаемости",
+        "🎯 Ежедневный отчет о посещаемости",
+        "📋 Отслеживание посещаемости детей",
+        "👶 Отчет о посещаемости детей",
+        "📊 Ежедневная посещаемость",
+      ],
+      eng: [
+        "📊 Daily Attendance Report",
+        "✅ Children Attendance Tracking",
+        "👥 Group Attendance Report",
+        "📈 Attendance Statistics",
+        "🎯 Daily Attendance Report",
+        "📋 Children Attendance Tracking",
+        "👶 Children Attendance Report",
+        "📊 Daily Attendance",
+      ],
+    };
+
+    // If the title is a default attendance title, translate it
+    const defaultHebrewTitles = attendanceTitles.heb;
+    const isDefaultTitle = defaultHebrewTitles.some((title) =>
+      originalTitle.includes(title.replace(/[📊✅👥📈🎯📋👶]/g, "").trim())
+    );
+
+    if (isDefaultTitle) {
+      // Use a consistent index based on the original title
+      const titleIndex = defaultHebrewTitles.findIndex((title) =>
+        originalTitle.includes(title.replace(/[📊✅👥📈🎯📋👶]/g, "").trim())
+      );
+
+      if (titleIndex >= 0 && titleIndex < attendanceTitles[language].length) {
+        return attendanceTitles[language][titleIndex];
+      }
+    }
+
+    // If not a default title or translation not found, return original
+    return originalTitle;
+  };
+
+  // Translation mapping for attendance labels
+  const getAttendanceLabel = (
+    label: "attendance" | "present" | "childrenStatus" | "closed"
+  ) => {
+    const labels = {
+      heb: {
+        attendance: "נוכחות",
+        present: "נוכחים",
+        childrenStatus: "מצב ילדים",
+        closed: "נסגר",
+      },
+      rus: {
+        attendance: "Посещаемость",
+        present: "Присутствуют",
+        childrenStatus: "Статус детей",
+        closed: "Закрыто",
+      },
+      eng: {
+        attendance: "Attendance",
+        present: "Present",
+        childrenStatus: "Children Status",
+        closed: "Closed",
+      },
+    };
+
+    return labels[language][label];
   };
 
   const renderSleepPost = () => {
@@ -426,65 +553,206 @@ const FeedPost: React.FC<FeedPostProps> = ({ post, isClosed = false }) => {
     const attendanceData = post.metadata.attendanceMetadata;
     if (!attendanceData) return null;
 
-    const presentCount = attendanceData.childrenAttendanceData.filter(
-      (child) => child.status === "Present"
+    // Count by actual status values (case-insensitive and handle multiple possible values)
+    const arrivedCount = attendanceData.childrenAttendanceData.filter(
+      (child) => {
+        const status = child.status.toLowerCase();
+        return (
+          status === "present" || status === "arrived" || status === "נוכח"
+        );
+      }
     ).length;
-    const lateCount = attendanceData.childrenAttendanceData.filter(
-      (child) => child.status === "Late"
+    const lateCount = attendanceData.childrenAttendanceData.filter((child) => {
+      const status = child.status.toLowerCase();
+      return status === "late" || status === "מאחר";
+    }).length;
+    const absentCount = attendanceData.childrenAttendanceData.filter(
+      (child) => {
+        const status = child.status.toLowerCase();
+        return status === "absent" || status === "missing" || status === "נעדר";
+      }
+    ).length;
+    const sickCount = attendanceData.childrenAttendanceData.filter((child) => {
+      const status = child.status.toLowerCase();
+      return status === "sick" || status === "חולה";
+    }).length;
+    const unreportedCount = attendanceData.childrenAttendanceData.filter(
+      (child) => {
+        const status = child.status.toLowerCase();
+        return status === "unreported" || status === "לא דווח";
+      }
     ).length;
     const totalCount = attendanceData.childrenAttendanceData.length;
+
+    console.log("Counts:", {
+      arrivedCount,
+      lateCount,
+      absentCount,
+      sickCount,
+      unreportedCount,
+      totalCount,
+    });
+
+    const attendancePercentage =
+      totalCount > 0 ? Math.round((arrivedCount / totalCount) * 100) : 0;
 
     return (
       <Box>
         <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-          {post.title}
+          {getAttendancePostTitle(post.title)}
         </Typography>
 
-        <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
-          {post.description}
-        </Typography>
+        {/* Attendance Stats Card */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            p: 3,
+            bgcolor: "rgba(76, 175, 80, 0.03)",
+            borderRadius: 3,
+            border: "1px solid",
+            borderColor: "rgba(76, 175, 80, 0.1)",
+            position: "relative",
+            overflow: "hidden",
+            mb: 2,
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: "2px",
+              background: "linear-gradient(90deg, #4CAF50 0%, #81C784 100%)",
+            },
+          }}
+        >
+          {/* Attendance Percentage */}
+          <Box sx={{ textAlign: "center", flex: 1 }}>
+            <Typography
+              variant="h3"
+              sx={{
+                fontWeight: 800,
+                color: "#4CAF50",
+                fontSize: { xs: "2rem", sm: "2.5rem" },
+                lineHeight: 1,
+                mb: 0.5,
+                textShadow: "0 2px 4px rgba(76, 175, 80, 0.2)",
+              }}
+            >
+              {attendancePercentage}%
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                fontSize: "0.8rem",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
+            >
+              {getAttendanceLabel("attendance")}
+            </Typography>
+          </Box>
 
+          {/* Divider */}
+          <Box
+            sx={{
+              width: "1px",
+              height: 60,
+              bgcolor: "rgba(76, 175, 80, 0.2)",
+              mx: 2,
+            }}
+          />
+
+          {/* Attendance Counts */}
+          <Box sx={{ textAlign: "center", flex: 1 }}>
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 700,
+                color: "#4CAF50",
+                fontSize: { xs: "1.5rem", sm: "2rem" },
+                lineHeight: 1,
+                mb: 0.5,
+              }}
+            >
+              {arrivedCount}/{totalCount}
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                fontSize: "0.75rem",
+                fontWeight: 500,
+              }}
+            >
+              {getAttendanceLabel("present")}
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Children Status Grid */}
         <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-            מצב ילדים:
+          <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
+            {getAttendanceLabel("childrenStatus")}:
           </Typography>
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
             {attendanceData.childrenAttendanceData.map((child) => (
-              <Chip
+              <AttendanceChildCard
                 key={child.childId}
-                label={`${child.childFirstName} ${child.childLastName}`}
-                color={getStatusColor(child.status) as any}
-                size="small"
-                variant="outlined"
+                child={child}
+                isClosed={isClosed}
+                getStatusText={getStatusText}
               />
             ))}
           </Box>
         </Box>
 
+        {/* Attendance Summary */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <Group sx={{ fontSize: 16, color: "text.secondary" }} />
-            <Typography variant="body2" color="text.secondary">
-              {presentCount + lateCount}/{totalCount} נוכחים
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 600,
+                color: isClosed ? "#9E9E9E" : "#4CAF50",
+                fontSize: "0.9rem",
+              }}
+            >
+              {arrivedCount}/{totalCount} {getAttendanceLabel("present")}
             </Typography>
           </Box>
+
+          {/* Additional stats */}
+          <AttendanceSummaryChips
+            lateCount={lateCount}
+            absentCount={absentCount}
+            sickCount={sickCount}
+            unreportedCount={unreportedCount}
+            isClosed={isClosed}
+          />
         </Box>
       </Box>
     );
   };
 
   return (
-    <Card
+    <Box
       sx={{
-        mb: 2,
-        borderRadius: 2,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-        "&:hover": {
-          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        mb: 0,
+        borderBottom: "1px solid",
+        borderColor: "divider",
+        pb: 3,
+        bgcolor: "background.paper",
+        "&:last-child": {
+          borderBottom: "none",
         },
       }}
     >
-      <CardContent sx={{ p: 3 }}>
+      <Box sx={{ p: { xs: 2, sm: 3 } }}>
         {/* Header */}
         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
           <Avatar
@@ -533,7 +801,7 @@ const FeedPost: React.FC<FeedPostProps> = ({ post, isClosed = false }) => {
                       fontSize: "0.7rem",
                     }}
                   >
-                    נסגר
+                    {getAttendanceLabel("closed")}
                   </Typography>
                 </Box>
               )}
@@ -552,8 +820,8 @@ const FeedPost: React.FC<FeedPostProps> = ({ post, isClosed = false }) => {
         {/* Content */}
         {post.type === "SleepPost" && renderSleepPost()}
         {post.type === "AttendancePost" && renderAttendancePost()}
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 
