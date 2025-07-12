@@ -173,33 +173,22 @@ export const FeedProvider: React.FC<FeedProviderProps> = ({ children }) => {
     fetchChildren();
   }, [user, fetchChildren]);
 
-  // Remove automatic feed fetching - let individual pages handle when to load
-  // useEffect(() => {
-  //   if (!user) return;
+  // Set up focus listener for refresh when returning from sleep post creation
+  useEffect(() => {
+    if (!user) return;
 
-  //   if (user.role === "Parent") {
-  //     // For parents, wait for children to be loaded
-  //     if (userChildren.length === 0) return;
-  //   } else {
-  //     // For staff/admin, fetch immediately if they have a groupId
-  //     if (!user.groupId) return;
-  //   }
+    // Set up focus listener for refresh when returning from sleep post creation
+    const handleFocus = () => {
+      console.log("FeedContext: Refreshing feed data on focus");
+      fetchFeedData(selectedDate);
+    };
 
-  //   // Initial fetch
-  //   fetchFeedData(selectedDate);
+    window.addEventListener("focus", handleFocus);
 
-  //   // Set up focus listener for refresh when returning from sleep post creation
-  //   const handleFocus = () => {
-  //     console.log("FeedContext: Refreshing feed data on focus");
-  //     fetchFeedData(selectedDate);
-  //   };
-
-  //   window.addEventListener("focus", handleFocus);
-
-  //   return () => {
-  //     window.removeEventListener("focus", handleFocus);
-  //   };
-  // }, [user, userChildren, selectedDate, fetchFeedData]);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [user, selectedDate, fetchFeedData]);
 
   const value: FeedContextType = {
     feedPosts,

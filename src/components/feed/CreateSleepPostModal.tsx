@@ -28,6 +28,7 @@ import {
   updateDailyReportSleepData,
 } from "../../services/api";
 import { SleepStatus } from "../../types/enums";
+import { useFeed } from "../../contexts/FeedContext";
 
 // ChildItem component defined outside to prevent recreation on every render
 const ChildItem = React.memo<{
@@ -255,6 +256,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const { refreshFeed } = useFeed();
 
   // Default title variations - memoized to prevent infinite loops
   const defaultTitles = React.useMemo(
@@ -549,37 +551,33 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
 
       // Prepare sleep data for the API (only children who haven't finished sleeping are included)
       const sleepData = {
-        childrenSleepData: {
-          title: title.trim(),
-          children: sleepChildren.map((child) => {
-            const isCurrentlySleeping = isChildSleeping(
-              child.sleepStartTime,
-              child.sleepEndTime
-            );
-            const hasFinishedSleeping =
-              child.sleepStartTime &&
-              child.sleepEndTime &&
-              !isCurrentlySleeping;
+        title: title.trim(),
+        children: sleepChildren.map((child) => {
+          const isCurrentlySleeping = isChildSleeping(
+            child.sleepStartTime,
+            child.sleepEndTime
+          );
+          const hasFinishedSleeping =
+            child.sleepStartTime && child.sleepEndTime && !isCurrentlySleeping;
 
-            let status: SleepStatus;
-            if (isCurrentlySleeping) {
-              status = SleepStatus.Sleeping;
-            } else if (hasFinishedSleeping) {
-              status = SleepStatus.Awake;
-            } else {
-              status = SleepStatus.Awake;
-            }
+          let status: SleepStatus;
+          if (isCurrentlySleeping) {
+            status = SleepStatus.Sleeping;
+          } else if (hasFinishedSleeping) {
+            status = SleepStatus.Awake;
+          } else {
+            status = SleepStatus.Awake;
+          }
 
-            return {
-              childId: child.childId,
-              status: status,
-              comment: child.notes,
-            };
-          }),
-        },
+          return {
+            childId: child.childId,
+            status: status,
+            comment: child.notes,
+          };
+        }),
       };
 
-      // Call the original onSubmit first to ensure navigation happens
+      // Prepare form data for navigation
       const formData: CreateSleepPostData = {
         title: title.trim(),
         groupId,
@@ -589,26 +587,40 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
       };
 
       console.log(
-        "🎯 [CreateSleepPostModal] About to call onSubmit with data:",
-        formData
+        "🎯 [CreateSleepPostModal] About to update daily report sleep data:",
+        sleepData
       );
 
-      // Call onSubmit to trigger navigation immediately
-      onSubmit(formData);
+      // Update the daily report first, then navigate on success
+      try {
+        await updateDailyReportSleepData(dailyReport.id, sleepData);
+        console.log(
+          "🎯 [CreateSleepPostModal] Sleep data updated successfully"
+        );
 
-      console.log("🎯 [CreateSleepPostModal] onSubmit called successfully");
+        // Refresh feed to get updated timestamps
+        console.log("🎯 [CreateSleepPostModal] Refreshing feed data...");
+        await refreshFeed();
+        console.log("🎯 [CreateSleepPostModal] Feed refreshed successfully");
 
-      // Update the daily report in the background
-      setTimeout(async () => {
-        try {
-          await updateDailyReportSleepData(dailyReport.id, sleepData);
-        } catch (apiError) {
-          console.error(
-            "API update failed but navigation should continue:",
-            apiError
-          );
-        }
-      }, 100);
+        // Only navigate after successful API update and feed refresh
+        console.log(
+          "🎯 [CreateSleepPostModal] About to call onSubmit with data:",
+          formData
+        );
+        onSubmit(formData);
+        console.log("🎯 [CreateSleepPostModal] onSubmit called successfully");
+      } catch (apiError) {
+        console.error("API update failed:", apiError);
+        setErrors({
+          submit:
+            apiError instanceof Error
+              ? apiError.message
+              : "אירעה שגיאה בעדכון נתוני השינה",
+        });
+        setIsLoading(false);
+        return;
+      }
     } catch (error) {
       console.error("Error updating sleep data:", error);
       setErrors({
@@ -627,6 +639,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
     groupName,
     onSubmit,
     isLoading,
+    refreshFeed,
   ]);
 
   // Count sleeping children

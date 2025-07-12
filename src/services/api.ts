@@ -995,14 +995,12 @@ export interface SleepPostResponse {
 
 // Update daily report with sleep data
 export interface UpdateDailyReportSleepData {
-  childrenSleepData: {
-    title: string;
-    children: {
-      childId: string;
-      status: SleepStatus;
-      comment?: string;
-    }[];
-  };
+  title: string;
+  children: {
+    childId: string;
+    status: SleepStatus;
+    comment?: string;
+  }[];
 }
 
 export const updateDailyReportSleepData = async (
