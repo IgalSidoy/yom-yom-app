@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Alert, Box } from "@mui/material";
 import { useLocation } from "react-router-dom";
 import {
@@ -16,10 +16,22 @@ import { ROUTES } from "../../config/routes";
 const AdminFeed: React.FC = () => {
   const { user } = useApp();
   const { dailyReport, fetchDailyReport } = useDailyReport();
-  const { feedPosts, selectedDate, isFeedLoading, handleDateChange } =
-    useFeed();
+  const {
+    feedPosts,
+    selectedDate,
+    isFeedLoading,
+    handleDateChange,
+    fetchFeedData,
+  } = useFeed();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Load feed data when component mounts
+  useEffect(() => {
+    if (user?.groupId) {
+      fetchFeedData(selectedDate);
+    }
+  }, [user?.groupId, selectedDate, fetchFeedData]);
 
   // Header content with date selector
   const headerContent = (

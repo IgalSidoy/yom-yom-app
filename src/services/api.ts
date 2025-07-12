@@ -1013,7 +1013,7 @@ export const updateDailyReportSleepData = async (
     logger.info("Updating daily report sleep data", { dailyReportId });
 
     const response = await api.patch(
-      `/api/v1/daily-reports/${dailyReportId}`,
+      `/api/v1/daily-reports/${dailyReportId}/sleep`,
       sleepData
     );
 

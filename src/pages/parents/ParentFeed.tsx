@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Alert, Box } from "@mui/material";
 import { useLocation } from "react-router-dom";
 import {
@@ -22,9 +22,24 @@ const ParentFeed: React.FC = () => {
     isFeedLoading,
     isLoadingChildren,
     handleDateChange,
+    fetchFeedData,
+    userChildren,
   } = useFeed();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Load feed data when component mounts and children are loaded (for parents)
+  useEffect(() => {
+    if (user?.role === "Parent") {
+      // For parents, wait for children to be loaded
+      if (userChildren.length > 0) {
+        fetchFeedData(selectedDate);
+      }
+    } else {
+      // For other roles, fetch immediately
+      fetchFeedData(selectedDate);
+    }
+  }, [user?.role, userChildren.length, selectedDate, fetchFeedData]);
 
   // Header content with date selector
   const headerContent = (
