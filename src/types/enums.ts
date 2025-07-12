@@ -25,3 +25,26 @@ export enum PostStatus {
   Completed = "completed",
   Draft = "draft",
 }
+
+// Food-related enums
+export enum FoodEventType {
+  Breakfast = "Breakfast",
+  MorningSnack = "MorningSnack",
+  Lunch = "Lunch",
+  AfternoonSnack = "AfternoonSnack",
+  Dinner = "Dinner",
+}
+
+export enum FoodStatus {
+  NotEaten = "NotEaten",
+  Eaten = "Eaten",
+  FullyEaten = "FullyEaten",
+  PartiallyEaten = "PartiallyEaten",
+  Refused = "Refused",
+}
+
+export enum FoodDataStatus {
+  Created = "Created",
+  Active = "Active",
+  Closed = "Closed",
+}

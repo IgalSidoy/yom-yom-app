@@ -5,7 +5,13 @@ import axios, {
   AxiosRequestConfig,
 } from "axios";
 import { logger } from "../utils/logger";
-import { SleepStatus, EntityStatus } from "../types/enums";
+import {
+  SleepStatus,
+  EntityStatus,
+  FoodStatus,
+  FoodEventType,
+  FoodDataStatus,
+} from "../types/enums";
 import { ApiAttendanceStatus } from "../types/attendance";
 import { FeedPost } from "../types/posts";
 
@@ -677,6 +683,29 @@ export interface SleepData {
   children: DailyReportChild[];
 }
 
+export interface FoodEventChild {
+  childId: string;
+  firstName: string;
+  lastName: string;
+  foodDetails: string;
+  status: FoodStatus;
+  updatedByUserId: string;
+  updatedByUserName: string;
+}
+
+export interface FoodEvent {
+  id: string;
+  type: FoodEventType;
+  timestamp: string;
+  children: FoodEventChild[];
+}
+
+export interface FoodData {
+  title: string;
+  status: FoodDataStatus;
+  events: FoodEvent[];
+}
+
 // Map API string status to SleepStatus enum
 export const mapApiStatusToSleepStatus = (apiStatus: string): SleepStatus => {
   switch (apiStatus.toLowerCase()) {
@@ -752,6 +781,7 @@ export interface DailyReport {
   createdById: string;
   date: string;
   sleepData: SleepData;
+  foodData?: FoodData;
   isPublished: boolean;
   created: string;
   updated: string;
@@ -1022,6 +1052,44 @@ export const updateDailyReportSleepData = async (
     return response.data;
   } catch (error) {
     logger.error("Failed to update daily report sleep data", error);
+    throw error;
+  }
+};
+
+// Update daily report with food data
+export interface UpdateDailyReportFoodData {
+  title: string;
+  events: {
+    id: string;
+    type: FoodEventType;
+    timestamp: string;
+    children: {
+      childId: string;
+      foodDetails: string;
+      status: FoodStatus;
+    }[];
+  }[];
+}
+
+export const updateDailyReportFoodData = async (
+  dailyReportId: string,
+  foodData: UpdateDailyReportFoodData
+): Promise<DailyReport> => {
+  try {
+    logger.info("Updating daily report food data", { dailyReportId });
+
+    const response = await api.patch(
+      `/api/v1/daily-reports/${dailyReportId}/food`,
+      foodData
+    );
+
+    logger.info("Daily report food data updated successfully", {
+      dailyReportId,
+    });
+
+    return response.data;
+  } catch (error) {
+    logger.error("Failed to update daily report food data", error);
     throw error;
   }
 };

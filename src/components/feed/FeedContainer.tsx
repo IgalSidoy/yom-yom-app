@@ -44,6 +44,11 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
   const [isCreatingPost, setIsCreatingPost] = useState(false);
 
   const handlePostTypeSelect = async (postType: string) => {
+    console.log(
+      "🎯 [FeedContainer] handlePostTypeSelect called with:",
+      postType
+    );
+
     // Call the parent's onPostTypeSelect if provided
     if (onPostTypeSelect) {
       await onPostTypeSelect(postType);
@@ -52,16 +57,22 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
     // Handle post type selection
     switch (postType) {
       case "sleep":
+        console.log("🛏️ [FeedContainer] Navigating to sleep post");
         // Navigate to the sleep post creation page
         navigate(ROUTES.SLEEP_POST);
         break;
+      case "food":
       case "snack":
-        // TODO: Implement snack post creation
+        console.log("🍽️ [FeedContainer] Navigating to food post");
+        // Navigate to the food post creation page (both "food" and "snack" go to food post)
+        navigate(ROUTES.FOOD_POST);
         break;
       case "activity":
+        console.log("🎮 [FeedContainer] Activity post not implemented yet");
         // TODO: Implement activity post creation
         break;
       default:
+        console.warn("⚠️ [FeedContainer] Unknown post type:", postType);
         // Unknown post type
         break;
     }

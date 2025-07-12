@@ -6,6 +6,7 @@ import Login from "./pages/shared/Login";
 import Onboarding from "./pages/shared/Onboarding";
 import Settings from "./pages/shared/Settings";
 import CreateSleepPostPage from "./pages/shared/CreateSleepPostPage";
+import CreateFoodPostPage from "./pages/shared/CreateFoodPostPage";
 import NotFound from "./pages/shared/NotFound";
 import BottomNav from "./components/BottomNav";
 import StaffDashboard from "./pages/staff/StaffDashboard";
@@ -71,9 +72,10 @@ const StaffOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const AppRoutes: React.FC = () => {
   const location = useLocation();
 
-  // Hide bottom navigation for create sleep post page and login page
+  // Hide bottom navigation for create post pages and login page
   const shouldShowBottomNav =
     !location.pathname.includes(ROUTES.SLEEP_POST) &&
+    !location.pathname.includes(ROUTES.FOOD_POST) &&
     !location.pathname.includes(ROUTES.LOGIN);
 
   return (
@@ -103,6 +105,16 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute>
               <StaffOnly>
                 <CreateSleepPostPage />
+              </StaffOnly>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.FOOD_POST}
+          element={
+            <ProtectedRoute>
+              <StaffOnly>
+                <CreateFoodPostPage />
               </StaffOnly>
             </ProtectedRoute>
           }

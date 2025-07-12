@@ -66,6 +66,10 @@ const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
   ];
 
   const handlePostTypeSelect = async (postType: string) => {
+    console.log(
+      "🎯 [FeedFloatingButton] handlePostTypeSelect called with:",
+      postType
+    );
     setIsLoading(true);
     setIsClosing(true);
     // Wait for the menu to fully close before calling the parent handler
@@ -73,7 +77,16 @@ const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
       setIsOpen(false);
       setIsClosing(false);
       try {
+        console.log("🔄 [FeedFloatingButton] Calling parent onPostTypeSelect");
         await onPostTypeSelect(postType);
+        console.log(
+          "✅ [FeedFloatingButton] Parent onPostTypeSelect completed"
+        );
+      } catch (error) {
+        console.error(
+          "💥 [FeedFloatingButton] Error in parent onPostTypeSelect:",
+          error
+        );
       } finally {
         setIsLoading(false);
       }
@@ -81,13 +94,20 @@ const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
   };
 
   const handleOpen = async () => {
+    console.log("🎯 [FeedFloatingButton] handleOpen called");
     if (onOpen) {
       try {
+        console.log("🔄 [FeedFloatingButton] Calling parent onOpen");
         await onOpen();
+        console.log("✅ [FeedFloatingButton] Parent onOpen completed");
       } catch (error) {
-        console.error("Failed to prepare data for post creation:", error);
+        console.error(
+          "💥 [FeedFloatingButton] Failed to prepare data for post creation:",
+          error
+        );
       }
     }
+    console.log("📱 [FeedFloatingButton] Setting isOpen to true");
     setIsOpen(true);
   };
 
