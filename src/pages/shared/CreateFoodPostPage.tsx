@@ -4,12 +4,20 @@ import {
   Box,
   Typography,
   CircularProgress,
-  Alert,
   Button,
-  useTheme,
-  useMediaQuery,
+  Alert,
+  AlertTitle,
+  Card,
+  CardContent,
+  Chip,
+  Divider,
 } from "@mui/material";
-import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
+import { useTheme } from "@mui/material/styles";
+import { useMediaQuery } from "@mui/material";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import LockIcon from "@mui/icons-material/Lock";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useApp } from "../../contexts/AppContext";
 import { useDailyReport } from "../../contexts/DailyReportContext";
 import { Child, updateDailyReportFoodData } from "../../services/api";
@@ -41,7 +49,6 @@ const CreateFoodPostPage: React.FC = () => {
   const [groupId, setGroupId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Check if food reporting is closed
   const isFoodReportingClosed = dailyReport?.foodData?.status === "Closed";
@@ -164,7 +171,6 @@ const CreateFoodPostPage: React.FC = () => {
           "🎉 [CreateFoodPostPage] Data loading completed successfully"
         );
         setIsLoading(false);
-        setIsModalOpen(true);
       } catch (err) {
         console.error("💥 [CreateFoodPostPage] Error loading data:", err);
         setError(
@@ -199,7 +205,6 @@ const CreateFoodPostPage: React.FC = () => {
 
   // Handle modal close (cancel)
   const handleClose = () => {
-    setIsModalOpen(false);
     navigate("/feed"); // Navigate to feed page
   };
 
@@ -278,7 +283,7 @@ const CreateFoodPostPage: React.FC = () => {
   };
 
   // Show loading state
-  if (isLoading || isLoadingUser) {
+  if (isLoadingUser) {
     return (
       <Box
         sx={{
@@ -310,7 +315,7 @@ const CreateFoodPostPage: React.FC = () => {
             size={isMobile ? 50 : 60}
             sx={{
               mb: 2,
-              color: "#9C27B0",
+              color: "#FF6B35",
             }}
           />
           <Typography
@@ -361,40 +366,324 @@ const CreateFoodPostPage: React.FC = () => {
             textAlign: "center",
           }}
         >
-          <Typography
-            variant={isMobile ? "h6" : "h5"}
-            color="error"
-            sx={{ fontWeight: 600, mb: 1 }}
+          <Alert
+            severity="error"
+            sx={{
+              width: "100%",
+              mb: 2,
+              "& .MuiAlert-icon": {
+                fontSize: isMobile ? "2rem" : "2.5rem",
+              },
+            }}
           >
-            שגיאה בטעינת הנתונים
-          </Typography>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ mb: 2, opacity: 0.8 }}
-          >
-            {error}
-          </Typography>
-          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-            <Button
-              variant="contained"
-              onClick={handleRetry}
+            <AlertTitle
               sx={{
-                bgcolor: "#9C27B0",
-                "&:hover": { bgcolor: "#7B1FA2" },
+                fontSize: isMobile ? "1.1rem" : "1.25rem",
+                fontWeight: 600,
               }}
             >
-              נסה שוב
-            </Button>
+              שגיאה בטעינת הנתונים
+            </AlertTitle>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              {error}
+            </Typography>
+          </Alert>
+
+          <Button
+            variant="contained"
+            onClick={handleRetry}
+            startIcon={<RefreshIcon />}
+            sx={{
+              bgcolor: "#FF6B35",
+              "&:hover": {
+                bgcolor: "#F7931E",
+              },
+              px: 3,
+              py: 1.5,
+              borderRadius: 2,
+            }}
+          >
+            נסה שוב
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
+
+  // Show closed status page
+  if (isFoodReportingClosed) {
+    return (
+      <Box
+        sx={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          bgcolor: "background.default",
+          zIndex: 1,
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          overflow: "auto",
+          p: isMobile ? 2 : 4,
+        }}
+      >
+        {/* Header */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            mb: 3,
+            pb: 2,
+            borderBottom: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <Button
+            variant="outlined"
+            onClick={handleGoBack}
+            startIcon={<ArrowBackIcon />}
+            sx={{
+              borderColor: "primary.main",
+              color: "primary.main",
+              "&:hover": {
+                borderColor: "primary.dark",
+                bgcolor: "primary.main",
+                color: "white",
+              },
+            }}
+          >
+            חזור
+          </Button>
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 700,
+              color: "text.primary",
+              flex: 1,
+            }}
+          >
+            דיווח מזון - {groupName}
+          </Typography>
+        </Box>
+
+        {/* Main Content */}
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+            maxWidth: 600,
+            mx: "auto",
+            width: "100%",
+          }}
+        >
+          {/* Status Icon */}
+          <Box
+            sx={{
+              width: 120,
+              height: 120,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #FF9800 0%, #F57C00 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mb: 3,
+              boxShadow: "0 8px 32px rgba(255, 152, 0, 0.3)",
+            }}
+          >
+            <LockIcon
+              sx={{
+                fontSize: 60,
+                color: "white",
+              }}
+            />
+          </Box>
+
+          {/* Status Badge */}
+          <Chip
+            label="דיווח מזון נסגר"
+            color="warning"
+            icon={<CheckCircleIcon />}
+            sx={{
+              mb: 3,
+              fontSize: "1rem",
+              fontWeight: 600,
+              py: 1,
+              px: 2,
+              "& .MuiChip-icon": {
+                fontSize: "1.2rem",
+              },
+            }}
+          />
+
+          {/* Title */}
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 700,
+              color: "text.primary",
+              mb: 2,
+              fontSize: { xs: "1.75rem", sm: "2.125rem" },
+            }}
+          >
+            דיווח המזון הושלם
+          </Typography>
+
+          {/* Description */}
+          <Typography
+            variant="body1"
+            sx={{
+              color: "text.secondary",
+              mb: 4,
+              fontSize: "1.1rem",
+              lineHeight: 1.6,
+              maxWidth: 500,
+            }}
+          >
+            דיווח המזון עבור {groupName} הושלם ואין אפשרות לערוך אותו. הנתונים
+            נשמרו וניתן לצפות בהם בפיד החדשות.
+          </Typography>
+
+          {/* Info Card */}
+          <Card
+            sx={{
+              width: "100%",
+              maxWidth: 500,
+              mb: 4,
+              bgcolor: "warning.light",
+              border: "1px solid",
+              borderColor: "warning.main",
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 600,
+                  color: "warning.dark",
+                  mb: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                }}
+              >
+                <CheckCircleIcon sx={{ fontSize: "1.2rem" }} />
+                מה קורה עכשיו?
+              </Typography>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "warning.dark",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 1,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      bgcolor: "warning.dark",
+                      mt: 0.7,
+                      flexShrink: 0,
+                    }}
+                  />
+                  דיווח המזון נשמר במערכת
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "warning.dark",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 1,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      bgcolor: "warning.dark",
+                      mt: 0.7,
+                      flexShrink: 0,
+                    }}
+                  />
+                  הורים יכולים לצפות בדיווח בפיד החדשות
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "warning.dark",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 1,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      bgcolor: "warning.dark",
+                      mt: 0.7,
+                      flexShrink: 0,
+                    }}
+                  />
+                  לא ניתן לערוך או להוסיף נתונים נוספים
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              gap: 2,
+              width: "100%",
+              maxWidth: 400,
+            }}
+          >
             <Button
               variant="outlined"
               onClick={handleGoBack}
-              startIcon={<ArrowBackIcon />}
+              sx={{
+                flex: 1,
+                borderColor: "primary.main",
+                color: "primary.main",
+                py: 1.5,
+                "&:hover": {
+                  borderColor: "primary.dark",
+                  bgcolor: "primary.main",
+                  color: "white",
+                },
+              }}
             >
-              חזור
+              חזור לדשבורד
             </Button>
-            <Button variant="outlined" onClick={handleGoToFeed}>
-              עבור לפיד
+            <Button
+              variant="contained"
+              onClick={handleGoToFeed}
+              sx={{
+                flex: 1,
+                bgcolor: "primary.main",
+                py: 1.5,
+                "&:hover": {
+                  bgcolor: "primary.dark",
+                },
+              }}
+            >
+              צפה בפיד החדשות
             </Button>
           </Box>
         </Box>
@@ -402,10 +691,38 @@ const CreateFoodPostPage: React.FC = () => {
     );
   }
 
+  // Debug logging
+  console.log("🎯 [CreateFoodPostPage] Rendering modal with:", {
+    childrenCount: children.length,
+    groupName,
+    groupId,
+    isDailyReportLoading,
+    hasDailyReport: !!dailyReport,
+    dailyReportId: dailyReport?.id,
+    hasFoodData: !!dailyReport?.foodData,
+    foodDataEventsCount: dailyReport?.foodData?.events?.length || 0,
+    isFoodReportingClosed,
+  });
+
+  // Show the modal as a full-screen page (only when not closed)
   return (
-    <>
+    <Box
+      sx={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        bgcolor: "background.default",
+        zIndex: 1,
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        overflow: "hidden",
+      }}
+    >
       <CreateFoodPostModal
-        isOpen={isModalOpen}
+        isOpen={true}
         onClose={handleClose}
         onSubmit={handleSubmit}
         children={children}
@@ -414,7 +731,7 @@ const CreateFoodPostPage: React.FC = () => {
         isLoadingDailyReport={isDailyReportLoading}
         dailyReport={dailyReport}
       />
-    </>
+    </Box>
   );
 };
 

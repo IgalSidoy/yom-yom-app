@@ -29,18 +29,21 @@ interface FeedFloatingButtonProps {
   onPostTypeSelect: (postType: string) => Promise<void>;
   onOpen?: () => Promise<void>;
   isLoading?: boolean;
+  userRole?: string;
 }
 
 const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
   onPostTypeSelect,
   onOpen,
   isLoading: externalLoading = false,
+  userRole,
 }) => {
   const theme = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
+  // Filter post type options based on user role
   const postTypeOptions: PostTypeOption[] = [
     {
       id: "sleep",
@@ -49,13 +52,18 @@ const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
       color: "#9C27B0", // Purple
       description: "דיווח על שנת ילדים",
     },
-    {
-      id: "snack",
-      label: "ארוחה",
-      icon: <SnackIcon />,
-      color: "#FF9800", // Orange
-      description: "דיווח על ארוחות",
-    },
+    // Only show food post option for Staff and Admin users
+    ...(userRole === "Staff" || userRole === "Admin"
+      ? [
+          {
+            id: "snack",
+            label: "ארוחה",
+            icon: <SnackIcon />,
+            color: "#FF9800", // Orange
+            description: "דיווח על ארוחות",
+          },
+        ]
+      : []),
     {
       id: "activity",
       label: "פעילות",

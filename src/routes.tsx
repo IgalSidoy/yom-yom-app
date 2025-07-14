@@ -69,14 +69,33 @@ const StaffOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
+// Staff and Admin route protection (redirects Parent users to dashboard)
+const StaffAndAdminOnly: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const { user } = useApp();
+
+  if (user?.role === "Parent") {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  if (user?.role === "Staff" || user?.role === "Admin") {
+    return <>{children}</>;
+  }
+
+  // For any other role or no role, redirect to dashboard
+  return <Navigate to="/dashboard" replace />;
+};
+
 const AppRoutes: React.FC = () => {
   const location = useLocation();
 
-  // Hide bottom navigation for create post pages and login page
+  // Hide bottom navigation for create post pages, login page, and onboarding page
   const shouldShowBottomNav =
     !location.pathname.includes(ROUTES.SLEEP_POST) &&
     !location.pathname.includes(ROUTES.FOOD_POST) &&
-    !location.pathname.includes(ROUTES.LOGIN);
+    !location.pathname.includes(ROUTES.LOGIN) &&
+    !location.pathname.includes(ROUTES.ONBOARDING);
 
   return (
     <>
@@ -113,9 +132,9 @@ const AppRoutes: React.FC = () => {
           path={ROUTES.FOOD_POST}
           element={
             <ProtectedRoute>
-              <StaffOnly>
+              <StaffAndAdminOnly>
                 <CreateFoodPostPage />
-              </StaffOnly>
+              </StaffAndAdminOnly>
             </ProtectedRoute>
           }
         />

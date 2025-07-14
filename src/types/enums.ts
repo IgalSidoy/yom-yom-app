@@ -37,9 +37,8 @@ export enum FoodEventType {
 
 export enum FoodStatus {
   NotEaten = "NotEaten",
-  Eaten = "Eaten",
-  FullyEaten = "FullyEaten",
   PartiallyEaten = "PartiallyEaten",
+  FullyEaten = "FullyEaten",
   Refused = "Refused",
 }
 

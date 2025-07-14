@@ -7,6 +7,7 @@ import Container from "../Container";
 import FeedFloatingButton from "./FeedFloatingButton";
 import { useAttendance } from "../../contexts/AttendanceContext";
 import { useDailyReport } from "../../contexts/DailyReportContext";
+import { useApp } from "../../contexts/AppContext";
 import { Child } from "../../services/api";
 
 interface FeedContainerProps {
@@ -33,6 +34,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const { user } = useApp();
   const { attendanceData } = useAttendance();
   const {
     dailyReport,
@@ -88,45 +90,119 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
 
   // Skeleton components
   const PostSkeleton = () => (
-    <Slide direction="up" in={true} timeout={600}>
+    <Fade in={true} timeout={300}>
       <MuiBox
         sx={{
           p: 2,
           mb: 2,
           bgcolor: "background.paper",
           borderRadius: 2,
-          boxShadow: 1,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
           border: "1px solid",
           borderColor: "divider",
+          transition: "all 0.2s ease-in-out",
+          "&:hover": {
+            transform: "translateY(-1px)",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          },
         }}
       >
         {/* Header skeleton */}
         <MuiBox sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-          <Skeleton variant="circular" width={40} height={40} />
+          <Skeleton
+            variant="circular"
+            width={40}
+            height={40}
+            sx={{ bgcolor: "rgba(0,0,0,0.08)" }}
+          />
           <MuiBox sx={{ ml: 2, flex: 1 }}>
-            <Skeleton variant="text" width="60%" height={24} />
-            <Skeleton variant="text" width="40%" height={16} />
+            <Skeleton
+              variant="text"
+              width="60%"
+              height={24}
+              sx={{ bgcolor: "rgba(0,0,0,0.08)" }}
+            />
+            <Skeleton
+              variant="text"
+              width="40%"
+              height={16}
+              sx={{ bgcolor: "rgba(0,0,0,0.06)" }}
+            />
           </MuiBox>
-          <Skeleton variant="text" width={80} height={16} />
+          <Skeleton
+            variant="text"
+            width={80}
+            height={16}
+            sx={{ bgcolor: "rgba(0,0,0,0.06)" }}
+          />
         </MuiBox>
 
         {/* Title skeleton */}
-        <Skeleton variant="text" width="80%" height={28} sx={{ mb: 1 }} />
+        <Skeleton
+          variant="text"
+          width="80%"
+          height={28}
+          sx={{ mb: 1, bgcolor: "rgba(0,0,0,0.1)" }}
+        />
 
-        {/* Content skeleton */}
-        <MuiBox sx={{ display: "flex", gap: 1, mb: 2 }}>
+        {/* Content skeleton - different types of posts */}
+        <MuiBox sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
+          <Skeleton
+            variant="rectangular"
+            width={70}
+            height={24}
+            sx={{ borderRadius: 12, bgcolor: "rgba(76, 175, 80, 0.2)" }}
+          />
+          <Skeleton
+            variant="rectangular"
+            width={90}
+            height={24}
+            sx={{ borderRadius: 12, bgcolor: "rgba(255, 107, 53, 0.2)" }}
+          />
           <Skeleton
             variant="rectangular"
             width={60}
             height={24}
-            sx={{ borderRadius: 1 }}
+            sx={{ borderRadius: 12, bgcolor: "rgba(156, 39, 176, 0.2)" }}
           />
-          <Skeleton
-            variant="rectangular"
-            width={80}
-            height={24}
-            sx={{ borderRadius: 1 }}
-          />
+        </MuiBox>
+
+        {/* Children list skeleton */}
+        <MuiBox sx={{ mb: 2 }}>
+          {[1, 2, 3].map((childIndex) => (
+            <MuiBox
+              key={childIndex}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                mb: 1,
+                p: 1,
+                borderRadius: 1,
+                bgcolor: "background.default",
+              }}
+            >
+              <Skeleton
+                variant="circular"
+                width={32}
+                height={32}
+                sx={{ bgcolor: "rgba(0,0,0,0.06)" }}
+              />
+              <MuiBox sx={{ ml: 1, flex: 1 }}>
+                <Skeleton
+                  variant="text"
+                  width="50%"
+                  height={16}
+                  sx={{ bgcolor: "rgba(0,0,0,0.06)" }}
+                />
+              </MuiBox>
+              <Skeleton
+                variant="rectangular"
+                width={60}
+                height={20}
+                sx={{ borderRadius: 10, bgcolor: "rgba(0,0,0,0.08)" }}
+              />
+            </MuiBox>
+          ))}
         </MuiBox>
 
         {/* Stats skeleton */}
@@ -140,39 +216,74 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
             borderRadius: 1.5,
             border: "1px solid",
             borderColor: "divider",
+            mb: 2,
           }}
         >
           <MuiBox>
-            <Skeleton variant="text" width={60} height={32} />
-            <Skeleton variant="text" width={50} height={16} />
+            <Skeleton
+              variant="text"
+              width={60}
+              height={32}
+              sx={{ bgcolor: "rgba(0,0,0,0.08)" }}
+            />
+            <Skeleton
+              variant="text"
+              width={50}
+              height={16}
+              sx={{ bgcolor: "rgba(0,0,0,0.06)" }}
+            />
           </MuiBox>
           <MuiBox sx={{ textAlign: "center" }}>
-            <Skeleton variant="text" width={40} height={24} />
-            <Skeleton variant="text" width={80} height={16} />
+            <Skeleton
+              variant="text"
+              width={40}
+              height={24}
+              sx={{ bgcolor: "rgba(0,0,0,0.08)" }}
+            />
+            <Skeleton
+              variant="text"
+              width={80}
+              height={16}
+              sx={{ bgcolor: "rgba(0,0,0,0.06)" }}
+            />
           </MuiBox>
         </MuiBox>
 
         {/* Actions skeleton */}
         <MuiBox
-          sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
         >
           <Skeleton
             variant="rectangular"
             width={100}
             height={32}
-            sx={{ borderRadius: 1 }}
+            sx={{ borderRadius: 16, bgcolor: "rgba(0,0,0,0.08)" }}
           />
           <MuiBox sx={{ display: "flex", gap: 1 }}>
-            <Skeleton variant="circular" width={32} height={32} />
-            <Skeleton variant="circular" width={32} height={32} />
+            <Skeleton
+              variant="circular"
+              width={32}
+              height={32}
+              sx={{ bgcolor: "rgba(0,0,0,0.06)" }}
+            />
+            <Skeleton
+              variant="circular"
+              width={32}
+              height={32}
+              sx={{ bgcolor: "rgba(0,0,0,0.06)" }}
+            />
           </MuiBox>
         </MuiBox>
       </MuiBox>
-    </Slide>
+    </Fade>
   );
 
   const FeedSkeleton = () => (
-    <Fade in={true} timeout={800}>
+    <Fade in={true} timeout={500} mountOnEnter unmountOnExit>
       <MuiBox>
         {[1, 2, 3].map((index) => (
           <PostSkeleton key={index} />
@@ -235,7 +346,18 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
             >
               {title}
             </Typography>
-            {headerContent && <Box sx={{ mt: 2 }}>{headerContent}</Box>}
+            {headerContent ? (
+              <Box sx={{ mt: 2 }}>{headerContent}</Box>
+            ) : isLoading ? (
+              <Box sx={{ mt: 2 }}>
+                <Skeleton
+                  variant="rectangular"
+                  width="100%"
+                  height={48}
+                  sx={{ borderRadius: 2, bgcolor: "rgba(0,0,0,0.06)" }}
+                />
+              </Box>
+            ) : null}
           </Box>
 
           {/* Mobile Content */}
@@ -287,6 +409,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
                 onPostTypeSelect={postTypeHandler}
                 onOpen={handleFloatingButtonOpen}
                 isLoading={false}
+                userRole={user?.role}
               />
             )}
           </Box>
@@ -351,7 +474,18 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
                 {subtitle}
               </Typography>
             )}
-            {headerContent && <Box sx={{ mt: 2 }}>{headerContent}</Box>}
+            {headerContent ? (
+              <Box sx={{ mt: 2 }}>{headerContent}</Box>
+            ) : isLoading ? (
+              <Box sx={{ mt: 2 }}>
+                <Skeleton
+                  variant="rectangular"
+                  width="100%"
+                  height={48}
+                  sx={{ borderRadius: 2, bgcolor: "rgba(0,0,0,0.06)" }}
+                />
+              </Box>
+            ) : null}
           </Box>
 
           {/* Desktop Content */}
@@ -401,6 +535,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
                 onPostTypeSelect={postTypeHandler}
                 onOpen={handleFloatingButtonOpen}
                 isLoading={false}
+                userRole={user?.role}
               />
             )}
           </Box>
