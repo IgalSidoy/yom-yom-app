@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Yom Yom",
+  "name": "Yom Yom - ניהול גנים יום יום",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,6 +20,10 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "orientation": "portrait",
+  "theme_color": "#FF9F43",
+  "background_color": "#FFF6EB",
+  "scope": "/",
+  "lang": "he",
+  "dir": "rtl"
 }
