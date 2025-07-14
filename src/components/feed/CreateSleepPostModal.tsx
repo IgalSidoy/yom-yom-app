@@ -28,12 +28,14 @@ import {
   updateDailyReportSleepData,
 } from "../../services/api";
 import { SleepStatus } from "../../types/enums";
+import { useFeed } from "../../contexts/FeedContext";
 
 // ChildItem component defined outside to prevent recreation on every render
 const ChildItem = React.memo<{
   child: SleepChild;
   isCompleted: boolean;
   isCelebrating: boolean;
+  isDisabled: boolean;
   onStartSleep: (childId: string) => void;
   onEndSleep: (childId: string, startTime: string) => void;
   onNotesChange: (childId: string, notes: string) => void;
@@ -42,6 +44,7 @@ const ChildItem = React.memo<{
     child,
     isCompleted,
     isCelebrating,
+    isDisabled,
     onStartSleep,
     onEndSleep,
     onNotesChange,
@@ -154,6 +157,7 @@ const ChildItem = React.memo<{
                   label="הערות"
                   value={child.notes}
                   onChange={(e) => handleNotesChange(e.target.value)}
+                  disabled={isDisabled}
                   sx={{ width: "100%", mt: 1 }}
                   placeholder="הערות נוספות..."
                 />
@@ -165,6 +169,7 @@ const ChildItem = React.memo<{
             <Switch
               checked={isSleeping}
               onChange={isSleeping ? handleEndSleep : handleStartSleep}
+              disabled={isDisabled}
               color="primary"
               sx={{
                 "& .MuiSwitch-switchBase.Mui-checked": {
@@ -172,6 +177,12 @@ const ChildItem = React.memo<{
                 },
                 "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
                   backgroundColor: "#9C27B0",
+                },
+                "& .MuiSwitch-switchBase.Mui-disabled": {
+                  color: "#9C27B080",
+                },
+                "& .MuiSwitch-switchBase.Mui-disabled + .MuiSwitch-track": {
+                  backgroundColor: "#9C27B040",
                 },
               }}
             />
@@ -245,15 +256,19 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const { refreshFeed } = useFeed();
 
   // Default title variations - memoized to prevent infinite loops
   const defaultTitles = React.useMemo(
     () => [
-      "שינת צהריים - " + groupName,
-      "דיווח שינה יומי - " + groupName,
-      "מעקב שינת ילדים - " + groupName,
-      "שינת ילדים - " + groupName,
-      "דיווח שנת צהריים - " + groupName,
+      "😴 שינת צהריים מתוקה - " + groupName,
+      "🌙 דיווח שינה יומי - " + groupName,
+      "💤 מעקב שינת ילדים - " + groupName,
+      "🛏️ שינת ילדים - " + groupName,
+      "✨ דיווח שנת צהריים - " + groupName,
+      "🌟 שינת ילדים מאושרים - " + groupName,
+      "💫 דיווח שינה יומי - " + groupName,
+      "🌠 שינת צהריים רגועה - " + groupName,
     ],
     [groupName]
   );
@@ -375,11 +390,17 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
 
   // Initialize title when modal opens or title index changes
   useEffect(() => {
-    if (isOpen && !titleInitializedRef.current) {
-      const initialTitle =
-        dailyReport?.sleepData?.title || defaultTitles[titleIndex];
-      setTitle(initialTitle);
-      titleInitializedRef.current = true;
+    if (isOpen) {
+      if (!titleInitializedRef.current) {
+        // Initial load - use daily report title or default title
+        const initialTitle =
+          dailyReport?.sleepData?.title || defaultTitles[titleIndex];
+        setTitle(initialTitle);
+        titleInitializedRef.current = true;
+      } else {
+        // Title index changed (random button clicked) - update title
+        setTitle(defaultTitles[titleIndex]);
+      }
     }
   }, [isOpen, dailyReport?.sleepData?.title, defaultTitles, titleIndex]);
 
@@ -391,6 +412,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
       setErrors({});
       setIsLoading(false);
       setCompletedChildren(new Set());
+      setCelebratingChildren(new Set());
       titleInitializedRef.current = false;
     }
   }, [isOpen]);
@@ -404,10 +426,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
   const handleNextTitle = useCallback(() => {
     const nextIndex = (titleIndex + 1) % defaultTitles.length;
     setTitleIndex(nextIndex);
-    setTitle(defaultTitles[nextIndex]);
-    // Reset the initialization flag so the title can be updated
-    titleInitializedRef.current = false;
-  }, [titleIndex, defaultTitles]);
+  }, [titleIndex, defaultTitles.length]);
 
   // Update child sleep state
   const updateChildSleep = useCallback(
@@ -532,37 +551,33 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
 
       // Prepare sleep data for the API (only children who haven't finished sleeping are included)
       const sleepData = {
-        childrenSleepData: {
-          title: title.trim(),
-          children: sleepChildren.map((child) => {
-            const isCurrentlySleeping = isChildSleeping(
-              child.sleepStartTime,
-              child.sleepEndTime
-            );
-            const hasFinishedSleeping =
-              child.sleepStartTime &&
-              child.sleepEndTime &&
-              !isCurrentlySleeping;
+        title: title.trim(),
+        children: sleepChildren.map((child) => {
+          const isCurrentlySleeping = isChildSleeping(
+            child.sleepStartTime,
+            child.sleepEndTime
+          );
+          const hasFinishedSleeping =
+            child.sleepStartTime && child.sleepEndTime && !isCurrentlySleeping;
 
-            let status: SleepStatus;
-            if (isCurrentlySleeping) {
-              status = SleepStatus.Sleeping;
-            } else if (hasFinishedSleeping) {
-              status = SleepStatus.Awake;
-            } else {
-              status = SleepStatus.Awake;
-            }
+          let status: SleepStatus;
+          if (isCurrentlySleeping) {
+            status = SleepStatus.Sleeping;
+          } else if (hasFinishedSleeping) {
+            status = SleepStatus.Awake;
+          } else {
+            status = SleepStatus.Awake;
+          }
 
-            return {
-              childId: child.childId,
-              status: status,
-              comment: child.notes,
-            };
-          }),
-        },
+          return {
+            childId: child.childId,
+            status: status,
+            comment: child.notes,
+          };
+        }),
       };
 
-      // Call the original onSubmit first to ensure navigation happens
+      // Prepare form data for navigation
       const formData: CreateSleepPostData = {
         title: title.trim(),
         groupId,
@@ -572,26 +587,40 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
       };
 
       console.log(
-        "🎯 [CreateSleepPostModal] About to call onSubmit with data:",
-        formData
+        "🎯 [CreateSleepPostModal] About to update daily report sleep data:",
+        sleepData
       );
 
-      // Call onSubmit to trigger navigation immediately
-      onSubmit(formData);
+      // Update the daily report first, then navigate on success
+      try {
+        await updateDailyReportSleepData(dailyReport.id, sleepData);
+        console.log(
+          "🎯 [CreateSleepPostModal] Sleep data updated successfully"
+        );
 
-      console.log("🎯 [CreateSleepPostModal] onSubmit called successfully");
+        // Refresh feed to get updated timestamps
+        console.log("🎯 [CreateSleepPostModal] Refreshing feed data...");
+        await refreshFeed();
+        console.log("🎯 [CreateSleepPostModal] Feed refreshed successfully");
 
-      // Update the daily report in the background
-      setTimeout(async () => {
-        try {
-          await updateDailyReportSleepData(dailyReport.id, sleepData);
-        } catch (apiError) {
-          console.error(
-            "API update failed but navigation should continue:",
-            apiError
-          );
-        }
-      }, 100);
+        // Only navigate after successful API update and feed refresh
+        console.log(
+          "🎯 [CreateSleepPostModal] About to call onSubmit with data:",
+          formData
+        );
+        onSubmit(formData);
+        console.log("🎯 [CreateSleepPostModal] onSubmit called successfully");
+      } catch (apiError) {
+        console.error("API update failed:", apiError);
+        setErrors({
+          submit:
+            apiError instanceof Error
+              ? apiError.message
+              : "אירעה שגיאה בעדכון נתוני השינה",
+        });
+        setIsLoading(false);
+        return;
+      }
     } catch (error) {
       console.error("Error updating sleep data:", error);
       setErrors({
@@ -610,6 +639,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
     groupName,
     onSubmit,
     isLoading,
+    refreshFeed,
   ]);
 
   // Count sleeping children
@@ -874,12 +904,17 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
               variant="outlined"
               size="small"
               onClick={handleSelectAllAsleep}
+              disabled={dailyReport?.sleepData?.status === "Closed"}
               sx={{
                 borderColor: "#9C27B0",
                 color: "#9C27B0",
                 "&:hover": {
                   borderColor: "#7B1FA2",
                   bgcolor: "#9C27B010",
+                },
+                "&:disabled": {
+                  borderColor: "#6c757d",
+                  color: "#6c757d",
                 },
               }}
             >
@@ -889,12 +924,17 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
               variant="outlined"
               size="small"
               onClick={handleFinishAllSleep}
+              disabled={dailyReport?.sleepData?.status === "Closed"}
               sx={{
                 borderColor: "#4CAF50",
                 color: "#4CAF50",
                 "&:hover": {
                   borderColor: "#388E3C",
                   bgcolor: "#4CAF5010",
+                },
+                "&:disabled": {
+                  borderColor: "#6c757d",
+                  color: "#6c757d",
                 },
               }}
             >
@@ -921,6 +961,14 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
           {errors.children && (
             <Alert severity="error" sx={{ mb: 1 }}>
               {errors.children}
+            </Alert>
+          )}
+
+          {dailyReport?.sleepData?.status === "Closed" && (
+            <Alert severity="warning" sx={{ mb: 1 }}>
+              <AlertTitle>דיווח שינה נסגר</AlertTitle>
+              לא ניתן לערוך דיווח שינה שכבר נסגר. הדיווח הושלם ואין אפשרות
+              להוסיף או לשנות נתונים.
             </Alert>
           )}
 
@@ -963,6 +1011,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
                   child={child}
                   isCompleted={completedChildren.has(child.childId)}
                   isCelebrating={celebratingChildren.has(child.childId)}
+                  isDisabled={dailyReport?.sleepData?.status === "Closed"}
                   onStartSleep={handleStartSleep}
                   onEndSleep={handleEndSleep}
                   onNotesChange={handleNotesChange}
@@ -996,22 +1045,37 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
         <Button
           variant="contained"
           onClick={handleSubmit}
-          disabled={isLoading || isLoadingDailyReport}
+          disabled={
+            isLoading ||
+            isLoadingDailyReport ||
+            dailyReport?.sleepData?.status === "Closed"
+          }
           startIcon={
             isLoading ? (
               <Skeleton variant="circular" width={20} height={20} />
+            ) : dailyReport?.sleepData?.status === "Closed" ? (
+              <Box sx={{ color: "white", fontSize: "1.2rem" }}>🔒</Box>
             ) : (
               <AddIcon />
             )
           }
           sx={{
             flex: 1,
-            bgcolor: "#9C27B0",
+            bgcolor:
+              dailyReport?.sleepData?.status === "Closed"
+                ? "#6c757d"
+                : "#9C27B0",
             "&:hover": {
-              bgcolor: "#7B1FA2",
+              bgcolor:
+                dailyReport?.sleepData?.status === "Closed"
+                  ? "#6c757d"
+                  : "#7B1FA2",
             },
             "&:disabled": {
-              bgcolor: "#9C27B080",
+              bgcolor:
+                dailyReport?.sleepData?.status === "Closed"
+                  ? "#6c757d"
+                  : "#9C27B080",
             },
           }}
         >
@@ -1022,6 +1086,8 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
             </Box>
           ) : isLoadingDailyReport ? (
             "טוען נתונים..."
+          ) : dailyReport?.sleepData?.status === "Closed" ? (
+            "דיווח שינה נסגר"
           ) : dailyReport?.sleepData?.status === "Updated" ? (
             "עדכן פוסט שינה"
           ) : (

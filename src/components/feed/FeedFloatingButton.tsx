@@ -29,18 +29,21 @@ interface FeedFloatingButtonProps {
   onPostTypeSelect: (postType: string) => Promise<void>;
   onOpen?: () => Promise<void>;
   isLoading?: boolean;
+  userRole?: string;
 }
 
 const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
   onPostTypeSelect,
   onOpen,
   isLoading: externalLoading = false,
+  userRole,
 }) => {
   const theme = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
+  // Filter post type options based on user role
   const postTypeOptions: PostTypeOption[] = [
     {
       id: "sleep",
@@ -49,13 +52,18 @@ const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
       color: "#9C27B0", // Purple
       description: "דיווח על שנת ילדים",
     },
-    {
-      id: "snack",
-      label: "ארוחה",
-      icon: <SnackIcon />,
-      color: "#FF9800", // Orange
-      description: "דיווח על ארוחות",
-    },
+    // Only show food post option for Staff and Admin users
+    ...(userRole === "Staff" || userRole === "Admin"
+      ? [
+          {
+            id: "snack",
+            label: "ארוחה",
+            icon: <SnackIcon />,
+            color: "#FF9800", // Orange
+            description: "דיווח על ארוחות",
+          },
+        ]
+      : []),
     {
       id: "activity",
       label: "פעילות",
@@ -66,6 +74,10 @@ const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
   ];
 
   const handlePostTypeSelect = async (postType: string) => {
+    console.log(
+      "🎯 [FeedFloatingButton] handlePostTypeSelect called with:",
+      postType
+    );
     setIsLoading(true);
     setIsClosing(true);
     // Wait for the menu to fully close before calling the parent handler
@@ -73,7 +85,16 @@ const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
       setIsOpen(false);
       setIsClosing(false);
       try {
+        console.log("🔄 [FeedFloatingButton] Calling parent onPostTypeSelect");
         await onPostTypeSelect(postType);
+        console.log(
+          "✅ [FeedFloatingButton] Parent onPostTypeSelect completed"
+        );
+      } catch (error) {
+        console.error(
+          "💥 [FeedFloatingButton] Error in parent onPostTypeSelect:",
+          error
+        );
       } finally {
         setIsLoading(false);
       }
@@ -81,13 +102,20 @@ const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
   };
 
   const handleOpen = async () => {
+    console.log("🎯 [FeedFloatingButton] handleOpen called");
     if (onOpen) {
       try {
+        console.log("🔄 [FeedFloatingButton] Calling parent onOpen");
         await onOpen();
+        console.log("✅ [FeedFloatingButton] Parent onOpen completed");
       } catch (error) {
-        console.error("Failed to prepare data for post creation:", error);
+        console.error(
+          "💥 [FeedFloatingButton] Failed to prepare data for post creation:",
+          error
+        );
       }
     }
+    console.log("📱 [FeedFloatingButton] Setting isOpen to true");
     setIsOpen(true);
   };
 

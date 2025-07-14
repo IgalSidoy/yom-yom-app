@@ -11,6 +11,7 @@ import { AppProvider } from "./contexts/AppContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AttendanceProvider } from "./contexts/AttendanceContext";
 import { DailyReportProvider } from "./contexts/DailyReportContext";
+import { FeedProvider } from "./contexts/FeedContext";
 import AppRoutes from "./routes";
 
 const App: React.FC = () => {
@@ -31,7 +32,9 @@ const App: React.FC = () => {
               <AuthProvider>
                 <AttendanceProvider>
                   <DailyReportProvider>
-                    <AppRoutes />
+                    <FeedProvider>
+                      <AppRoutes />
+                    </FeedProvider>
                   </DailyReportProvider>
                 </AttendanceProvider>
               </AuthProvider>

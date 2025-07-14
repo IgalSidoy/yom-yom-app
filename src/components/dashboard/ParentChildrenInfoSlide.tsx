@@ -52,6 +52,7 @@ interface ParentChildrenInfoSlideProps {
   onRefresh?: () => void;
   onUpdateAttendance?: (childId: string, status: string) => Promise<void>;
   forceExpand?: boolean;
+  attendanceDataByDate?: any[]; // Add this to check for closed attendance
 }
 
 const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
@@ -61,6 +62,7 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
   onRefresh,
   onUpdateAttendance,
   forceExpand = false,
+  attendanceDataByDate = [],
 }) => {
   const [expanded, setExpanded] = React.useState(true);
   const [updateLoading, setUpdateLoading] = React.useState(false);
@@ -210,6 +212,11 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
       day: "numeric",
     });
   };
+
+  // Check if any attendance group is closed
+  const isAnyAttendanceClosed = attendanceDataByDate.some(
+    (groupAttendance) => groupAttendance.isClosed
+  );
 
   // Convert string status to ApiAttendanceStatus enum
   const convertStringToApiStatus = (status: string): ApiAttendanceStatus => {
@@ -379,16 +386,47 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
               width: "100%",
             }}
           >
-            <Typography
-              variant="h5"
+            <Box
               sx={{
-                fontWeight: 600,
-                color: "text.primary",
-                fontSize: { xs: "1.25rem", sm: "1.5rem" },
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                flexWrap: "wrap",
               }}
             >
-              נוכחות
-            </Typography>
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 600,
+                  color: "text.primary",
+                  fontSize: { xs: "1.25rem", sm: "1.5rem" },
+                }}
+              >
+                נוכחות
+              </Typography>
+              {isAnyAttendanceClosed && (
+                <Box
+                  sx={{
+                    bgcolor: "warning.main",
+                    color: "white",
+                    borderRadius: 1.5,
+                    px: 1.5,
+                    py: 0.5,
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: "0.7rem",
+                    }}
+                  >
+                    נסגר
+                  </Typography>
+                </Box>
+              )}
+            </Box>
           </Box>
         </AccordionSummary>
         <AccordionDetails
@@ -494,6 +532,7 @@ const ParentChildrenInfoSlide: React.FC<ParentChildrenInfoSlideProps> = ({
                           handleStatusUpdate(child.childId, status)
                         }
                         updateLoading={updateLoading}
+                        disabled={isAnyAttendanceClosed}
                         getStatusColor={getStatusColor}
                         getStatusTextColor={getStatusTextColor}
                         getStatusText={getStatusText}

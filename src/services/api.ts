@@ -5,8 +5,15 @@ import axios, {
   AxiosRequestConfig,
 } from "axios";
 import { logger } from "../utils/logger";
-import { SleepStatus, EntityStatus } from "../types/enums";
+import {
+  SleepStatus,
+  EntityStatus,
+  FoodStatus,
+  FoodEventType,
+  FoodDataStatus,
+} from "../types/enums";
 import { ApiAttendanceStatus } from "../types/attendance";
+import { FeedPost } from "../types/posts";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL;
 
@@ -676,6 +683,29 @@ export interface SleepData {
   children: DailyReportChild[];
 }
 
+export interface FoodEventChild {
+  childId: string;
+  firstName: string;
+  lastName: string;
+  foodDetails: string;
+  status: FoodStatus;
+  updatedByUserId: string;
+  updatedByUserName: string;
+}
+
+export interface FoodEvent {
+  id: string;
+  type: FoodEventType;
+  timestamp: string;
+  children: FoodEventChild[];
+}
+
+export interface FoodData {
+  title: string;
+  status: FoodDataStatus;
+  events: FoodEvent[];
+}
+
 // Map API string status to SleepStatus enum
 export const mapApiStatusToSleepStatus = (apiStatus: string): SleepStatus => {
   switch (apiStatus.toLowerCase()) {
@@ -691,6 +721,38 @@ export const mapApiStatusToSleepStatus = (apiStatus: string): SleepStatus => {
   }
 };
 
+// Map API attendance status to feed status format
+export const mapAttendanceStatusForFeed = (apiStatus: string): string => {
+  console.log(
+    `🔄 [API] Mapping attendance status: ${apiStatus} -> feed format`
+  );
+
+  const mappedStatus = (() => {
+    switch (apiStatus.toLowerCase()) {
+      case "arrived":
+        return "Present";
+      case "missing":
+        return "Absent";
+      case "sick":
+        return "Sick";
+      case "late":
+        return "Late";
+      case "vacation":
+        return "Absent"; // Map vacation to absent for feed display
+      case "unreported":
+        return "Unreported"; // Keep unreported as unreported
+      default:
+        console.warn(
+          `Unknown attendance status from API: ${apiStatus}, defaulting to Absent`
+        );
+        return "Absent";
+    }
+  })();
+
+  console.log(`✅ [API] Mapped status: ${apiStatus} -> ${mappedStatus}`);
+  return mappedStatus;
+};
+
 // Map API string status to EntityStatus enum
 export const mapApiStatusToEntityStatus = (apiStatus: string): EntityStatus => {
   switch (apiStatus) {
@@ -700,6 +762,8 @@ export const mapApiStatusToEntityStatus = (apiStatus: string): EntityStatus => {
       return EntityStatus.Updated;
     case "Deleted":
       return EntityStatus.Deleted;
+    case "Closed":
+      return EntityStatus.Closed;
     default:
       console.warn(
         `Unknown entity status from API: ${apiStatus}, defaulting to Created`
@@ -713,9 +777,11 @@ export interface DailyReport {
   organizationId: string;
   accountId: string;
   groupId: string;
+  groupName: string;
   createdById: string;
   date: string;
   sleepData: SleepData;
+  foodData?: FoodData;
   isPublished: boolean;
   created: string;
   updated: string;
@@ -959,14 +1025,12 @@ export interface SleepPostResponse {
 
 // Update daily report with sleep data
 export interface UpdateDailyReportSleepData {
-  childrenSleepData: {
-    title: string;
-    children: {
-      childId: string;
-      status: SleepStatus;
-      comment?: string;
-    }[];
-  };
+  title: string;
+  children: {
+    childId: string;
+    status: SleepStatus;
+    comment?: string;
+  }[];
 }
 
 export const updateDailyReportSleepData = async (
@@ -977,7 +1041,7 @@ export const updateDailyReportSleepData = async (
     logger.info("Updating daily report sleep data", { dailyReportId });
 
     const response = await api.patch(
-      `/api/v1/daily-reports/${dailyReportId}`,
+      `/api/v1/daily-reports/${dailyReportId}/sleep`,
       sleepData
     );
 
@@ -988,6 +1052,44 @@ export const updateDailyReportSleepData = async (
     return response.data;
   } catch (error) {
     logger.error("Failed to update daily report sleep data", error);
+    throw error;
+  }
+};
+
+// Update daily report with food data
+export interface UpdateDailyReportFoodData {
+  title: string;
+  events: {
+    id: string;
+    type: FoodEventType;
+    timestamp: string;
+    children: {
+      childId: string;
+      foodDetails: string;
+      status: FoodStatus;
+    }[];
+  }[];
+}
+
+export const updateDailyReportFoodData = async (
+  dailyReportId: string,
+  foodData: UpdateDailyReportFoodData
+): Promise<DailyReport> => {
+  try {
+    logger.info("Updating daily report food data", { dailyReportId });
+
+    const response = await api.patch(
+      `/api/v1/daily-reports/${dailyReportId}/food`,
+      foodData
+    );
+
+    logger.info("Daily report food data updated successfully", {
+      dailyReportId,
+    });
+
+    return response.data;
+  } catch (error) {
+    logger.error("Failed to update daily report food data", error);
     throw error;
   }
 };
@@ -1010,6 +1112,122 @@ export const createSleepPost = async (
     logger.error("Failed to create sleep post", error);
     throw error;
   }
+};
+
+// Feed API functions
+export const feedApi = {
+  getFeedByGroup: async (
+    groupId: string,
+    date: string
+  ): Promise<FeedPost[]> => {
+    try {
+      logger.info("Fetching feed for group", { groupId, date });
+
+      const response = await api.get(`/api/v1/feed/${groupId}?date=${date}`, {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      });
+
+      logger.info("Feed fetched successfully", {
+        groupId,
+        date,
+        postCount: response.data.length,
+      });
+
+      // Map the feed data to handle status mapping for attendance posts
+      const mappedData = response.data.map((post: any) => {
+        if (
+          post.type === "AttendancePost" &&
+          post.metadata?.attendanceMetadata
+        ) {
+          return {
+            ...post,
+            state: post.state || "Open", // Include state field
+            isClosed: post.state === "Closed", // Set isClosed based on state
+            metadata: {
+              ...post.metadata,
+              attendanceMetadata: {
+                ...post.metadata.attendanceMetadata,
+                childrenAttendanceData:
+                  post.metadata.attendanceMetadata.childrenAttendanceData?.map(
+                    (child: any) => ({
+                      ...child,
+                      status: mapAttendanceStatusForFeed(child.status),
+                    })
+                  ) || [],
+              },
+            },
+          };
+        }
+        // Handle other post types (like SleepPost)
+        return {
+          ...post,
+          state: post.state || "Open", // Include state field
+          isClosed: post.state === "Closed", // Set isClosed based on state
+        };
+      });
+
+      return mappedData;
+    } catch (error) {
+      logger.error("Failed to fetch feed", error);
+      throw error;
+    }
+  },
+
+  getFeedForUser: async (date: string): Promise<FeedPost[]> => {
+    try {
+      logger.info("Fetching feed for user", { date });
+
+      const response = await api.get(`/api/v1/feed/user?date=${date}`, {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      });
+
+      logger.info("User feed fetched successfully", {
+        date,
+        postCount: response.data.length,
+      });
+
+      // Map the feed data to handle status mapping for attendance posts
+      const mappedData = response.data.map((post: any) => {
+        if (
+          post.type === "AttendancePost" &&
+          post.metadata?.attendanceMetadata
+        ) {
+          return {
+            ...post,
+            state: post.state || "Open", // Include state field
+            isClosed: post.state === "Closed", // Set isClosed based on state
+            metadata: {
+              ...post.metadata,
+              attendanceMetadata: {
+                ...post.metadata.attendanceMetadata,
+                childrenAttendanceData:
+                  post.metadata.attendanceMetadata.childrenAttendanceData?.map(
+                    (child: any) => ({
+                      ...child,
+                      status: mapAttendanceStatusForFeed(child.status),
+                    })
+                  ) || [],
+              },
+            },
+          };
+        }
+        return post;
+      });
+
+      return mappedData;
+    } catch (error) {
+      logger.error("Failed to fetch user feed", error);
+      throw error;
+    }
+  },
 };
 
 export default api;

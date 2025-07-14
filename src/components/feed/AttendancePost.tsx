@@ -4,6 +4,7 @@ import {
   CheckCircle as CheckCircleIcon,
   Schedule as ScheduleIcon,
   Group as GroupIcon,
+  Lock as LockIcon,
 } from "@mui/icons-material";
 import PostContainer from "./PostContainer";
 
@@ -20,6 +21,7 @@ interface AttendancePostProps {
   publishDate: string;
   isLiked?: boolean;
   likeCount?: number;
+  isClosed?: boolean; // Add prop to indicate if attendance post is closed
   onViewDetails?: (id: string) => void;
   onEdit?: (id: string) => void;
   onLike?: (id: string) => void;
@@ -38,6 +40,7 @@ const AttendancePost: React.FC<AttendancePostProps> = ({
   publishDate,
   isLiked = false,
   likeCount = 0,
+  isClosed = false, // Add default value
   onViewDetails,
   onEdit,
   onLike,
@@ -114,6 +117,33 @@ const AttendancePost: React.FC<AttendancePostProps> = ({
               },
             }}
           />
+          {/* Closed status badge */}
+          {isClosed && (
+            <Box
+              sx={{
+                bgcolor: "warning.main",
+                color: "white",
+                borderRadius: 1.5,
+                px: 1.5,
+                py: 0.5,
+                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+              }}
+            >
+              <LockIcon sx={{ fontSize: "0.8rem" }} />
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: "0.7rem",
+                }}
+              >
+                סגור
+              </Typography>
+            </Box>
+          )}
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: "auto" }}>
           <GroupIcon

@@ -14,6 +14,7 @@ export const ROUTES = {
 
   // Post creation routes
   SLEEP_POST: "/sleep-post",
+  FOOD_POST: "/food-post",
 
   // Catch-all route
   NOT_FOUND: "*",
@@ -28,7 +29,7 @@ export const ROUTE_GROUPS = {
     ROUTES.FEED,
     ROUTES.ATTENDANCE,
   ],
-  POST_ROUTES: [ROUTES.SLEEP_POST],
+  POST_ROUTES: [ROUTES.SLEEP_POST, ROUTES.FOOD_POST],
 } as const;
 
 // Helper function to build dynamic routes

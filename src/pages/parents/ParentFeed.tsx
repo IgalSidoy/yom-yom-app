@@ -1,147 +1,77 @@
-import React, { useState, useEffect } from "react";
-import { Alert, Box, Typography, Chip, Avatar } from "@mui/material";
+import React, { useEffect } from "react";
+import { Alert, Box } from "@mui/material";
+import { useLocation } from "react-router-dom";
 import {
-  AttendancePost,
-  SleepPost,
-  SleepPostErrorBoundary,
   FeedContainer,
+  FetchDailyReportButton,
+  FeedDateSelector,
+  FeedPost,
 } from "../../components/feed";
-import { Child } from "../../services/api";
-import { useAttendance } from "../../contexts/AttendanceContext";
 import { useApp } from "../../contexts/AppContext";
 import { useDailyReport } from "../../contexts/DailyReportContext";
+import { useFeed } from "../../contexts/FeedContext";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../config/routes";
 
 const ParentFeed: React.FC = () => {
-  const { attendanceData } = useAttendance();
   const { user } = useApp();
-  const { dailyReport } = useDailyReport();
+  const { dailyReport, fetchDailyReport } = useDailyReport();
+  const {
+    feedPosts,
+    selectedDate,
+    isFeedLoading,
+    isLoadingChildren,
+    handleDateChange,
+    fetchFeedData,
+    userChildren,
+  } = useFeed();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Loading states
-  const [isFeedLoading, setIsFeedLoading] = useState(false);
+  // Load feed data when component mounts and children are loaded (for parents)
+  useEffect(() => {
+    if (user?.role === "Parent") {
+      // For parents, wait for children to be loaded
+      if (userChildren.length > 0) {
+        fetchFeedData(selectedDate);
+      }
+    } else {
+      // For other roles, fetch immediately
+      fetchFeedData(selectedDate);
+    }
+  }, [user?.role, userChildren.length, selectedDate, fetchFeedData]);
 
-  // Mock data for parent's children's group
-  const mockParentAttendancePosts = [
-    {
-      id: "1",
-      title: "נוכחות יומית - גן א",
-      groupName: "גן א",
-      attendanceDate: "יום שני, 15 בינואר 2024",
-      presentCount: 18,
-      totalCount: 22,
-      status: "completed" as const,
-      teacherName: "שרה כהן",
-      teacherAvatar: "https://randomuser.me/api/portraits/women/32.jpg",
-      publishDate: "יום שני, 15 בינואר 2024 08:30",
-      isLiked: true,
-      likeCount: 5,
-    },
-    {
-      id: "2",
-      title: "נוכחות בוקר - גן א",
-      groupName: "גן א",
-      attendanceDate: "יום שני, 15 בינואר 2024",
-      presentCount: 15,
-      totalCount: 20,
-      status: "in-progress" as const,
-      teacherName: "דוד לוי",
-      teacherAvatar: "https://randomuser.me/api/portraits/men/45.jpg",
-      publishDate: "יום שני, 15 בינואר 2024 09:15",
-      isLiked: false,
-      likeCount: 3,
-    },
-  ];
-
-  // Mock sleep posts for parent's children
-  const mockParentSleepPosts = [
-    {
-      id: "1",
-      type: "sleep" as const,
-      title: "שנת צהריים - גן א",
-      groupName: "גן א",
-      sleepDate: "יום שני, 15 בינואר 2024",
-      children: [
-        {
-          childId: "child1",
-          firstName: "יוסי",
-          lastName: "כהן",
-          sleepDuration: 120,
-        },
-        {
-          childId: "child2",
-          firstName: "שרה",
-          lastName: "לוי",
-          sleepDuration: 90,
-        },
-      ],
-      totalChildren: 2,
-      sleepingChildren: 2,
-      averageSleepDuration: 105,
-      status: "active" as const,
-      teacherName: "שרה כהן",
-      teacherAvatar: "https://randomuser.me/api/portraits/women/32.jpg",
-      publishDate: "יום שני, 15 בינואר 2024 12:30",
-      isLiked: true,
-      likeCount: 8,
-    },
-  ];
-
-  const handleViewDetails = (id: string) => {
-    console.log("View details for post:", id);
-  };
-
-  const handleLike = (id: string) => {
-    console.log("Like post:", id);
-  };
+  // Header content with date selector
+  const headerContent = (
+    <FeedDateSelector
+      selectedDate={selectedDate}
+      onDateChange={handleDateChange}
+      label="בחר תאריך לצפייה בפיד"
+    />
+  );
 
   return (
     <FeedContainer
-      title="חדשות הילדים - הורים"
-      subtitle="צפה בחדשות ועדכונים על ילדיך מהגן"
-      isLoading={isFeedLoading}
+      title="חדשות הילדים - הורה"
+      subtitle="צפה בחדשות ועדכונים מהילדים"
+      isLoading={isFeedLoading || isLoadingChildren}
       showFloatingButton={false}
+      headerContent={headerContent}
     >
-      {/* Parent-specific info alert */}
       <Alert severity="info" sx={{ mb: 2 }}>
-        צפה בחדשות ועדכונים על ילדיך מהגן
+        צפה בחדשות ועדכונים מהילדים שלך
       </Alert>
 
-      {/* Render sleep posts first */}
-      {mockParentSleepPosts.map((post) => (
-        <SleepPostErrorBoundary
-          key={post.id}
-          onClose={() => {
-            console.log("Sleep post error, removing from view");
-          }}
-          onRetry={() => {
-            console.log("Retrying sleep post render:", post.id);
-          }}
-        >
-          <SleepPost
-            {...post}
-            onViewDetails={handleViewDetails}
-            onEdit={() => {}} // Parents can't edit
-            onLike={handleLike}
-          />
-        </SleepPostErrorBoundary>
-      ))}
-
-      {/* Render attendance posts */}
-      {mockParentAttendancePosts.map((post) => (
-        <AttendancePost
-          key={post.id}
-          {...post}
-          onViewDetails={handleViewDetails}
-          onEdit={() => {}} // Parents can't edit
-          onLike={handleLike}
-        />
-      ))}
-
-      {mockParentSleepPosts.length === 0 &&
-        mockParentAttendancePosts.length === 0 && (
-          <Alert severity="info" sx={{ mt: 2 }}>
-            אין עדיין חדשות להצגה
-          </Alert>
-        )}
+      {/* Render feed posts from context */}
+      {feedPosts.length > 0 ? (
+        feedPosts.map((post) => (
+          <FeedPost key={post.id} post={post} isClosed={post.isClosed} />
+        ))
+      ) : (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          אין עדיין חדשות להצגה לתאריך זה
+        </Alert>
+      )}
     </FeedContainer>
   );
 };

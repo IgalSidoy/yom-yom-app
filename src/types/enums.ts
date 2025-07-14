@@ -16,6 +16,7 @@ export enum EntityStatus {
   Created = "Created",
   Updated = "Updated",
   Deleted = "Deleted",
+  Closed = "Closed",
 }
 
 // Post status enum - used for post lifecycle management
@@ -23,4 +24,26 @@ export enum PostStatus {
   Active = "active",
   Completed = "completed",
   Draft = "draft",
+}
+
+// Food-related enums
+export enum FoodEventType {
+  Breakfast = "Breakfast",
+  MorningSnack = "MorningSnack",
+  Lunch = "Lunch",
+  AfternoonSnack = "AfternoonSnack",
+  Dinner = "Dinner",
+}
+
+export enum FoodStatus {
+  NotEaten = "NotEaten",
+  PartiallyEaten = "PartiallyEaten",
+  FullyEaten = "FullyEaten",
+  Refused = "Refused",
+}
+
+export enum FoodDataStatus {
+  Created = "Created",
+  Active = "Active",
+  Closed = "Closed",
 }

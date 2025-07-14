@@ -20,17 +20,17 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useApp } from "../../contexts/AppContext";
 import { useDailyReport } from "../../contexts/DailyReportContext";
-import { childApi, DailyReport, Child } from "../../services/api";
-import CreateSleepPostModal from "../../components/feed/CreateSleepPostModal";
+import { Child, updateDailyReportFoodData } from "../../services/api";
+import CreateFoodPostModal from "../../components/food/CreateFoodPostModal";
+import { generateGuid } from "../../utils/guid";
 
 interface LocationState {
   groupId?: string;
   groupName?: string;
   children?: Child[];
-  dailyReport?: DailyReport;
 }
 
-const CreateSleepPostPage: React.FC = () => {
+const CreateFoodPostPage: React.FC = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -50,15 +50,15 @@ const CreateSleepPostPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if sleep reporting is closed
-  const isSleepReportingClosed = dailyReport?.sleepData?.status === "Closed";
+  // Check if food reporting is closed
+  const isFoodReportingClosed = dailyReport?.foodData?.status === "Closed";
 
   // Load data on component mount
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log("🚀 [CreateSleepPostPage] Starting data load...");
-        console.log("📊 [CreateSleepPostPage] Initial state:", {
+        console.log("🚀 [CreateFoodPostPage] Starting data load...");
+        console.log("📊 [CreateFoodPostPage] Initial state:", {
           user: user
             ? { id: user.id, groupId: user.groupId, role: user.role }
             : null,
@@ -88,22 +88,22 @@ const CreateSleepPostPage: React.FC = () => {
           locationState.children.length > 0
         ) {
           console.log(
-            "📍 [CreateSleepPostPage] Using complete navigation state data"
+            "📍 [CreateFoodPostPage] Using complete navigation state data"
           );
           currentGroupId = locationState.groupId;
           currentGroupName = locationState.groupName;
           currentChildren = locationState.children;
-          console.log("📋 [CreateSleepPostPage] Navigation state data:", {
+          console.log("📋 [CreateFoodPostPage] Navigation state data:", {
             groupId: currentGroupId,
             groupName: currentGroupName,
             childrenCount: currentChildren.length,
           });
         } else {
           console.log(
-            "🔍 [CreateSleepPostPage] No navigation state, using user context"
+            "🔍 [CreateFoodPostPage] No navigation state, using user context"
           );
 
-          console.log("👤 [CreateSleepPostPage] User context:", {
+          console.log("👤 [CreateFoodPostPage] User context:", {
             userId: user?.id,
             userGroupId: user?.groupId,
             userRole: user?.role,
@@ -112,12 +112,12 @@ const CreateSleepPostPage: React.FC = () => {
 
           // Always use user.groupId since it's always available
           if (!user?.groupId) {
-            console.error("❌ [CreateSleepPostPage] No user.groupId available");
+            console.error("❌ [CreateFoodPostPage] No user.groupId available");
             throw new Error("No group ID available");
           }
 
           console.log(
-            "✅ [CreateSleepPostPage] Using user.groupId:",
+            "✅ [CreateFoodPostPage] Using user.groupId:",
             user.groupId
           );
           currentGroupId = user.groupId;
@@ -125,26 +125,23 @@ const CreateSleepPostPage: React.FC = () => {
 
           // Fetch daily report immediately with the groupId
           console.log(
-            "📅 [CreateSleepPostPage] Fetching daily report with user.groupId:",
+            "📅 [CreateFoodPostPage] Fetching daily report with user.groupId:",
             currentGroupId
           );
           await fetchDailyReport(currentGroupId);
 
           // Don't load children here - let the modal handle it
           console.log(
-            "ℹ️ [CreateSleepPostPage] Skipping children API call - modal will handle children data"
+            "ℹ️ [CreateFoodPostPage] Skipping children API call - modal will handle children data"
           );
           currentChildren = [];
         }
 
-        console.log(
-          "📊 [CreateSleepPostPage] Final data before state update:",
-          {
-            groupId: currentGroupId,
-            groupName: currentGroupName,
-            childrenCount: currentChildren.length,
-          }
-        );
+        console.log("📊 [CreateFoodPostPage] Final data before state update:", {
+          groupId: currentGroupId,
+          groupName: currentGroupName,
+          childrenCount: currentChildren.length,
+        });
 
         // Set state with the loaded data
         setGroupId(currentGroupId);
@@ -154,28 +151,28 @@ const CreateSleepPostPage: React.FC = () => {
         // Fetch daily report for the current group (only if we haven't already fetched it)
         if (currentGroupId && !user?.groupId) {
           console.log(
-            "📅 [CreateSleepPostPage] Fetching daily report for groupId (from children):",
+            "📅 [CreateFoodPostPage] Fetching daily report for groupId (from children):",
             currentGroupId
           );
           await fetchDailyReport(currentGroupId);
-          console.log("✅ [CreateSleepPostPage] Daily report fetch completed");
+          console.log("✅ [CreateFoodPostPage] Daily report fetch completed");
         } else if (currentGroupId && user?.groupId) {
           console.log(
-            "✅ [CreateSleepPostPage] Daily report already fetched with user.groupId"
+            "✅ [CreateFoodPostPage] Daily report already fetched with user.groupId"
           );
         } else {
           console.error(
-            "❌ [CreateSleepPostPage] No groupId available for daily report fetch"
+            "❌ [CreateFoodPostPage] No groupId available for daily report fetch"
           );
           throw new Error("No group ID found");
         }
 
         console.log(
-          "🎉 [CreateSleepPostPage] Data loading completed successfully"
+          "🎉 [CreateFoodPostPage] Data loading completed successfully"
         );
         setIsLoading(false);
       } catch (err) {
-        console.error("💥 [CreateSleepPostPage] Error loading data:", err);
+        console.error("💥 [CreateFoodPostPage] Error loading data:", err);
         setError(
           err instanceof Error ? err.message : "אירעה שגיאה בטעינת הנתונים"
         );
@@ -187,10 +184,10 @@ const CreateSleepPostPage: React.FC = () => {
     if (!isLoadingUser && (locationState?.groupId || user?.groupId)) {
       loadData();
     } else if (isLoadingUser) {
-      console.log("⏳ [CreateSleepPostPage] Waiting for user to load...");
+      console.log("⏳ [CreateFoodPostPage] Waiting for user to load...");
     } else if (!locationState?.groupId && !user?.groupId) {
       console.log(
-        "⚠️ [CreateSleepPostPage] No locationState.groupId or user.groupId available"
+        "⚠️ [CreateFoodPostPage] No locationState.groupId or user.groupId available"
       );
     }
   }, [locationState, fetchDailyReport, isLoadingUser, user?.groupId]);
@@ -199,7 +196,7 @@ const CreateSleepPostPage: React.FC = () => {
   useEffect(() => {
     if (dailyReport?.groupName && dailyReport.groupName !== groupName) {
       console.log(
-        "🏷️ [CreateSleepPostPage] Updating group name from daily report:",
+        "🏷️ [CreateFoodPostPage] Updating group name from daily report:",
         dailyReport.groupName
       );
       setGroupName(dailyReport.groupName);
@@ -214,27 +211,56 @@ const CreateSleepPostPage: React.FC = () => {
   // Handle form submission
   const handleSubmit = async (data: any) => {
     try {
-      // Here you would typically call your API to create/update the sleep post
       console.log(
-        "🎯 [CreateSleepPostPage] handleSubmit called with data:",
+        "🎯 [CreateFoodPostPage] handleSubmit called with data:",
         data
       );
-      console.log(
-        "🎯 [CreateSleepPostPage] Current location:",
-        window.location.pathname
-      );
-      console.log("🎯 [CreateSleepPostPage] About to navigate to feed...");
 
-      // Navigate to feed page regardless of where user came from
-      setTimeout(() => {
-        navigate("/feed");
-        console.log(
-          "🎯 [CreateSleepPostPage] navigate('/feed') called successfully"
-        );
-      }, 0);
+      // Check if we have a daily report to update
+      if (!dailyReport?.id) {
+        console.error("❌ [CreateFoodPostPage] No daily report ID available");
+        throw new Error("No daily report available for update");
+      }
+
+      // Check if there's an existing food event for this type
+      const existingEvent = dailyReport?.foodData?.events?.find(
+        (event) => event.type === data.events[0].type
+      );
+
+      // Prepare the API request data according to the new structure
+      const apiData = {
+        title: data.title,
+        events: [
+          {
+            id: existingEvent?.id || generateGuid(), // Use existing ID or generate new GUID
+            type: data.events[0].type,
+            timestamp: existingEvent?.timestamp || new Date().toISOString(),
+            children: data.events[0].children.map((child: any) => ({
+              childId: child.childId,
+              foodDetails: child.foodDetails,
+              status: child.status,
+            })),
+          },
+        ],
+      };
+
+      console.log(
+        "🎯 [CreateFoodPostPage] Calling updateDailyReportFoodData with:",
+        apiData
+      );
+
+      // Call the API to update the daily report
+      await updateDailyReportFoodData(dailyReport.id, apiData);
+
+      console.log("✅ [CreateFoodPostPage] Food data updated successfully");
+
+      // Navigate to feed page after successful update
+      navigate("/feed");
+      console.log("✅ [CreateFoodPostPage] Navigated to feed successfully");
     } catch (error) {
-      console.error("❌ [CreateSleepPostPage] Error in handleSubmit:", error);
-      // Handle error appropriately
+      console.error("❌ [CreateFoodPostPage] Error in handleSubmit:", error);
+      // Handle error appropriately - you might want to show an error message to the user
+      throw error; // Re-throw to let the modal handle the error display
     }
   };
 
@@ -257,7 +283,7 @@ const CreateSleepPostPage: React.FC = () => {
   };
 
   // Show loading state
-  if (isLoading || isLoadingUser) {
+  if (isLoadingUser) {
     return (
       <Box
         sx={{
@@ -289,7 +315,7 @@ const CreateSleepPostPage: React.FC = () => {
             size={isMobile ? 50 : 60}
             sx={{
               mb: 2,
-              color: "#9C27B0",
+              color: "#FF6B35",
             }}
           />
           <Typography
@@ -304,7 +330,7 @@ const CreateSleepPostPage: React.FC = () => {
             color="text.secondary"
             sx={{ opacity: 0.8 }}
           >
-            מכין את הטופס ליצירת פוסט שינה
+            מכין את הטופס ליצירת פוסט מזון
           </Typography>
         </Box>
       </Box>
@@ -368,9 +394,9 @@ const CreateSleepPostPage: React.FC = () => {
             onClick={handleRetry}
             startIcon={<RefreshIcon />}
             sx={{
-              bgcolor: "#9C27B0",
+              bgcolor: "#FF6B35",
               "&:hover": {
-                bgcolor: "#7B1FA2",
+                bgcolor: "#F7931E",
               },
               px: 3,
               py: 1.5,
@@ -385,7 +411,7 @@ const CreateSleepPostPage: React.FC = () => {
   }
 
   // Show closed status page
-  if (isSleepReportingClosed) {
+  if (isFoodReportingClosed) {
     return (
       <Box
         sx={{
@@ -439,7 +465,7 @@ const CreateSleepPostPage: React.FC = () => {
               flex: 1,
             }}
           >
-            דיווח שינה - {groupName}
+            דיווח מזון - {groupName}
           </Typography>
         </Box>
 
@@ -481,7 +507,7 @@ const CreateSleepPostPage: React.FC = () => {
 
           {/* Status Badge */}
           <Chip
-            label="דיווח שינה נסגר"
+            label="דיווח מזון נסגר"
             color="warning"
             icon={<CheckCircleIcon />}
             sx={{
@@ -506,7 +532,7 @@ const CreateSleepPostPage: React.FC = () => {
               fontSize: { xs: "1.75rem", sm: "2.125rem" },
             }}
           >
-            דיווח השינה הושלם
+            דיווח המזון הושלם
           </Typography>
 
           {/* Description */}
@@ -520,7 +546,7 @@ const CreateSleepPostPage: React.FC = () => {
               maxWidth: 500,
             }}
           >
-            דיווח השינה עבור {groupName} הושלם ואין אפשרות לערוך אותו. הנתונים
+            דיווח המזון עבור {groupName} הושלם ואין אפשרות לערוך אותו. הנתונים
             נשמרו וניתן לצפות בהם בפיד החדשות.
           </Typography>
 
@@ -570,7 +596,7 @@ const CreateSleepPostPage: React.FC = () => {
                       flexShrink: 0,
                     }}
                   />
-                  דיווח השינה נשמר במערכת
+                  דיווח המזון נשמר במערכת
                 </Typography>
                 <Typography
                   variant="body2"
@@ -666,16 +692,16 @@ const CreateSleepPostPage: React.FC = () => {
   }
 
   // Debug logging
-  console.log("🎯 [CreateSleepPostPage] Rendering modal with:", {
+  console.log("🎯 [CreateFoodPostPage] Rendering modal with:", {
     childrenCount: children.length,
     groupName,
     groupId,
     isDailyReportLoading,
     hasDailyReport: !!dailyReport,
     dailyReportId: dailyReport?.id,
-    hasSleepData: !!dailyReport?.sleepData,
-    sleepDataChildrenCount: dailyReport?.sleepData?.children?.length || 0,
-    isSleepReportingClosed,
+    hasFoodData: !!dailyReport?.foodData,
+    foodDataEventsCount: dailyReport?.foodData?.events?.length || 0,
+    isFoodReportingClosed,
   });
 
   // Show the modal as a full-screen page (only when not closed)
@@ -695,7 +721,7 @@ const CreateSleepPostPage: React.FC = () => {
         overflow: "hidden",
       }}
     >
-      <CreateSleepPostModal
+      <CreateFoodPostModal
         isOpen={true}
         onClose={handleClose}
         onSubmit={handleSubmit}
@@ -709,4 +735,4 @@ const CreateSleepPostPage: React.FC = () => {
   );
 };
 
-export default CreateSleepPostPage;
+export default CreateFoodPostPage;

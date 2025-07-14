@@ -11,6 +11,7 @@ interface SleepTimerProps {
   startTime: string;
   endTime?: string;
   isSleeping: boolean;
+  activityDate?: string; // The date this sleep activity is for
   size?: "small" | "medium" | "large";
   showIcon?: boolean;
   showPulse?: boolean;
@@ -21,6 +22,7 @@ const SleepTimer: React.FC<SleepTimerProps> = ({
   startTime,
   endTime,
   isSleeping,
+  activityDate,
   size = "medium",
   showIcon = true,
   showPulse = true,
@@ -28,13 +30,48 @@ const SleepTimer: React.FC<SleepTimerProps> = ({
 }) => {
   const [elapsedTime, setElapsedTime] = useState<number>(0);
 
+  // Helper function to check if this is for a previous date
+  const isPreviousDate = (): boolean => {
+    if (!activityDate) return false;
+    const activity = new Date(activityDate);
+    const today = new Date();
+    return activity.toDateString() !== today.toDateString();
+  };
+
+  // Helper function to check if sleep data is valid for display
+  const isValidSleepData = (): boolean => {
+    if (!startTime) return false;
+
+    // If it's a previous date and no end time, don't show timer
+    if (isPreviousDate() && !isValidEndTime(endTime)) {
+      return false;
+    }
+
+    // If start and end time are the same or invalid, don't show timer
+    if (startTime === endTime || startTime === "0001-01-01T00:00:00") {
+      return false;
+    }
+
+    return true;
+  };
+
   useEffect(() => {
-    if (!startTime) {
+    if (!isValidSleepData()) {
       setElapsedTime(0);
       return;
     }
 
-    // Set initial elapsed time
+    // For previous dates, only show duration if there's a valid end time
+    if (isPreviousDate()) {
+      if (isValidEndTime(endTime)) {
+        setElapsedTime(calculateSleepDuration(startTime, endTime));
+      } else {
+        setElapsedTime(0);
+      }
+      return;
+    }
+
+    // For current date, use normal logic
     setElapsedTime(calculateSleepDuration(startTime, endTime));
 
     // If child is still sleeping and no valid end time, update timer every second
@@ -48,10 +85,12 @@ const SleepTimer: React.FC<SleepTimerProps> = ({
       // If not sleeping or has valid end time, just set the final elapsed time once
       setElapsedTime(calculateSleepDuration(startTime, endTime));
     }
-  }, [startTime, endTime, isSleeping]);
+  }, [startTime, endTime, isSleeping, activityDate]);
 
   // Always show timer, even when no sleep data
-  const displayTime = startTime ? formatDuration(elapsedTime) : "00:00";
+  const displayTime = isValidSleepData()
+    ? formatDuration(elapsedTime)
+    : "00:00";
 
   const getSizeStyles = () => {
     switch (size) {
@@ -119,7 +158,7 @@ const SleepTimer: React.FC<SleepTimerProps> = ({
         display: "flex",
         alignItems: "center",
         gap: 0.5,
-        color: startTime
+        color: isValidSleepData()
           ? isSleeping
             ? "#9C27B0"
             : "text.secondary"

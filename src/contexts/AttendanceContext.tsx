@@ -155,14 +155,14 @@ export const AttendanceProvider: React.FC<AttendanceProviderProps> = ({
     isInitialized.current = false;
   }, []);
 
-  // Auto-fetch attendance data only once when user changes or on component mount
-  useEffect(() => {
-    if (user?.groupId && !isInitialized.current) {
-      const today = new Date().toISOString().split("T")[0];
-      fetchAttendance(user.groupId, today);
-      isInitialized.current = true;
-    }
-  }, [user?.groupId, fetchAttendance]);
+  // Remove automatic attendance loading - let individual pages handle when to load
+  // useEffect(() => {
+  //   if (user?.groupId && !isInitialized.current) {
+  //     const today = new Date().toISOString().split("T")[0];
+  //     fetchAttendance(user.groupId, today);
+  //     isInitialized.current = true;
+  //   }
+  // }, [user?.groupId, fetchAttendance]);
 
   const value: AttendanceContextType = {
     attendanceData,

@@ -23,17 +23,13 @@ const StaffDashboard: React.FC = () => {
   const { user, isLoadingUser } = useApp();
   const navigate = useNavigate();
   const theme = useTheme();
-  const {
-    attendanceData,
-    isAttendanceClosed,
-    isLoading: isAttendanceLoading,
-  } = useAttendance();
+  const { attendanceData, isAttendanceClosed } = useAttendance();
 
-  // Check if all data is ready (user loaded and attendance data loaded)
+  // Check if all data is ready (only user loaded, attendance data is optional for dashboard)
   const isDataReady = useMemo(() => {
-    // Only show content when user is loaded and attendance data is loaded
-    return !isLoadingUser && !isAttendanceLoading && user !== null;
-  }, [isLoadingUser, isAttendanceLoading, user]);
+    // Only show content when user is loaded
+    return !isLoadingUser && user !== null;
+  }, [isLoadingUser, user]);
 
   // Check if attendance is closed (either from context error or attendance data)
   const isAttendanceClosedComputed = useMemo(() => {
