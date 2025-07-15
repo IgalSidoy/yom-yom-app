@@ -10,20 +10,25 @@
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#FF9F43",
   "background_color": "#FFF6EB",
   "scope": "/",
   "lang": "he",
-  "dir": "rtl"
+  "dir": "rtl",
+  "categories": ["education", "productivity"],
+  "description": "מערכת לניהול גני ילדים - מעקב אחר ילדים, דיווחי מזון ושינה",
+  "prefer_related_applications": false
 }
