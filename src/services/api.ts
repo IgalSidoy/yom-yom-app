@@ -15,7 +15,16 @@ import {
 import { ApiAttendanceStatus } from "../types/attendance";
 import { FeedPost } from "../types/posts";
 
-const baseURL = process.env.REACT_APP_API_BASE_URL;
+const baseURL = process.env.REACT_APP_API_BASE_URL || "http://localhost:3001";
+
+// Debug the baseURL configuration
+console.log("🔧 [API] BaseURL configuration:", {
+  baseURL,
+  hasBaseURL: !!baseURL,
+  envVars: {
+    REACT_APP_API_BASE_URL: process.env.REACT_APP_API_BASE_URL,
+  },
+});
 
 // Create axios instance
 const api = axios.create({
@@ -27,6 +36,11 @@ const api = axios.create({
   },
 });
 
+console.log("🔧 [API] Main API instance created:", {
+  baseURL: api.defaults.baseURL,
+  withCredentials: api.defaults.withCredentials,
+});
+
 // Create a separate axios instance for refresh token requests
 const refreshApi = axios.create({
   baseURL,
@@ -35,6 +49,18 @@ const refreshApi = axios.create({
     Accept: "application/json",
     "Content-Type": "application/json",
   },
+});
+
+console.log("🔧 [API] Refresh API instance created:", {
+  baseURL: refreshApi.defaults.baseURL,
+  withCredentials: refreshApi.defaults.withCredentials,
+});
+
+// Debug the refreshApi configuration
+console.log("🔧 [API] RefreshApi configuration:", {
+  baseURL,
+  withCredentials: refreshApi.defaults.withCredentials,
+  headers: refreshApi.defaults.headers,
 });
 
 // Flag to prevent multiple refresh attempts
@@ -107,7 +133,12 @@ const processQueue = (error: any, token: string | null = null) => {
 // Function to get a new access token using refresh token
 export const getNewAccessToken = async () => {
   try {
-    logger.info("Getting new access token using refresh token");
+    console.log("🔄 [API] Getting new access token using refresh token");
+    console.log(
+      "🌐 [API] Making request to:",
+      `${baseURL}/api/v1/auth/refresh`
+    );
+    console.log("🍪 [API] Current cookies:", document.cookie);
 
     const response = await refreshApi.post(
       "/api/v1/auth/refresh",
@@ -121,11 +152,24 @@ export const getNewAccessToken = async () => {
       }
     );
 
+    console.log("✅ [API] Refresh token request successful:", {
+      status: response.status,
+      hasToken: !!response.data.token,
+      responseData: response.data,
+      headers: response.headers,
+    });
+
     const { token } = response.data;
 
     return token;
   } catch (error) {
-    logger.error("Failed to get new access token", error);
+    console.error("💥 [API] Failed to get new access token:", error);
+    console.error("💥 [API] Error details:", {
+      status: (error as AxiosError).response?.status,
+      statusText: (error as AxiosError).response?.statusText,
+      data: (error as AxiosError).response?.data,
+      headers: (error as AxiosError).response?.headers,
+    });
     throw error;
   }
 };

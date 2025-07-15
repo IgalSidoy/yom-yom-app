@@ -32,6 +32,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (data: LoginData) => void;
   logout: () => void;
+  testRefreshToken: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -48,8 +49,107 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const isInitialMount = useRef(true);
   const initialPath = useRef(location.pathname);
 
+  console.log("🚀 [AuthContext] AuthProvider initialized", {
+    initialPath: initialPath.current,
+    currentPath: location.pathname,
+    isInitialMount: isInitialMount.current,
+  });
+
+  // Add immediate logging to see if this runs
+  console.log("🔍 [AuthContext] Component rendered, isLoading:", isLoading);
+
+  // Define checkAuth function outside useEffect so it can be called from other functions
+  const checkAuth = async () => {
+    console.log("🔐 [AuthContext] Starting authentication check...");
+    console.log("🔍 [AuthContext] Current URL:", window.location.href);
+    console.log("🔍 [AuthContext] Current pathname:", location.pathname);
+
+    try {
+      // Check if we have a refresh token
+      const cookies = document.cookie.split(";");
+      console.log("🍪 [AuthContext] All cookies:", cookies);
+      console.log("🍪 [AuthContext] Total cookies found:", cookies.length);
+
+      // Log each cookie individually
+      cookies.forEach((cookie, index) => {
+        const trimmedCookie = cookie.trim();
+        console.log(`🍪 [AuthContext] Cookie ${index}:`, {
+          raw: cookie,
+          trimmed: trimmedCookie,
+          name: trimmedCookie.split("=")[0],
+          hasValue: trimmedCookie.includes("="),
+        });
+      });
+
+      // Improved cookie parsing
+      const refreshTokenCookie = cookies.find((cookie) => {
+        const trimmedCookie = cookie.trim();
+        console.log("🍪 [AuthContext] Checking cookie:", trimmedCookie);
+        return trimmedCookie.startsWith("refreshToken=");
+      });
+
+      let refreshToken = null;
+      if (refreshTokenCookie) {
+        const parts = refreshTokenCookie.split("=");
+        if (parts.length >= 2) {
+          refreshToken = parts.slice(1).join("="); // Handle tokens that might contain '=' characters
+        }
+      }
+
+      console.log("🔄 [AuthContext] Refresh token found:", !!refreshToken);
+      if (refreshToken) {
+        console.log(
+          "🔄 [AuthContext] Refresh token length:",
+          refreshToken.length
+        );
+      } else {
+        console.log(
+          "❌ [AuthContext] NO REFRESH TOKEN FOUND - This is the scenario we want to test!"
+        );
+      }
+
+      if (refreshToken) {
+        console.log("🔄 [AuthContext] Attempting to get new access token...");
+        // Use the getNewAccessToken function which handles the refresh token from cookies
+        const token = await getNewAccessToken();
+
+        console.log("✅ [AuthContext] New access token received:", !!token);
+
+        if (token) {
+          setAccessToken(token);
+          console.log("✅ [AuthContext] Access token set successfully");
+        } else {
+          console.log(
+            "❌ [AuthContext] No token received, redirecting to login"
+          );
+          setAccessToken(null);
+          navigate("/login", { replace: true });
+        }
+      } else {
+        console.log(
+          "❌ [AuthContext] No refresh token found, redirecting to login"
+        );
+        console.log("🔀 [AuthContext] Navigating to login page...");
+        setAccessToken(null);
+        navigate("/login", { replace: true });
+      }
+    } catch (error) {
+      console.error("💥 [AuthContext] Authentication check failed:", error);
+      setAccessToken(null);
+      navigate("/login", { replace: true });
+    } finally {
+      setIsLoading(false);
+      console.log("🏁 [AuthContext] Authentication check completed");
+    }
+  };
+
   // Sync token with AppContext via custom event
   useEffect(() => {
+    console.log("🔄 [AuthContext] Syncing access token:", {
+      hasToken: !!accessToken,
+      tokenLength: accessToken?.length || 0,
+    });
+
     if (accessToken) {
       updateAccessToken(accessToken);
       // Dispatch event to notify AppContext
@@ -67,51 +167,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Token refresh and validation logic
   useEffect(() => {
+    console.log("🔄 [AuthContext] useEffect triggered", {
+      isInitialMount: isInitialMount.current,
+      isLoading,
+      hasAccessToken: !!accessToken,
+    });
+
     // Skip refresh check if this is not the initial mount
     if (!isInitialMount.current) {
+      console.log("⏭️ [AuthContext] Skipping refresh - not initial mount");
       return;
     }
     isInitialMount.current = false;
 
-    const checkAuth = async () => {
-      try {
-        // Check if we have a refresh token
-        const cookies = document.cookie.split(";");
-        const refreshTokenCookie = cookies.find((cookie) =>
-          cookie.trim().startsWith("refreshToken=")
-        );
-        const refreshToken = refreshTokenCookie
-          ? refreshTokenCookie.split("=")[1]
-          : null;
-
-        if (refreshToken) {
-          // Use the getNewAccessToken function which handles the refresh token from cookies
-          const token = await getNewAccessToken();
-
-          if (token) {
-            setAccessToken(token);
-          } else {
-            setAccessToken(null);
-            navigate("/login", { replace: true });
-          }
-        } else {
-          setAccessToken(null);
-          navigate("/login", { replace: true });
-        }
-      } catch (error) {
-        setAccessToken(null);
-        navigate("/login", { replace: true });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     checkAuth();
-  }, [navigate, location]);
+  }, [navigate]); // Remove location from dependencies to prevent unnecessary re-runs
 
   // Show loading state while checking auth
   if (isLoading) {
-    return null; // or return a loading spinner component
+    console.log("⏳ [AuthContext] Showing loading state...");
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          fontSize: "18px",
+        }}
+      >
+        🔐 Checking authentication...
+      </div>
+    );
   }
 
   const login = (data: LoginData) => {
@@ -124,6 +211,62 @@ export function AuthProvider({ children }: AuthProviderProps) {
     navigate("/login");
   };
 
+  // Test function for debugging
+  const testRefreshToken = async () => {
+    console.log("🧪 [AuthContext] Testing refresh token manually...");
+    try {
+      const token = await getNewAccessToken();
+      console.log("🧪 [AuthContext] Manual refresh successful:", !!token);
+      if (token) {
+        setAccessToken(token);
+      }
+    } catch (error) {
+      console.error("🧪 [AuthContext] Manual refresh failed:", error);
+    }
+  };
+
+  // Test function to clear cookies and test no-cookie scenario
+  const testNoCookieScenario = () => {
+    console.log("🧪 [AuthContext] Testing no-cookie scenario...");
+    console.log(
+      "🧪 [AuthContext] Current cookies before clearing:",
+      document.cookie
+    );
+
+    // Clear all cookies
+    document.cookie.split(";").forEach(function (c) {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+
+    console.log(
+      "🧪 [AuthContext] Cookies cleared. Current cookies:",
+      document.cookie
+    );
+    console.log(
+      "🧪 [AuthContext] Reloading page to test no-cookie scenario..."
+    );
+
+    // Reload the page to trigger the authentication check
+    window.location.reload();
+  };
+
+  // Test function to manually trigger authentication check
+  const triggerAuthCheck = () => {
+    console.log("🧪 [AuthContext] Manually triggering authentication check...");
+    // Reset the initial mount flag to allow the check to run again
+    isInitialMount.current = true;
+    setIsLoading(true);
+    // This will trigger the useEffect to run again
+    checkAuth();
+  };
+
+  // Expose test functions globally for debugging
+  (window as any).testRefreshToken = testRefreshToken;
+  (window as any).testNoCookieScenario = testNoCookieScenario;
+  (window as any).triggerAuthCheck = triggerAuthCheck;
+
   const value = {
     accessToken,
     setAccessToken,
@@ -131,6 +274,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: !!accessToken,
     login,
     logout,
+    testRefreshToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

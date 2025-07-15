@@ -13,11 +13,14 @@ import { AttendanceProvider } from "./contexts/AttendanceContext";
 import { DailyReportProvider } from "./contexts/DailyReportContext";
 import { FeedProvider } from "./contexts/FeedContext";
 import AppRoutes from "./routes";
+import AuthDebug from "./components/AuthDebug";
 
 const App: React.FC = () => {
+  console.log("🚀 [App] App component rendering...");
+
   return (
-    <AppProvider>
-      <Router>
+    <Router>
+      <AppProvider>
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <LocalizationProvider
@@ -34,6 +37,7 @@ const App: React.FC = () => {
                   <DailyReportProvider>
                     <FeedProvider>
                       <AppRoutes />
+                      <AuthDebug />
                     </FeedProvider>
                   </DailyReportProvider>
                 </AttendanceProvider>
@@ -41,8 +45,8 @@ const App: React.FC = () => {
             </LanguageProvider>
           </LocalizationProvider>
         </ThemeProvider>
-      </Router>
-    </AppProvider>
+      </AppProvider>
+    </Router>
   );
 };
 

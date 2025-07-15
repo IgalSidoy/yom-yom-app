@@ -25,22 +25,17 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
-  Card,
-  CardContent,
-  Grid,
   Chip,
   InputAdornment,
   Popover,
   Autocomplete,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import dayjs, { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import CheckIcon from "@mui/icons-material/Check";
-import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
-import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+
 import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
 import {
@@ -59,8 +54,6 @@ import {
 import Notification from "./Notification";
 import { useApp } from "../contexts/AppContext";
 import { useAuth } from "../contexts/AuthContext";
-import { SelectChangeEvent } from "@mui/material/Select";
-import BottomNav from "./BottomNav";
 
 interface ChildManagementCardProps {
   accounts: Account[];
@@ -245,7 +238,6 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
   onChildrenChange,
   onParentsRefresh,
 }) => {
-  const { accessToken } = useAuth();
   const { userChangeTimestamp } = useApp();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -275,6 +267,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     message: "",
     severity: "success" as "success" | "error" | "info" | "warning",
   });
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   // Initialize data when accordion is expanded
   useEffect(() => {
@@ -290,7 +283,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
       }
     };
     initializeData();
-  }, [isExpanded, accounts.length, parents.length]);
+  }, [isExpanded, accounts.length, parents.length, onAccountsChange]);
 
   // Function to fetch groups for a specific account
   const fetchGroupsForAccount = async (accountId: string) => {
@@ -326,7 +319,7 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     } else {
       setGroups([]);
     }
-  }, [selectedAccountId]);
+  }, [selectedAccountId, fetchGroupsForAccount]);
 
   // Refresh parents when user changes occur and drawer is open
   useEffect(() => {
@@ -383,6 +376,63 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     });
   };
 
+  const handleEditChild = (child: Child) => {
+    const formatDateForInput = (dateString: string) => {
+      if (!dateString) return "";
+      const date = new Date(dateString);
+      return date.toISOString().split("T")[0];
+    };
+
+    // Map parent IDs to Parent objects (not User)
+    const parentObjects: Parent[] = (child.parents || [])
+      .map((parent: string | { id: string }) => {
+        const parentId = typeof parent === "string" ? parent : parent.id;
+        const found = parents.find((p) => p.id === parentId);
+        return found
+          ? {
+              id: found.id,
+              firstName: found.firstName,
+              lastName: found.lastName,
+              mobile: found.mobile,
+            }
+          : null;
+      })
+      .filter((parent): parent is Parent => parent !== null);
+
+    // Check if groups are already loaded for this account
+    const existingGroups = groups.filter(
+      (group) => group.accountId === child.accountId
+    );
+    const shouldSetGroupId =
+      child.groupId &&
+      existingGroups.some((group) => group.id === child.groupId);
+
+    setCurrentChild({
+      id: child.id,
+      firstName: child.firstName,
+      lastName: child.lastName,
+      dateOfBirth: formatDateForInput(child.dateOfBirth),
+      accountId: child.accountId,
+      groupId: shouldSetGroupId ? child.groupId : "",
+      parents: parentObjects,
+      created: child.created,
+      updated: child.updated,
+    });
+
+    if (child.accountId) {
+      fetchGroupsForAccount(child.accountId).then(() => {
+        // After groups are fetched, check if we need to set the groupId
+        if (child.groupId && !shouldSetGroupId) {
+          setCurrentChild((prev) => ({
+            ...prev,
+            groupId: child.groupId,
+          }));
+        }
+      });
+    }
+    setIsDrawerOpen(true);
+  };
+
   // Filter children based on selected account, group, and search query
   const filteredChildren = useMemo(() => {
     return sortChildren(
@@ -409,14 +459,8 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     searchQuery,
     sortBy,
     sortOrder,
+    sortChildren,
   ]);
-
-  // Filter groups based on selected account
-  const filteredGroups = useMemo(() => {
-    return selectedAccountId
-      ? groups.filter((group) => group.accountId === selectedAccountId)
-      : groups;
-  }, [groups, selectedAccountId]);
 
   // Memoized callback functions
   const handleGroupFilterClick = useCallback(
@@ -426,9 +470,12 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
     [selectedGroupFilter]
   );
 
-  const handleEditClick = useCallback((child: Child) => {
-    handleEditChild(child);
-  }, []);
+  const handleEditClick = useCallback(
+    (child: Child) => {
+      handleEditChild(child);
+    },
+    [handleEditChild]
+  );
 
   const handleSearchChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -596,63 +643,6 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
       month: "2-digit",
       day: "2-digit",
     }).format(date);
-  };
-
-  const handleEditChild = (child: Child) => {
-    const formatDateForInput = (dateString: string) => {
-      if (!dateString) return "";
-      const date = new Date(dateString);
-      return date.toISOString().split("T")[0];
-    };
-
-    // Map parent IDs to Parent objects (not User)
-    const parentObjects: Parent[] = (child.parents || [])
-      .map((parent: string | { id: string }) => {
-        const parentId = typeof parent === "string" ? parent : parent.id;
-        const found = parents.find((p) => p.id === parentId);
-        return found
-          ? {
-              id: found.id,
-              firstName: found.firstName,
-              lastName: found.lastName,
-              mobile: found.mobile,
-            }
-          : null;
-      })
-      .filter((parent): parent is Parent => parent !== null);
-
-    // Check if groups are already loaded for this account
-    const existingGroups = groups.filter(
-      (group) => group.accountId === child.accountId
-    );
-    const shouldSetGroupId =
-      child.groupId &&
-      existingGroups.some((group) => group.id === child.groupId);
-
-    setCurrentChild({
-      id: child.id,
-      firstName: child.firstName,
-      lastName: child.lastName,
-      dateOfBirth: formatDateForInput(child.dateOfBirth),
-      accountId: child.accountId,
-      groupId: shouldSetGroupId ? child.groupId : "",
-      parents: parentObjects,
-      created: child.created,
-      updated: child.updated,
-    });
-
-    if (child.accountId) {
-      fetchGroupsForAccount(child.accountId).then(() => {
-        // After groups are fetched, check if we need to set the groupId
-        if (child.groupId && !shouldSetGroupId) {
-          setCurrentChild((prev) => ({
-            ...prev,
-            groupId: child.groupId,
-          }));
-        }
-      });
-    }
-    setIsDrawerOpen(true);
   };
 
   return (
@@ -1152,6 +1142,9 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
 
                 <DatePicker
                   label="תאריך לידה"
+                  open={isDatePickerOpen}
+                  onOpen={() => setIsDatePickerOpen(true)}
+                  onClose={() => setIsDatePickerOpen(false)}
                   value={
                     currentChild.dateOfBirth
                       ? dayjs(currentChild.dateOfBirth)
@@ -1162,16 +1155,21 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                       "dateOfBirth",
                       newValue?.format("YYYY-MM-DD") || ""
                     );
+                    // Don't close immediately to avoid glitches
+                    setTimeout(() => setIsDatePickerOpen(false), 100);
                   }}
-                  slots={{
-                    leftArrowIcon: KeyboardArrowRightIcon,
-                    rightArrowIcon: KeyboardArrowLeftIcon,
-                  }}
+                  slots={{}}
                   slotProps={{
-                    openPickerButton: { sx: { color: "primary.main" } },
+                    openPickerButton: { sx: { display: "none" } },
                     textField: {
                       fullWidth: true,
                       required: true,
+                      onClick: (event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setIsDatePickerOpen(true);
+                      },
+                      onFocus: () => setIsDatePickerOpen(true),
                       sx: {
                         "& .MuiInputLabel-root": {
                           fontSize: "0.95rem",
@@ -1191,6 +1189,20 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                             fontSize: "0.95rem",
                             color: "text.primary",
                             padding: "12px 14px",
+                            textAlign: "right", // Align placeholder and text to the right
+                            cursor: "pointer", // Show pointer cursor to indicate it's clickable
+                          },
+                          // Force placeholder to align right
+                          "& .MuiInputBase-input::placeholder": {
+                            textAlign: "right",
+                          },
+                          // Completely hide the calendar icon
+                          "& .MuiInputAdornment-root": {
+                            display: "none !important",
+                          },
+                          // Hide any calendar icon that might still appear
+                          "& .MuiInputAdornment-positionEnd": {
+                            display: "none !important",
                           },
                         },
                       },
@@ -1199,6 +1211,13 @@ const ChildManagementCard: React.FC<ChildManagementCardProps> = ({
                   sx={{
                     "& .MuiPickersArrowSwitcher-button": {
                       color: "primary.main",
+                    },
+                    // Fix DatePicker navigation styling
+                    "& .MuiPickersCalendarHeader-root": {
+                      direction: "ltr", // Force LTR for calendar navigation
+                    },
+                    "& .MuiPickersArrowSwitcher-root": {
+                      direction: "ltr", // Force LTR for arrow switcher
                     },
                   }}
                 />
