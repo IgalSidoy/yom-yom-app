@@ -140,6 +140,30 @@ export const getNewAccessToken = async () => {
     );
     console.log("🍪 [API] Current cookies:", document.cookie);
 
+    // Get the refresh token from cookies
+    const cookies = document.cookie.split(";");
+    const refreshTokenCookie = cookies.find((cookie) => {
+      const trimmedCookie = cookie.trim();
+      return trimmedCookie.startsWith("refreshToken=");
+    });
+
+    let refreshToken = null;
+    if (refreshTokenCookie) {
+      const parts = refreshTokenCookie.split("=");
+      if (parts.length >= 2) {
+        refreshToken = parts.slice(1).join("="); // Handle tokens that might contain '=' characters
+      }
+    }
+
+    console.log(
+      "🔄 [API] Refresh token from cookie:",
+      refreshToken ? `${refreshToken.substring(0, 20)}...` : "None"
+    );
+
+    if (!refreshToken) {
+      throw new Error("No refresh token found in cookies");
+    }
+
     const response = await refreshApi.post(
       "/api/v1/auth/refresh",
       {},
@@ -147,6 +171,7 @@ export const getNewAccessToken = async () => {
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
+          Authorization: `Bearer ${refreshToken}`, // Add the refresh token to Authorization header
         },
         withCredentials: true,
       }

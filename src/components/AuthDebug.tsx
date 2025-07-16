@@ -7,6 +7,25 @@ const AuthDebug: React.FC = () => {
     useAuth();
   const { accessToken: appAccessToken, user } = useApp();
 
+  // Get refresh token from cookies
+  const getRefreshToken = () => {
+    const cookies = document.cookie.split(";");
+    const refreshTokenCookie = cookies.find((cookie) => {
+      const trimmedCookie = cookie.trim();
+      return trimmedCookie.startsWith("refreshToken=");
+    });
+
+    if (refreshTokenCookie) {
+      const parts = refreshTokenCookie.split("=");
+      if (parts.length >= 2) {
+        return parts.slice(1).join("=");
+      }
+    }
+    return null;
+  };
+
+  const refreshToken = getRefreshToken();
+
   const testNoCookieScenario = () => {
     if ((window as any).testNoCookieScenario) {
       (window as any).testNoCookieScenario();
@@ -47,6 +66,10 @@ const AuthDebug: React.FC = () => {
       </div>
       <div>User: {user ? `${user.firstName} ${user.lastName}` : "None"}</div>
       <div>Cookies: {document.cookie ? "Present" : "None"}</div>
+      <div>
+        Refresh Token:{" "}
+        {refreshToken ? `${refreshToken.substring(0, 20)}...` : "None"}
+      </div>
       <div
         style={{
           marginTop: "10px",
