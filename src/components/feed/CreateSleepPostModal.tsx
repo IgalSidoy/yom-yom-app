@@ -1055,9 +1055,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
               <Skeleton variant="circular" width={20} height={20} />
             ) : dailyReport?.sleepData?.status === "Closed" ? (
               <Box sx={{ color: "white", fontSize: "1.2rem" }}>🔒</Box>
-            ) : (
-              <AddIcon />
-            )
+            ) : null
           }
           sx={{
             flex: 1,

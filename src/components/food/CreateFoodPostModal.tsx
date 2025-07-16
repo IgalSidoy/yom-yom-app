@@ -830,9 +830,7 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
               <Skeleton variant="circular" width={20} height={20} />
             ) : dailyReport?.foodData?.status === "Closed" ? (
               <Box sx={{ color: "white", fontSize: "1.2rem" }}>🔒</Box>
-            ) : (
-              <AddIcon />
-            )
+            ) : null
           }
           sx={{ flex: 1 }}
         >

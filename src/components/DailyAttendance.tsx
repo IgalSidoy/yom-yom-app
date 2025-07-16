@@ -6,7 +6,6 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import { FixedSizeList as VirtualList } from "react-window";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../config/routes";
 import {
@@ -158,7 +157,7 @@ const AttendanceChildListItem: React.FC<{
         <Box
           sx={{
             display: { xs: "flex", sm: "flex" },
-            flexDirection: { xs: "row", sm: "row-reverse" },
+            flexDirection: { xs: "row", sm: "row" },
             alignItems: { xs: "center", sm: "center" },
             justifyContent: { xs: "space-between", sm: "space-between" },
             gap: { xs: 1.5, sm: 1.5 },
@@ -168,8 +167,8 @@ const AttendanceChildListItem: React.FC<{
           <Box
             sx={{
               flexShrink: 0,
-              order: { xs: 1, sm: 1 }, // Button first on mobile and desktop
-              justifyContent: { xs: "flex-start", sm: "flex-start" },
+              order: { xs: 2, sm: 2 }, // Button second on mobile and desktop
+              justifyContent: { xs: "flex-end", sm: "flex-end" },
               width: { xs: "auto", sm: "auto" },
             }}
           >
@@ -209,14 +208,30 @@ const AttendanceChildListItem: React.FC<{
           <Box
             sx={{
               display: { xs: "flex", sm: "block" },
-              flexDirection: { xs: "row", sm: "column" },
-              alignItems: { xs: "center", sm: "stretch" },
-              justifyContent: { xs: "flex-end", sm: "flex-start" },
-              order: { xs: 2, sm: 2 },
+              flexDirection: { xs: "column", sm: "column" },
+              alignItems: { xs: "flex-start", sm: "stretch" },
+              justifyContent: { xs: "flex-start", sm: "flex-start" },
+              order: { xs: 1, sm: 1 },
               width: { xs: "auto", sm: "auto" },
-              gap: { xs: 1, sm: 0 },
+              gap: { xs: 0.5, sm: 0 },
             }}
           >
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                color: "text.primary",
+                textAlign: { xs: "right", sm: "right" },
+                fontSize: { xs: "1.1rem", sm: "1.25rem" },
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+              noWrap
+            >
+              {child.firstName} {child.lastName}
+            </Typography>
+
             <Typography
               variant="body2"
               sx={{
@@ -228,36 +243,6 @@ const AttendanceChildListItem: React.FC<{
             >
               עודכן {formatUpdateTime(updateTime)}
             </Typography>
-
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                minWidth: 0,
-                flexShrink: 1,
-              }}
-            >
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 700,
-                  color: "text.primary",
-                  textAlign: { xs: "right", sm: "right" },
-                  fontSize: { xs: "1.1rem", sm: "1.25rem" },
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-                noWrap
-              >
-                {child.firstName} {child.lastName}
-              </Typography>
-              {/* Status icon for mobile view */}
-              <Box sx={{ display: { xs: "flex", sm: "none" } }}>
-                {getStatusIcon(attendanceStatus)}
-              </Box>
-            </Box>
           </Box>
         </Box>
 
@@ -294,9 +279,9 @@ const AttendanceSkeleton: React.FC = () => (
     <Box
       sx={{
         display: { xs: "flex", sm: "flex" },
-        flexDirection: { xs: "column", sm: "row-reverse" },
-        alignItems: { xs: "stretch", sm: "center" },
-        justifyContent: { xs: "flex-start", sm: "space-between" },
+        flexDirection: { xs: "row", sm: "row" },
+        alignItems: { xs: "center", sm: "center" },
+        justifyContent: { xs: "space-between", sm: "space-between" },
         gap: { xs: 1.5, sm: 1.5 },
       }}
     >
@@ -304,12 +289,12 @@ const AttendanceSkeleton: React.FC = () => (
       <Box
         sx={{
           display: { xs: "flex", sm: "block" },
-          flexDirection: { xs: "row", sm: "column" },
-          alignItems: { xs: "center", sm: "stretch" },
-          justifyContent: { xs: "flex-start", sm: "flex-start" },
-          order: { xs: 1, sm: 2 },
-          width: { xs: "100%", sm: "auto" },
-          gap: { xs: 1, sm: 0 },
+          flexDirection: { xs: "column", sm: "column" },
+          alignItems: { xs: "flex-end", sm: "stretch" },
+          justifyContent: { xs: "flex-end", sm: "flex-start" },
+          order: { xs: 2, sm: 2 },
+          width: { xs: "auto", sm: "auto" },
+          gap: { xs: 0.5, sm: 0 },
         }}
       >
         <Skeleton
@@ -361,9 +346,9 @@ const AttendanceSkeleton: React.FC = () => (
         sx={{
           display: "flex",
           gap: 1,
-          order: { xs: 2, sm: 1 },
-          justifyContent: { xs: "flex-end", sm: "flex-start" },
-          width: { xs: "100%", sm: "auto" },
+          order: { xs: 1, sm: 1 },
+          justifyContent: { xs: "flex-start", sm: "flex-start" },
+          width: { xs: "auto", sm: "auto" },
         }}
       >
         <Skeleton
@@ -771,10 +756,18 @@ const DailyAttendance: React.FC = () => {
         boxShadow: { xs: "none", sm: "0 2px 8px rgba(0, 0, 0, 0.1)" },
         overflow: "hidden",
         px: { xs: 0, sm: 2 },
+        direction: "rtl",
       }}
       ref={containerRef}
     >
-      <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <Box
+        sx={{
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          direction: "rtl",
+        }}
+      >
         {/* Header with Group Info and Date - Improved Layout */}
         <Fade in={!isInitialLoading} timeout={400}>
           <Box
@@ -1224,6 +1217,10 @@ const DailyAttendance: React.FC = () => {
                     sx={{
                       fontSize: { xs: "0.7rem", sm: "0.75rem" },
                       fontWeight: 500,
+                      "& .MuiChip-deleteIcon": {
+                        marginRight: "4px",
+                        marginLeft: "4px",
+                      },
                     }}
                   />
                   <Typography
@@ -1251,6 +1248,7 @@ const DailyAttendance: React.FC = () => {
             pb: 0,
             mt: { xs: 0.5, sm: 0 },
             position: "relative",
+            direction: "rtl",
           }}
         >
           {isInitialLoading ? (
@@ -1276,53 +1274,17 @@ const DailyAttendance: React.FC = () => {
                 </Typography>
               </Box>
             </Fade>
-          ) : filteredChildren.length > 5 ? (
-            // Use virtualization for larger lists
-            <Fade in={!isInitialLoading} timeout={500}>
-              <Box sx={{ height: "100%", px: { xs: 2, sm: 2 }, pb: 4 }}>
-                <VirtualList
-                  height={listHeight}
-                  itemCount={filteredChildren.length}
-                  itemSize={100} // Reduced item size for smaller gaps
-                  width="100%"
-                  overscanCount={8}
-                  itemKey={(index, data) =>
-                    data.children[index]?.id || `child-${index}`
-                  }
-                  itemData={{
-                    children: filteredChildren,
-                    attendanceRecords,
-                    attendanceTimestamps,
-                    onStatusChange: handleStatusChange,
-                  }}
-                >
-                  {({ index, style, data }) => (
-                    <div style={style}>
-                      <AttendanceChildListItem
-                        key={data.children[index].id}
-                        child={data.children[index]}
-                        attendanceStatus={
-                          data.attendanceRecords[data.children[index].id!] ||
-                          "missing"
-                        }
-                        updateTime={
-                          data.attendanceTimestamps[data.children[index].id!]
-                        }
-                        onStatusChange={data.onStatusChange}
-                        index={index}
-                        isAttendanceClosed={isAttendanceClosedComputed}
-                      />
-                    </div>
-                  )}
-                </VirtualList>
-                {/* Small spacer for extra scroll space */}
-                <Box sx={{ height: 20 }} />
-              </Box>
-            </Fade>
           ) : (
             // Use regular rendering for smaller lists
             <Fade in={!isInitialLoading} timeout={500}>
-              <Box sx={{ height: "100%", px: { xs: 2, sm: 2 }, pb: 4 }}>
+              <Box
+                sx={{
+                  height: "100%",
+                  px: { xs: 2, sm: 2 },
+                  pb: 4,
+                  direction: "rtl",
+                }}
+              >
                 {filteredChildren.map((child, index) => (
                   <AttendanceChildListItem
                     key={child.id}

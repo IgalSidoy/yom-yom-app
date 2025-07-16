@@ -17,15 +17,6 @@ import { FeedPost } from "../types/posts";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL || "http://localhost:3001";
 
-// Debug the baseURL configuration
-console.log("🔧 [API] BaseURL configuration:", {
-  baseURL,
-  hasBaseURL: !!baseURL,
-  envVars: {
-    REACT_APP_API_BASE_URL: process.env.REACT_APP_API_BASE_URL,
-  },
-});
-
 // Create axios instance
 const api = axios.create({
   baseURL,
@@ -36,11 +27,6 @@ const api = axios.create({
   },
 });
 
-console.log("🔧 [API] Main API instance created:", {
-  baseURL: api.defaults.baseURL,
-  withCredentials: api.defaults.withCredentials,
-});
-
 // Create a separate axios instance for refresh token requests
 const refreshApi = axios.create({
   baseURL,
@@ -49,18 +35,6 @@ const refreshApi = axios.create({
     Accept: "application/json",
     "Content-Type": "application/json",
   },
-});
-
-console.log("🔧 [API] Refresh API instance created:", {
-  baseURL: refreshApi.defaults.baseURL,
-  withCredentials: refreshApi.defaults.withCredentials,
-});
-
-// Debug the refreshApi configuration
-console.log("🔧 [API] RefreshApi configuration:", {
-  baseURL,
-  withCredentials: refreshApi.defaults.withCredentials,
-  headers: refreshApi.defaults.headers,
 });
 
 // Flag to prevent multiple refresh attempts
@@ -133,13 +107,6 @@ const processQueue = (error: any, token: string | null = null) => {
 // Function to get a new access token using refresh token
 export const getNewAccessToken = async () => {
   try {
-    console.log("🔄 [API] Getting new access token using refresh token");
-    console.log(
-      "🌐 [API] Making request to:",
-      `${baseURL}/api/v1/auth/refresh`
-    );
-    console.log("🍪 [API] Current cookies:", document.cookie);
-
     // Get the refresh token from cookies
     const cookies = document.cookie.split(";");
     const refreshTokenCookie = cookies.find((cookie) => {
@@ -154,11 +121,6 @@ export const getNewAccessToken = async () => {
         refreshToken = parts.slice(1).join("="); // Handle tokens that might contain '=' characters
       }
     }
-
-    console.log(
-      "🔄 [API] Refresh token from cookie:",
-      refreshToken ? `${refreshToken.substring(0, 20)}...` : "None"
-    );
 
     if (!refreshToken) {
       throw new Error("No refresh token found in cookies");
@@ -177,24 +139,11 @@ export const getNewAccessToken = async () => {
       }
     );
 
-    console.log("✅ [API] Refresh token request successful:", {
-      status: response.status,
-      hasToken: !!response.data.token,
-      responseData: response.data,
-      headers: response.headers,
-    });
-
     const { token } = response.data;
 
     return token;
   } catch (error) {
-    console.error("💥 [API] Failed to get new access token:", error);
-    console.error("💥 [API] Error details:", {
-      status: (error as AxiosError).response?.status,
-      statusText: (error as AxiosError).response?.statusText,
-      data: (error as AxiosError).response?.data,
-      headers: (error as AxiosError).response?.headers,
-    });
+    console.error("Failed to get new access token:", error);
     throw error;
   }
 };
@@ -242,12 +191,6 @@ api.interceptors.request.use(
 // Add response interceptor to handle 401s and refresh
 api.interceptors.response.use(
   (response: AxiosResponse) => {
-    logger.info("Response interceptor - success", {
-      url:
-        (response.config as InternalAxiosRequestConfig & { url?: string })
-          .url || "unknown",
-      status: response.status,
-    });
     return response;
   },
   async (error: AxiosError) => {
@@ -256,43 +199,21 @@ api.interceptors.response.use(
       url?: string;
     };
 
-    logger.info("Response interceptor - error", {
-      url: originalRequest.url || "unknown",
-      status: error.response?.status,
-      isRefreshRequest: originalRequest.url?.includes("/auth/refresh"),
-    });
-
     // Skip if not a 401 error or if it's a refresh token request
     if (
       error.response?.status !== 401 ||
       originalRequest._retry ||
       originalRequest.url?.includes("/auth/refresh")
     ) {
-      logger.info("Response interceptor - skipping refresh", {
-        reason: originalRequest.url?.includes("/auth/refresh")
-          ? "refresh request"
-          : "not 401 or already retried",
-      });
       return Promise.reject(error);
     }
 
-    logger.info("Response interceptor - 401 detected", {
-      url: originalRequest.url || "unknown",
-      isRefreshing,
-    });
-
     // If already refreshing, add request to queue
     if (isRefreshing) {
-      logger.info("Already refreshing, adding to queue", {
-        url: originalRequest.url || "unknown",
-      });
       return new Promise((resolve, reject) => {
         failedQueue.push({ resolve, reject });
       })
         .then((token) => {
-          logger.info("Retrying queued request", {
-            url: originalRequest.url || "unknown",
-          });
           if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${token}`;
           }
@@ -317,17 +238,10 @@ api.interceptors.response.use(
       // Process queued requests
       processQueue(null, token);
 
-      logger.info("Retrying original request", {
-        url: originalRequest.url || "unknown",
-      });
       // Retry the original request
       return api(originalRequest);
     } catch (refreshError) {
-      logger.error("Token refresh failed", {
-        error: refreshError,
-        status: (refreshError as AxiosError).response?.status,
-        headers: (refreshError as AxiosError).response?.headers,
-      });
+      logger.error("Token refresh failed", refreshError);
 
       // Clear token from context
       const event = new CustomEvent("updateAccessToken", { detail: null });
