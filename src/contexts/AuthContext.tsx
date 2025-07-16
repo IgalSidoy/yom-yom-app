@@ -102,6 +102,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
           "🔄 [AuthContext] Refresh token length:",
           refreshToken.length
         );
+        console.log(
+          "🔄 [AuthContext] Refresh token value (first 20 chars):",
+          refreshToken.substring(0, 20) + "..."
+        );
+        console.log(
+          "🔄 [AuthContext] Refresh token will be used in Authorization header as: Bearer [token]"
+        );
       } else {
         console.log(
           "❌ [AuthContext] NO REFRESH TOKEN FOUND - This is the scenario we want to test!"
