@@ -677,10 +677,6 @@ const DailyAttendance: React.FC = () => {
     if (user?.groupId) {
       const today = new Date().toISOString().split("T")[0];
       fetchAttendance(user.groupId, today, true);
-      // Remove focus from the button after clicking
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
-      }
     }
   };
 
