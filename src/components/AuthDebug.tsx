@@ -38,6 +38,18 @@ const AuthDebug: React.FC = () => {
     }
   };
 
+  const debugAuthState = () => {
+    if ((window as any).debugAuthState) {
+      (window as any).debugAuthState();
+    }
+  };
+
+  const test401Error = () => {
+    if ((window as any).test401Error) {
+      (window as any).test401Error();
+    }
+  };
+
   return (
     <div
       style={{
@@ -116,6 +128,32 @@ const AuthDebug: React.FC = () => {
           }}
         >
           Trigger Auth Check
+        </button>
+        <button
+          onClick={debugAuthState}
+          style={{
+            padding: "5px 10px",
+            background: "#28a745",
+            color: "white",
+            border: "none",
+            borderRadius: "3px",
+            cursor: "pointer",
+          }}
+        >
+          Debug State
+        </button>
+        <button
+          onClick={test401Error}
+          style={{
+            padding: "5px 10px",
+            background: "#ffc107",
+            color: "black",
+            border: "none",
+            borderRadius: "3px",
+            cursor: "pointer",
+          }}
+        >
+          Test 401 Error
         </button>
       </div>
     </div>

@@ -5,6 +5,7 @@ import React, {
   ReactNode,
   useEffect,
   useRef,
+  useCallback,
 } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import api, { getNewAccessToken, updateAccessToken } from "../services/api";
@@ -58,8 +59,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Add immediate logging to see if this runs
   console.log("🔍 [AuthContext] Component rendered, isLoading:", isLoading);
 
-  // Define checkAuth function outside useEffect so it can be called from other functions
-  const checkAuth = async () => {
+  // Define checkAuth function with useCallback to prevent recreation on every render
+  const checkAuth = useCallback(async () => {
     console.log("🔐 [AuthContext] Starting authentication check...");
     console.log("🔍 [AuthContext] Current URL:", window.location.href);
     console.log("🔍 [AuthContext] Current pathname:", location.pathname);
@@ -148,7 +149,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(false);
       console.log("🏁 [AuthContext] Authentication check completed");
     }
-  };
+  }, [navigate]);
 
   // Sync token with AppContext via custom event
   useEffect(() => {
@@ -188,38 +189,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isInitialMount.current = false;
 
     checkAuth();
-  }, [navigate]); // Remove location from dependencies to prevent unnecessary re-runs
+  }, [checkAuth]); // Include checkAuth in dependencies since it's used in useEffect
 
-  // Show loading state while checking auth
-  if (isLoading) {
-    console.log("⏳ [AuthContext] Showing loading state...");
-    return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-          fontSize: "18px",
-        }}
-      >
-        🔐 Checking authentication...
-      </div>
-    );
-  }
+  // Define all functions that use hooks before any early returns
+  const login = useCallback(
+    (data: LoginData) => {
+      setAccessToken(data.token);
+      navigate("/dashboard");
+    },
+    [navigate]
+  );
 
-  const login = (data: LoginData) => {
-    setAccessToken(data.token);
-    navigate("/dashboard");
-  };
-
-  const logout = () => {
+  const logout = useCallback(() => {
     setAccessToken(null);
     navigate("/login");
-  };
+  }, [navigate]);
 
   // Test function for debugging
-  const testRefreshToken = async () => {
+  const testRefreshToken = useCallback(async () => {
     console.log("🧪 [AuthContext] Testing refresh token manually...");
     try {
       const token = await getNewAccessToken();
@@ -230,10 +217,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error("🧪 [AuthContext] Manual refresh failed:", error);
     }
-  };
+  }, []);
 
   // Test function to clear cookies and test no-cookie scenario
-  const testNoCookieScenario = () => {
+  const testNoCookieScenario = useCallback(() => {
     console.log("🧪 [AuthContext] Testing no-cookie scenario...");
     console.log(
       "🧪 [AuthContext] Current cookies before clearing:",
@@ -257,22 +244,76 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Reload the page to trigger the authentication check
     window.location.reload();
-  };
+  }, []);
 
   // Test function to manually trigger authentication check
-  const triggerAuthCheck = () => {
+  const triggerAuthCheck = useCallback(() => {
     console.log("🧪 [AuthContext] Manually triggering authentication check...");
     // Reset the initial mount flag to allow the check to run again
     isInitialMount.current = true;
     setIsLoading(true);
     // This will trigger the useEffect to run again
     checkAuth();
-  };
+  }, [checkAuth]);
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    console.log("⏳ [AuthContext] Showing loading state...");
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          fontSize: "18px",
+        }}
+      >
+        🔐 Checking authentication...
+      </div>
+    );
+  }
 
   // Expose test functions globally for debugging
   (window as any).testRefreshToken = testRefreshToken;
   (window as any).testNoCookieScenario = testNoCookieScenario;
   (window as any).triggerAuthCheck = triggerAuthCheck;
+  (window as any).checkAuth = checkAuth; // Expose checkAuth for direct testing
+
+  // Debug function to check current auth state
+  (window as any).debugAuthState = () => {
+    console.log("🔍 [AuthDebug] Current auth state:", {
+      accessToken: accessToken ? `${accessToken.substring(0, 20)}...` : null,
+      isLoading,
+      isAuthenticated: !!accessToken,
+      cookies: document.cookie,
+      isInitialMount: isInitialMount.current,
+    });
+  };
+
+  // Test function to simulate a 401 error and trigger refresh
+  (window as any).test401Error = async () => {
+    console.log("🧪 [AuthDebug] Testing 401 error simulation...");
+    try {
+      // Make a request that might return 401
+      const response = await fetch(
+        `${
+          process.env.REACT_APP_API_BASE_URL || "http://localhost:3001"
+        }/api/v1/user`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: "Bearer invalid_token",
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
+      console.log("🧪 [AuthDebug] 401 test response:", response.status);
+    } catch (error) {
+      console.log("🧪 [AuthDebug] 401 test error:", error);
+    }
+  };
 
   const value = {
     accessToken,
