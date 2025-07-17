@@ -1,6 +1,17 @@
 import React from "react";
-import { Box, Chip, Typography } from "@mui/material";
-import { getAttendanceStatusColor } from "../../config/colors";
+import { Box, Chip, Typography, Avatar } from "@mui/material";
+import {
+  getAttendanceStatusColor,
+  ATTENDANCE_COLORS,
+} from "../../config/colors";
+import {
+  CheckCircle as CheckCircleIcon,
+  Schedule as ScheduleIcon,
+  Cancel as CancelIcon,
+  LocalHospital as LocalHospitalIcon,
+  BeachAccess as BeachAccessIcon,
+  Help as HelpIcon,
+} from "@mui/icons-material";
 
 interface AttendanceChildCardProps {
   child: {
@@ -24,80 +35,100 @@ const AttendanceChildCard: React.FC<AttendanceChildCardProps> = ({
     return status === "present" || status === "arrived" || status === "נוכח";
   })();
 
+  const getStatusIcon = (status: string) => {
+    const statusLower = status.toLowerCase();
+    switch (statusLower) {
+      case "present":
+      case "arrived":
+      case "נוכח":
+        return <CheckCircleIcon sx={{ fontSize: 16, color: "#fff" }} />;
+      case "late":
+      case "מאחר":
+        return <ScheduleIcon sx={{ fontSize: 16, color: "#fff" }} />;
+      case "absent":
+      case "missing":
+      case "נעדר":
+        return <CancelIcon sx={{ fontSize: 16, color: "#fff" }} />;
+      case "sick":
+      case "חולה":
+        return <LocalHospitalIcon sx={{ fontSize: 16, color: "#fff" }} />;
+      case "vacation":
+      case "חופשה":
+        return <BeachAccessIcon sx={{ fontSize: 16, color: "#fff" }} />;
+      default:
+        return <HelpIcon sx={{ fontSize: 16, color: "#fff" }} />;
+    }
+  };
+
+  // Get the exact attendance color based on status
+  const getAttendanceColor = (status: string) => {
+    const statusLower = status.toLowerCase();
+    switch (statusLower) {
+      case "present":
+      case "arrived":
+      case "נוכח":
+        return ATTENDANCE_COLORS.PRESENT;
+      case "late":
+      case "מאחר":
+        return ATTENDANCE_COLORS.LATE;
+      case "absent":
+      case "missing":
+      case "נעדר":
+        return ATTENDANCE_COLORS.ABSENT;
+      case "sick":
+      case "חולה":
+        return ATTENDANCE_COLORS.SICK;
+      case "vacation":
+      case "חופשה":
+        return ATTENDANCE_COLORS.VACATION;
+      default:
+        return ATTENDANCE_COLORS.UNREPORTED;
+    }
+  };
+
+  const attendanceColor = getAttendanceColor(child.status);
+
   return (
     <Box
       sx={{
-        position: "relative",
         display: "flex",
-        flexDirection: "column",
         alignItems: "center",
-        gap: 0.5,
-        p: 1.5,
+        gap: 0.75,
+        p: 1,
         borderRadius: 2,
         border: "1px solid",
-        borderColor: isClosed ? "grey.300" : "divider",
-        bgcolor: isClosed ? "grey.50" : "background.paper",
+        borderColor: isClosed ? "grey.200" : attendanceColor.border,
+        bgcolor: isClosed ? "grey.50" : attendanceColor.bg,
         transition: "all 0.2s ease-in-out",
-        opacity: isClosed ? 0.8 : 1,
+        opacity: isClosed ? 0.7 : 1,
+        minWidth: 120,
+        maxWidth: 150,
+        cursor: "default",
         "&:hover": {
-          transform: isClosed ? "none" : "translateY(-2px)",
-          boxShadow: isClosed ? "none" : "0 4px 12px rgba(0,0,0,0.1)",
-          borderColor: isClosed ? "grey.300" : statusColor.border,
+          transform: isClosed ? "none" : "translateY(-1px)",
+          boxShadow: isClosed ? "none" : "0 3px 8px rgba(0,0,0,0.12)",
+          borderColor: isClosed ? "grey.200" : attendanceColor.border,
         },
       }}
     >
-      {/* Child Name Chip */}
-      <Chip
-        label={`${child.childFirstName} ${child.childLastName}`}
-        size="small"
-        variant="outlined"
-        sx={{
-          borderWidth: isPresent ? 2 : 1,
-          fontWeight: isPresent ? 600 : 400,
-          opacity: isClosed ? 0.7 : 1,
-          bgcolor: isClosed ? "grey.100" : statusColor.bg,
-          borderColor: isClosed ? "grey.400" : statusColor.border,
-          color: isClosed ? "grey.600" : statusColor.text,
-          "&:hover": {
-            borderColor: isClosed ? "grey.400" : statusColor.border,
-            color: isClosed ? "grey.600" : statusColor.text,
-            backgroundColor: isClosed ? "transparent" : `${statusColor.bg}20`,
-          },
-        }}
-      />
+      {/* Status Icon */}
+      <Box sx={{ flexShrink: 0 }}>{getStatusIcon(child.status)}</Box>
 
-      {/* Status Indicator */}
-      <Box
+      {/* Child Full Name */}
+      <Typography
+        variant="body2"
         sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 0.5,
-          mt: 0.5,
+          fontWeight: isPresent ? 700 : 600,
+          color: isClosed ? "grey.600" : "#fff",
+          fontSize: "0.75rem",
+          lineHeight: 1.2,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
         }}
       >
-        {/* Status Dot */}
-        <Box
-          sx={{
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            bgcolor: statusColor.bg,
-            opacity: isClosed ? 0.5 : 1,
-          }}
-        />
-
-        {/* Status Text */}
-        <Typography
-          variant="caption"
-          sx={{
-            fontSize: "0.7rem",
-            fontWeight: 500,
-            color: isClosed ? "grey.600" : "text.primary",
-          }}
-        >
-          {getStatusText(child.status)}
-        </Typography>
-      </Box>
+        {child.childFirstName} {child.childLastName}
+      </Typography>
     </Box>
   );
 };

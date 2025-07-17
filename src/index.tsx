@@ -5,6 +5,20 @@ import "./index.css";
 
 console.log("🚀 [index.tsx] Starting app initialization...");
 
+// Register service worker for PWA functionality
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((registration) => {
+        console.log("✅ Service Worker registered successfully:", registration);
+      })
+      .catch((error) => {
+        console.log("❌ Service Worker registration failed:", error);
+      });
+  });
+}
+
 const container = document.getElementById("root");
 console.log("🔍 [index.tsx] Root container found:", !!container);
 

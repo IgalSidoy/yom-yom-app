@@ -130,6 +130,63 @@ export function AuthProvider({ children }: AuthProviderProps) {
     checkAuth();
   }, [checkAuth]); // Include checkAuth in dependencies since it's used in useEffect
 
+  // Listen for force logout events from API layer
+  useEffect(() => {
+    const handleForceLogout = () => {
+      setAccessToken(null);
+      navigate("/login", { replace: true });
+    };
+
+    window.addEventListener("forceLogout", handleForceLogout);
+
+    return () => {
+      window.removeEventListener("forceLogout", handleForceLogout);
+    };
+  }, [navigate]);
+
+  // Listen for access token requests from API layer
+  useEffect(() => {
+    const handleGetAccessToken = () => {
+      const event = new CustomEvent("accessTokenResponse", {
+        detail: accessToken,
+      });
+      window.dispatchEvent(event);
+    };
+
+    window.addEventListener("getAccessToken", handleGetAccessToken);
+
+    return () => {
+      window.removeEventListener("getAccessToken", handleGetAccessToken);
+    };
+  }, [accessToken]);
+
+  // Listen for access token updates from API layer (refresh token flow)
+  useEffect(() => {
+    const handleUpdateAccessToken = (event: CustomEvent) => {
+      const newToken = event.detail;
+      console.log("AuthContext: Received token update", {
+        hasNewToken: !!newToken,
+        currentToken: !!accessToken,
+      });
+
+      if (newToken !== accessToken) {
+        setAccessToken(newToken);
+      }
+    };
+
+    window.addEventListener(
+      "updateAccessToken",
+      handleUpdateAccessToken as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "updateAccessToken",
+        handleUpdateAccessToken as EventListener
+      );
+    };
+  }, [accessToken]);
+
   // Define all functions that use hooks before any early returns
   const login = useCallback(
     (data: LoginData) => {

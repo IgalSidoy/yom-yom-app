@@ -63,9 +63,26 @@ const Attendance = () => {
           zIndex: 1,
           display: "flex",
           flexDirection: "column",
-          height: "100vh",
+          height: { xs: "100dvh", sm: "100vh" }, // Use dynamic viewport height on mobile
           overflow: "auto",
           p: isMobile ? 2 : 4,
+          // Add safe area insets for mobile
+          paddingTop: {
+            xs: "calc(2rem + env(safe-area-inset-top))",
+            sm: "2rem",
+          },
+          paddingBottom: {
+            xs: "calc(2rem + env(safe-area-inset-bottom))",
+            sm: "2rem",
+          },
+          paddingLeft: {
+            xs: "calc(2rem + env(safe-area-inset-left))",
+            sm: "2rem",
+          },
+          paddingRight: {
+            xs: "calc(2rem + env(safe-area-inset-right))",
+            sm: "2rem",
+          },
         }}
       >
         {/* Header */}

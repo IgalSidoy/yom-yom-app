@@ -752,8 +752,13 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
         zIndex: 1,
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
+        height: { xs: "100dvh", sm: "100vh" }, // Use dynamic viewport height on mobile
         overflow: "hidden",
+        // Add safe area insets for mobile
+        paddingTop: { xs: "env(safe-area-inset-top)", sm: 0 },
+        paddingBottom: { xs: "env(safe-area-inset-bottom)", sm: 0 },
+        paddingLeft: { xs: "env(safe-area-inset-left)", sm: 0 },
+        paddingRight: { xs: "env(safe-area-inset-right)", sm: 0 },
       }}
     >
       {/* Header */}
@@ -815,7 +820,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          pb: isMobile ? 1 : 0, // Add bottom padding to prevent overlap with sticky footer
+          pb: isMobile ? 2 : 0, // Increased bottom padding to prevent overlap with sticky footer
         }}
       >
         {/* Basic Details */}
@@ -1028,7 +1033,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
           display: "flex",
           gap: 2,
           pt: 1,
-          pb: isMobile ? 1 : 0,
+          pb: isMobile ? 2 : 0, // Increased bottom padding for mobile
           borderTop: "1px solid",
           borderColor: "divider",
           p: isMobile ? 1.5 : 2,
@@ -1037,6 +1042,10 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
           bgcolor: "background.default",
           zIndex: 10,
           boxShadow: "0 -2px 8px rgba(0,0,0,0.1)",
+          // Add safe area bottom padding for mobile
+          paddingBottom: isMobile
+            ? "calc(1rem + env(safe-area-inset-bottom))"
+            : "1rem",
         }}
       >
         <Button variant="outlined" onClick={onClose} sx={{ flex: 1 }}>

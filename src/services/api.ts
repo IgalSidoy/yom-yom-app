@@ -17,6 +17,24 @@ import { FeedPost } from "../types/posts";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL || "http://localhost:3001";
 
+// Utility function to redirect to login
+const redirectToLogin = () => {
+  // Clear any stored tokens
+  document.cookie =
+    "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+  // Dispatch event to clear access token from context
+  const event = new CustomEvent("updateAccessToken", { detail: null });
+  window.dispatchEvent(event);
+
+  // Dispatch event to trigger logout in AuthContext
+  const logoutEvent = new CustomEvent("forceLogout");
+  window.dispatchEvent(logoutEvent);
+
+  // Redirect to login page
+  window.location.href = "/login";
+};
+
 // Create axios instance
 const api = axios.create({
   baseURL,
@@ -85,6 +103,12 @@ export const updateAccessToken = (token: string | null) => {
   // Update AppContext's accessToken state
   const event = new CustomEvent("updateAccessToken", { detail: token });
   window.dispatchEvent(event);
+
+  // Log for debugging
+  logger.info("Access token updated", {
+    hasToken: !!token,
+    tokenLength: token?.length || 0,
+  });
 };
 
 // Function to process the queue of failed requests
@@ -231,12 +255,20 @@ api.interceptors.response.use(
     try {
       const token = await getNewAccessToken();
 
-      // Update token in context
+      // Update token in context and API headers
+      updateAccessToken(token);
+
+      // Also dispatch event to ensure AuthContext is updated
       const event = new CustomEvent("updateAccessToken", { detail: token });
       window.dispatchEvent(event);
 
       // Process queued requests
       processQueue(null, token);
+
+      // Update the original request headers with the new token
+      if (originalRequest.headers) {
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+      }
 
       // Retry the original request
       return api(originalRequest);
@@ -249,8 +281,13 @@ api.interceptors.response.use(
 
       processQueue(refreshError, null);
 
-      // Instead of forcing a page reload, just reject the promise
-      return Promise.reject(new Error("Session expired. Please login again."));
+      // Redirect to login page when refresh token is invalid
+      redirectToLogin();
+
+      // Return a rejected promise (this won't be reached due to redirect)
+      return Promise.reject(
+        new Error("Session expired. Redirecting to login...")
+      );
     } finally {
       isRefreshing = false;
     }

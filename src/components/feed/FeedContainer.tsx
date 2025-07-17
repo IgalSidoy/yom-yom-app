@@ -313,7 +313,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
         <Box
           sx={{
             width: "100%",
-            height: "100%",
+            height: "calc(100dvh - 72px - env(safe-area-inset-bottom))",
             bgcolor: "background.paper",
             borderRadius: 0,
             boxShadow: "none",
@@ -365,7 +365,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
             sx={{
               px: 0,
               py: 1,
-              pb: 10,
+              pb: "calc(72px + env(safe-area-inset-bottom) + 20px)",
               flex: 1,
               bgcolor: "background.default",
               overflow: "auto",
