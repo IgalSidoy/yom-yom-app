@@ -12,8 +12,8 @@ import {
   ATTENDANCE_COLORS,
 } from "../../config/colors";
 import AttendanceChildCard from "./AttendanceChildCard";
-import AttendanceSummaryChips from "./AttendanceSummaryChips";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { THEME_COLORS } from "../../config/colors";
 
 interface FeedPostProps {
   post: FeedPostType;
@@ -129,59 +129,15 @@ const FeedPost: React.FC<FeedPostProps> = ({ post, isClosed = false }) => {
 
   // Translation mapping for attendance post titles
   const getAttendancePostTitle = (originalTitle: string) => {
-    // Default attendance post titles in different languages
+    // Simple translation mapping for attendance post titles
     const attendanceTitles = {
-      heb: [
-        "📊 דיווח נוכחות יומי",
-        "✅ מעקב נוכחות ילדים",
-        "👥 דיווח נוכחות קבוצה",
-        "📈 סטטיסטיקת נוכחות",
-        "🎯 דיווח נוכחות יומי",
-        "📋 מעקב נוכחות ילדים",
-        "👶 דיווח נוכחות ילדים",
-        "📊 נוכחות יומית",
-      ],
-      rus: [
-        "📊 Ежедневный отчет о посещаемости",
-        "✅ Отслеживание посещаемости детей",
-        "👥 Отчет о посещаемости группы",
-        "📈 Статистика посещаемости",
-        "🎯 Ежедневный отчет о посещаемости",
-        "📋 Отслеживание посещаемости детей",
-        "👶 Отчет о посещаемости детей",
-        "📊 Ежедневная посещаемость",
-      ],
-      eng: [
-        "📊 Daily Attendance Report",
-        "✅ Children Attendance Tracking",
-        "👥 Group Attendance Report",
-        "📈 Attendance Statistics",
-        "🎯 Daily Attendance Report",
-        "📋 Children Attendance Tracking",
-        "👶 Children Attendance Report",
-        "📊 Daily Attendance",
-      ],
+      heb: "נוכחות יומית",
+      rus: "Ежедневная посещаемость",
+      eng: "Daily Attendance",
     };
 
-    // If the title is a default attendance title, translate it
-    const defaultHebrewTitles = attendanceTitles.heb;
-    const isDefaultTitle = defaultHebrewTitles.some((title) =>
-      originalTitle.includes(title.replace(/[📊✅👥📈🎯📋👶]/g, "").trim())
-    );
-
-    if (isDefaultTitle) {
-      // Use a consistent index based on the original title
-      const titleIndex = defaultHebrewTitles.findIndex((title) =>
-        originalTitle.includes(title.replace(/[📊✅👥📈🎯📋👶]/g, "").trim())
-      );
-
-      if (titleIndex >= 0 && titleIndex < attendanceTitles[language].length) {
-        return attendanceTitles[language][titleIndex];
-      }
-    }
-
-    // If not a default title or translation not found, return original
-    return originalTitle;
+    // Always return the translated title for attendance posts
+    return attendanceTitles[language] || attendanceTitles.eng;
   };
 
   // Translation mapping for attendance labels
@@ -584,121 +540,333 @@ const FeedPost: React.FC<FeedPostProps> = ({ post, isClosed = false }) => {
     ).length;
     const totalCount = attendanceData.childrenAttendanceData.length;
 
-    console.log("Counts:", {
-      arrivedCount,
-      lateCount,
-      absentCount,
-      sickCount,
-      unreportedCount,
-      totalCount,
-    });
-
     const attendancePercentage =
       totalCount > 0 ? Math.round((arrivedCount / totalCount) * 100) : 0;
 
     return (
       <Box>
-        <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-          {getAttendancePostTitle(post.title)}
-        </Typography>
-
-        {/* Attendance Stats Card */}
+        {/* Modern Status Overview */}
         <Box
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            p: 3,
-            bgcolor: "rgba(76, 175, 80, 0.03)",
-            borderRadius: 3,
-            border: "1px solid",
-            borderColor: "rgba(76, 175, 80, 0.1)",
-            position: "relative",
-            overflow: "hidden",
-            mb: 2,
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: "2px",
-              background: "linear-gradient(90deg, #4CAF50 0%, #81C784 100%)",
-            },
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(80px, 1fr))",
+            gap: 1,
+            mb: 3,
           }}
         >
-          {/* Attendance Percentage */}
-          <Box sx={{ textAlign: "center", flex: 1 }}>
-            <Typography
-              variant="h3"
-              sx={{
-                fontWeight: 800,
-                color: "#4CAF50",
-                fontSize: { xs: "2rem", sm: "2.5rem" },
-                lineHeight: 1,
-                mb: 0.5,
-                textShadow: "0 2px 4px rgba(76, 175, 80, 0.2)",
-              }}
-            >
-              {attendancePercentage}%
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                color: "text.secondary",
-                fontSize: "0.8rem",
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              {getAttendanceLabel("attendance")}
-            </Typography>
-          </Box>
-
-          {/* Divider */}
+          {/* Present */}
           <Box
             sx={{
-              width: "1px",
-              height: 60,
-              bgcolor: "rgba(76, 175, 80, 0.2)",
-              mx: 2,
+              bgcolor: "success.light",
+              color: "success.contrastText",
+              borderRadius: 2,
+              p: 1.5,
+              textAlign: "center",
+              position: "relative",
+              overflow: "hidden",
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 3,
+                bgcolor: "success.main",
+              },
             }}
-          />
-
-          {/* Attendance Counts */}
-          <Box sx={{ textAlign: "center", flex: 1 }}>
+          >
             <Typography
               variant="h4"
               sx={{
-                fontWeight: 700,
-                color: "#4CAF50",
-                fontSize: { xs: "1.5rem", sm: "2rem" },
+                fontWeight: 800,
+                fontSize: "1.8rem",
                 lineHeight: 1,
                 mb: 0.5,
               }}
             >
-              {arrivedCount}/{totalCount}
+              {arrivedCount}
             </Typography>
             <Typography
               variant="caption"
               sx={{
-                color: "text.secondary",
+                fontWeight: 600,
                 fontSize: "0.75rem",
-                fontWeight: 500,
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
               }}
             >
               {getAttendanceLabel("present")}
             </Typography>
           </Box>
+
+          {/* Late */}
+          {lateCount > 0 && (
+            <Box
+              sx={{
+                bgcolor: "warning.light",
+                color: "warning.contrastText",
+                borderRadius: 2,
+                p: 1.5,
+                textAlign: "center",
+                position: "relative",
+                overflow: "hidden",
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 3,
+                  bgcolor: "warning.main",
+                },
+              }}
+            >
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 800,
+                  fontSize: "1.8rem",
+                  lineHeight: 1,
+                  mb: 0.5,
+                }}
+              >
+                {lateCount}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: "0.75rem",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                מאחרים
+              </Typography>
+            </Box>
+          )}
+
+          {/* Absent */}
+          {absentCount > 0 && (
+            <Box
+              sx={{
+                bgcolor: "error.light",
+                color: "error.contrastText",
+                borderRadius: 2,
+                p: 1.5,
+                textAlign: "center",
+                position: "relative",
+                overflow: "hidden",
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 3,
+                  bgcolor: "error.main",
+                },
+              }}
+            >
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 800,
+                  fontSize: "1.8rem",
+                  lineHeight: 1,
+                  mb: 0.5,
+                }}
+              >
+                {absentCount}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: "0.75rem",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                נעדרים
+              </Typography>
+            </Box>
+          )}
+
+          {/* Sick */}
+          {sickCount > 0 && (
+            <Box
+              sx={{
+                bgcolor: "info.light",
+                color: "info.contrastText",
+                borderRadius: 2,
+                p: 1.5,
+                textAlign: "center",
+                position: "relative",
+                overflow: "hidden",
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 3,
+                  bgcolor: "info.main",
+                },
+              }}
+            >
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 800,
+                  fontSize: "1.8rem",
+                  lineHeight: 1,
+                  mb: 0.5,
+                }}
+              >
+                {sickCount}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: "0.75rem",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                חולים
+              </Typography>
+            </Box>
+          )}
+
+          {/* Unreported */}
+          {unreportedCount > 0 && (
+            <Box
+              sx={{
+                bgcolor: "grey.300",
+                color: "grey.700",
+                borderRadius: 2,
+                p: 1.5,
+                textAlign: "center",
+                position: "relative",
+                overflow: "hidden",
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 3,
+                  bgcolor: "grey.500",
+                },
+              }}
+            >
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 800,
+                  fontSize: "1.8rem",
+                  lineHeight: 1,
+                  mb: 0.5,
+                }}
+              >
+                {unreportedCount}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: "0.75rem",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                לא דווח
+              </Typography>
+            </Box>
+          )}
         </Box>
 
-        {/* Children Status Grid */}
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
-            {getAttendanceLabel("childrenStatus")}:
+        {/* Summary Bar */}
+        <Box
+          sx={{
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            p: 2,
+            mb: 2,
+            border: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              mb: 1,
+            }}
+          >
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 600,
+                color: "text.primary",
+              }}
+            >
+              סה"כ נוכחות
+            </Typography>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                color: THEME_COLORS.PRIMARY,
+              }}
+            >
+              {attendancePercentage}%
+            </Typography>
+          </Box>
+          <Box
+            sx={{
+              width: "100%",
+              height: 8,
+              bgcolor: "grey.200",
+              borderRadius: 4,
+              overflow: "hidden",
+            }}
+          >
+            <Box
+              sx={{
+                width: `${attendancePercentage}%`,
+                height: "100%",
+                bgcolor: THEME_COLORS.PRIMARY,
+                borderRadius: 4,
+                transition: "width 0.3s ease",
+              }}
+            />
+          </Box>
+        </Box>
+
+        {/* Children Section */}
+        <Box>
+          <Typography
+            variant="subtitle1"
+            sx={{
+              mb: 2,
+              fontWeight: 600,
+              color: "text.primary",
+              fontSize: "1rem",
+            }}
+          >
+            ילדים נוכחים:
           </Typography>
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+              gap: 1.5,
+            }}
+          >
             {attendanceData.childrenAttendanceData.map((child) => (
               <AttendanceChildCard
                 key={child.childId}
@@ -708,32 +876,6 @@ const FeedPost: React.FC<FeedPostProps> = ({ post, isClosed = false }) => {
               />
             ))}
           </Box>
-        </Box>
-
-        {/* Attendance Summary */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            <Group sx={{ fontSize: 16, color: "text.secondary" }} />
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 600,
-                color: isClosed ? "#9E9E9E" : "#4CAF50",
-                fontSize: "0.9rem",
-              }}
-            >
-              {arrivedCount}/{totalCount} {getAttendanceLabel("present")}
-            </Typography>
-          </Box>
-
-          {/* Additional stats */}
-          <AttendanceSummaryChips
-            lateCount={lateCount}
-            absentCount={absentCount}
-            sickCount={sickCount}
-            unreportedCount={unreportedCount}
-            isClosed={isClosed}
-          />
         </Box>
       </Box>
     );

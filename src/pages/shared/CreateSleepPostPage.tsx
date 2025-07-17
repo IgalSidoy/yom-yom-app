@@ -273,6 +273,24 @@ const CreateSleepPostPage: React.FC = () => {
           bgcolor: "background.default",
           zIndex: 1,
           p: isMobile ? 2 : 4,
+          height: { xs: "100dvh", sm: "100vh" }, // Use dynamic viewport height on mobile
+          // Add safe area insets for mobile
+          paddingTop: {
+            xs: "calc(2rem + env(safe-area-inset-top))",
+            sm: "2rem",
+          },
+          paddingBottom: {
+            xs: "calc(2rem + env(safe-area-inset-bottom))",
+            sm: "2rem",
+          },
+          paddingLeft: {
+            xs: "calc(2rem + env(safe-area-inset-left))",
+            sm: "2rem",
+          },
+          paddingRight: {
+            xs: "calc(2rem + env(safe-area-inset-right))",
+            sm: "2rem",
+          },
         }}
       >
         <Box
@@ -328,6 +346,24 @@ const CreateSleepPostPage: React.FC = () => {
           bgcolor: "background.default",
           zIndex: 1,
           p: isMobile ? 2 : 4,
+          height: { xs: "100dvh", sm: "100vh" }, // Use dynamic viewport height on mobile
+          // Add safe area insets for mobile
+          paddingTop: {
+            xs: "calc(2rem + env(safe-area-inset-top))",
+            sm: "2rem",
+          },
+          paddingBottom: {
+            xs: "calc(2rem + env(safe-area-inset-bottom))",
+            sm: "2rem",
+          },
+          paddingLeft: {
+            xs: "calc(2rem + env(safe-area-inset-left))",
+            sm: "2rem",
+          },
+          paddingRight: {
+            xs: "calc(2rem + env(safe-area-inset-right))",
+            sm: "2rem",
+          },
         }}
       >
         <Box
@@ -398,9 +434,26 @@ const CreateSleepPostPage: React.FC = () => {
           zIndex: 1,
           display: "flex",
           flexDirection: "column",
-          height: "100vh",
+          height: { xs: "100dvh", sm: "100vh" }, // Use dynamic viewport height on mobile
           overflow: "auto",
           p: isMobile ? 2 : 4,
+          // Add safe area insets for mobile
+          paddingTop: {
+            xs: "calc(2rem + env(safe-area-inset-top))",
+            sm: "2rem",
+          },
+          paddingBottom: {
+            xs: "calc(2rem + env(safe-area-inset-bottom))",
+            sm: "2rem",
+          },
+          paddingLeft: {
+            xs: "calc(2rem + env(safe-area-inset-left))",
+            sm: "2rem",
+          },
+          paddingRight: {
+            xs: "calc(2rem + env(safe-area-inset-right))",
+            sm: "2rem",
+          },
         }}
       >
         {/* Header */}
@@ -691,8 +744,13 @@ const CreateSleepPostPage: React.FC = () => {
         zIndex: 1,
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
+        height: { xs: "100dvh", sm: "100vh" }, // Use dynamic viewport height on mobile
         overflow: "hidden",
+        // Add safe area insets for mobile
+        paddingTop: { xs: "env(safe-area-inset-top)", sm: 0 },
+        paddingBottom: { xs: "env(safe-area-inset-bottom)", sm: 0 },
+        paddingLeft: { xs: "env(safe-area-inset-left)", sm: 0 },
+        paddingRight: { xs: "env(safe-area-inset-right)", sm: 0 },
       }}
     >
       <CreateSleepPostModal

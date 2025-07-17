@@ -57,9 +57,7 @@ const FeedDateSelector: React.FC<FeedDateSelectorProps> = ({
     }
   };
 
-  if (!isMobile) {
-    return null; // Only show on mobile
-  }
+  // Show on all screen sizes now
 
   return (
     <Box sx={{ mb: 1 }}>
@@ -82,51 +80,11 @@ const FeedDateSelector: React.FC<FeedDateSelectorProps> = ({
           }}
         >
           <IconButton
-            onClick={handlePreviousDay}
-            disabled={selectedDate.isSame(dayjs().subtract(6, "day"), "day")}
-            size="small"
-            sx={{
-              color: "primary.main",
-              "&:disabled": {
-                color: "text.disabled",
-              },
-            }}
-          >
-            <ChevronLeft />
-          </IconButton>
-
-          <Box sx={{ textAlign: "center", flex: 1, mx: 1 }}>
-            <Typography
-              variant="subtitle1"
-              sx={{ fontWeight: 600, color: "primary.main" }}
-            >
-              {formatDate(selectedDate)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {selectedDate.format("DD/MM/YYYY")}
-            </Typography>
-          </Box>
-
-          <IconButton
-            onClick={handleNextDay}
-            disabled={selectedDate.isSame(dayjs(), "day")}
-            size="small"
-            sx={{
-              color: "primary.main",
-              "&:disabled": {
-                color: "text.disabled",
-              },
-            }}
-          >
-            <ChevronRight />
-          </IconButton>
-
-          <IconButton
             onClick={handleToday}
             disabled={selectedDate.isSame(dayjs(), "day")}
             size="small"
             sx={{
-              ml: 1,
+              mr: 1,
               bgcolor: selectedDate.isSame(dayjs(), "day")
                 ? "primary.main"
                 : "transparent",
@@ -147,6 +105,46 @@ const FeedDateSelector: React.FC<FeedDateSelectorProps> = ({
             }}
           >
             <Today sx={{ fontSize: 16 }} />
+          </IconButton>
+
+          <IconButton
+            onClick={handleNextDay}
+            disabled={selectedDate.isSame(dayjs(), "day")}
+            size="small"
+            sx={{
+              color: "primary.main",
+              "&:disabled": {
+                color: "text.disabled",
+              },
+            }}
+          >
+            <ChevronRight />
+          </IconButton>
+
+          <Box sx={{ textAlign: "center", flex: 1, mx: 1 }}>
+            <Typography
+              variant="subtitle1"
+              sx={{ fontWeight: 600, color: "primary.main" }}
+            >
+              {formatDate(selectedDate)}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {selectedDate.format("DD/MM/YYYY")}
+            </Typography>
+          </Box>
+
+          <IconButton
+            onClick={handlePreviousDay}
+            disabled={selectedDate.isSame(dayjs().subtract(6, "day"), "day")}
+            size="small"
+            sx={{
+              color: "primary.main",
+              "&:disabled": {
+                color: "text.disabled",
+              },
+            }}
+          >
+            <ChevronLeft />
           </IconButton>
         </Box>
       </Paper>

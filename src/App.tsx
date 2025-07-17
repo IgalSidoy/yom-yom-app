@@ -13,11 +13,9 @@ import { AttendanceProvider } from "./contexts/AttendanceContext";
 import { DailyReportProvider } from "./contexts/DailyReportContext";
 import { FeedProvider } from "./contexts/FeedContext";
 import AppRoutes from "./routes";
-import AuthDebug from "./components/AuthDebug";
+import AuthWrapper from "./components/AuthWrapper";
 
 const App: React.FC = () => {
-  console.log("🚀 [App] App component rendering...");
-
   return (
     <Router>
       <AppProvider>
@@ -33,14 +31,15 @@ const App: React.FC = () => {
           >
             <LanguageProvider>
               <AuthProvider>
-                <AttendanceProvider>
-                  <DailyReportProvider>
-                    <FeedProvider>
-                      <AppRoutes />
-                      <AuthDebug />
-                    </FeedProvider>
-                  </DailyReportProvider>
-                </AttendanceProvider>
+                <AuthWrapper>
+                  <AttendanceProvider>
+                    <DailyReportProvider>
+                      <FeedProvider>
+                        <AppRoutes />
+                      </FeedProvider>
+                    </DailyReportProvider>
+                  </AttendanceProvider>
+                </AuthWrapper>
               </AuthProvider>
             </LanguageProvider>
           </LocalizationProvider>

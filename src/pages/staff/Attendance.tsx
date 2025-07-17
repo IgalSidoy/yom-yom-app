@@ -63,9 +63,26 @@ const Attendance = () => {
           zIndex: 1,
           display: "flex",
           flexDirection: "column",
-          height: "100vh",
+          height: { xs: "100dvh", sm: "100vh" }, // Use dynamic viewport height on mobile
           overflow: "auto",
           p: isMobile ? 2 : 4,
+          // Add safe area insets for mobile
+          paddingTop: {
+            xs: "calc(2rem + env(safe-area-inset-top))",
+            sm: "2rem",
+          },
+          paddingBottom: {
+            xs: "calc(2rem + env(safe-area-inset-bottom))",
+            sm: "2rem",
+          },
+          paddingLeft: {
+            xs: "calc(2rem + env(safe-area-inset-left))",
+            sm: "2rem",
+          },
+          paddingRight: {
+            xs: "calc(2rem + env(safe-area-inset-right))",
+            sm: "2rem",
+          },
         }}
       >
         {/* Header */}
@@ -284,89 +301,7 @@ const Attendance = () => {
   }
 
   // Show regular attendance component if not closed
-  if (isLoading) {
-    return (
-      <Box
-        sx={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          bgcolor: "background.default",
-          zIndex: 1,
-          display: "flex",
-          flexDirection: "column",
-          height: "100vh",
-          overflow: "auto",
-          p: isMobile ? 2 : 4,
-        }}
-      >
-        {/* Header */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            mb: 3,
-            pb: 2,
-            borderBottom: "1px solid",
-            borderColor: "divider",
-          }}
-        >
-          <Button
-            variant="outlined"
-            onClick={handleGoBack}
-            startIcon={<ArrowBackIcon />}
-            sx={{
-              borderColor: "primary.main",
-              color: "primary.main",
-              "&:hover": {
-                borderColor: "primary.dark",
-                bgcolor: "primary.main",
-                color: "white",
-              },
-            }}
-          >
-            חזור
-          </Button>
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 700,
-              color: "text.primary",
-              flex: 1,
-            }}
-          >
-            נוכחות יומית
-          </Typography>
-        </Box>
-
-        {/* Loading Content */}
-        <Box
-          sx={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            textAlign: "center",
-            py: 4,
-          }}
-        >
-          <Typography
-            variant="h6"
-            sx={{
-              color: "text.secondary",
-              mb: 2,
-            }}
-          >
-            טוען נתוני נוכחות...
-          </Typography>
-        </Box>
-      </Box>
-    );
-  }
+  // Note: DailyAttendance component handles its own loading state with skeleton animations
 
   return <DailyAttendance />;
 };

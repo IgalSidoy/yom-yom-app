@@ -6,7 +6,6 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import { FixedSizeList as VirtualList } from "react-window";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../config/routes";
 import {
@@ -33,7 +32,7 @@ import {
   Alert,
 } from "@mui/material";
 import StatusButtonWithPopup from "./StatusButtonWithPopup";
-import DateTimeWidget from "./DateTimeWidget";
+
 import { useApp } from "../contexts/AppContext";
 import { useAttendance } from "../contexts/AttendanceContext";
 import {
@@ -147,7 +146,7 @@ const AttendanceChildListItem: React.FC<{
     return (
       <Box
         sx={{
-          py: { xs: 1.5, sm: 2 },
+          py: { xs: 1, sm: 2 },
           px: { xs: 0.5, sm: 3 },
           borderBottom: "1px solid",
           borderColor: "rgba(0, 0, 0, 0.04)",
@@ -158,18 +157,18 @@ const AttendanceChildListItem: React.FC<{
         <Box
           sx={{
             display: { xs: "flex", sm: "flex" },
-            flexDirection: { xs: "row", sm: "row-reverse" },
+            flexDirection: { xs: "row", sm: "row" },
             alignItems: { xs: "center", sm: "center" },
             justifyContent: { xs: "space-between", sm: "space-between" },
-            gap: { xs: 1.5, sm: 1.5 },
+            gap: { xs: 1, sm: 1.5 },
           }}
         >
           {/* Status Button with Popup */}
           <Box
             sx={{
               flexShrink: 0,
-              order: { xs: 1, sm: 1 }, // Button first on mobile and desktop
-              justifyContent: { xs: "flex-start", sm: "flex-start" },
+              order: { xs: 2, sm: 2 }, // Button second on mobile and desktop
+              justifyContent: { xs: "flex-end", sm: "flex-end" },
               width: { xs: "auto", sm: "auto" },
             }}
           >
@@ -209,14 +208,30 @@ const AttendanceChildListItem: React.FC<{
           <Box
             sx={{
               display: { xs: "flex", sm: "block" },
-              flexDirection: { xs: "row", sm: "column" },
-              alignItems: { xs: "center", sm: "stretch" },
-              justifyContent: { xs: "flex-end", sm: "flex-start" },
-              order: { xs: 2, sm: 2 },
+              flexDirection: { xs: "column", sm: "column" },
+              alignItems: { xs: "flex-start", sm: "stretch" },
+              justifyContent: { xs: "flex-start", sm: "flex-start" },
+              order: { xs: 1, sm: 1 },
               width: { xs: "auto", sm: "auto" },
-              gap: { xs: 1, sm: 0 },
+              gap: { xs: 0.5, sm: 0 },
             }}
           >
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                color: "text.primary",
+                textAlign: { xs: "right", sm: "right" },
+                fontSize: { xs: "1.1rem", sm: "1.25rem" },
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+              noWrap
+            >
+              {child.firstName} {child.lastName}
+            </Typography>
+
             <Typography
               variant="body2"
               sx={{
@@ -228,36 +243,6 @@ const AttendanceChildListItem: React.FC<{
             >
               עודכן {formatUpdateTime(updateTime)}
             </Typography>
-
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                minWidth: 0,
-                flexShrink: 1,
-              }}
-            >
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 700,
-                  color: "text.primary",
-                  textAlign: { xs: "right", sm: "right" },
-                  fontSize: { xs: "1.1rem", sm: "1.25rem" },
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-                noWrap
-              >
-                {child.firstName} {child.lastName}
-              </Typography>
-              {/* Status icon for mobile view */}
-              <Box sx={{ display: { xs: "flex", sm: "none" } }}>
-                {getStatusIcon(attendanceStatus)}
-              </Box>
-            </Box>
           </Box>
         </Box>
 
@@ -294,9 +279,9 @@ const AttendanceSkeleton: React.FC = () => (
     <Box
       sx={{
         display: { xs: "flex", sm: "flex" },
-        flexDirection: { xs: "column", sm: "row-reverse" },
-        alignItems: { xs: "stretch", sm: "center" },
-        justifyContent: { xs: "flex-start", sm: "space-between" },
+        flexDirection: { xs: "row", sm: "row" },
+        alignItems: { xs: "center", sm: "center" },
+        justifyContent: { xs: "space-between", sm: "space-between" },
         gap: { xs: 1.5, sm: 1.5 },
       }}
     >
@@ -304,12 +289,12 @@ const AttendanceSkeleton: React.FC = () => (
       <Box
         sx={{
           display: { xs: "flex", sm: "block" },
-          flexDirection: { xs: "row", sm: "column" },
-          alignItems: { xs: "center", sm: "stretch" },
-          justifyContent: { xs: "flex-start", sm: "flex-start" },
-          order: { xs: 1, sm: 2 },
-          width: { xs: "100%", sm: "auto" },
-          gap: { xs: 1, sm: 0 },
+          flexDirection: { xs: "column", sm: "column" },
+          alignItems: { xs: "flex-end", sm: "stretch" },
+          justifyContent: { xs: "flex-end", sm: "flex-start" },
+          order: { xs: 2, sm: 2 },
+          width: { xs: "auto", sm: "auto" },
+          gap: { xs: 0.5, sm: 0 },
         }}
       >
         <Skeleton
@@ -361,9 +346,9 @@ const AttendanceSkeleton: React.FC = () => (
         sx={{
           display: "flex",
           gap: 1,
-          order: { xs: 2, sm: 1 },
-          justifyContent: { xs: "flex-end", sm: "flex-start" },
-          width: { xs: "100%", sm: "auto" },
+          order: { xs: 1, sm: 1 },
+          justifyContent: { xs: "flex-start", sm: "flex-start" },
+          width: { xs: "auto", sm: "auto" },
         }}
       >
         <Skeleton
@@ -544,19 +529,16 @@ const DailyAttendance: React.FC = () => {
   // Calculate dynamic heights based on viewport
   useEffect(() => {
     const calculateHeights = () => {
+      // Use dynamic viewport height for mobile browsers
       const viewportHeight = window.innerHeight;
-      const navbarHeight = 0; // No navbar anymore
       const bottomNavHeight = 72; // Fixed bottom nav height
-      const topMargin = 0; // No top margin
-      const bottomMargin = 0; // No bottom margin needed
+      const safeAreaBottom = parseInt(
+        getComputedStyle(document.documentElement).getPropertyValue("--sat") ||
+          "0"
+      );
 
       // Calculate available height for container
-      const availableHeight =
-        viewportHeight -
-        navbarHeight -
-        bottomNavHeight -
-        topMargin -
-        bottomMargin;
+      const availableHeight = viewportHeight - bottomNavHeight - safeAreaBottom;
 
       // Set container height dynamically
       if (containerRef.current) {
@@ -568,7 +550,7 @@ const DailyAttendance: React.FC = () => {
         const containerHeight = containerRef.current.clientHeight;
         const headerHeight =
           containerRef.current.querySelector("[data-header]")?.clientHeight ||
-          150;
+          120; // Reduced from 150 to 120 for more compact header
         const availableListHeight = Math.max(
           containerHeight - headerHeight,
           200
@@ -692,10 +674,6 @@ const DailyAttendance: React.FC = () => {
     if (user?.groupId) {
       const today = new Date().toISOString().split("T")[0];
       fetchAttendance(user.groupId, today, true);
-      // Remove focus from the button after clicking
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
-      }
     }
   };
 
@@ -771,16 +749,24 @@ const DailyAttendance: React.FC = () => {
         boxShadow: { xs: "none", sm: "0 2px 8px rgba(0, 0, 0, 0.1)" },
         overflow: "hidden",
         px: { xs: 0, sm: 2 },
+        direction: "rtl",
       }}
       ref={containerRef}
     >
-      <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-        {/* Header with Group Info and Date - Improved Layout */}
+      <Box
+        sx={{
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          direction: "rtl",
+        }}
+      >
+        {/* Header with Group Info - Optimized for mobile */}
         <Fade in={!isInitialLoading} timeout={400}>
           <Box
             sx={{
-              px: { xs: 2, sm: 3 },
-              py: { xs: 2, sm: 2.5 },
+              px: { xs: 1.5, sm: 3 },
+              py: { xs: 1.5, sm: 2.5 },
               flexShrink: 0,
               borderBottom: "1px solid",
               borderColor: "divider",
@@ -788,13 +774,13 @@ const DailyAttendance: React.FC = () => {
             }}
             data-header
           >
-            {/* Main Header Row */}
+            {/* Main Header Row - Compact mobile layout */}
             <Box
               sx={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                mb: 1.5,
+                mb: { xs: 1, sm: 1.5 },
               }}
             >
               {/* Title, Group Name, and Refresh Button */}
@@ -803,17 +789,16 @@ const DailyAttendance: React.FC = () => {
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 1,
-                    mb: 0.5,
+                    gap: { xs: 0.5, sm: 1 },
+                    mb: { xs: 0.25, sm: 0.5 },
                   }}
                 >
                   <Typography
                     variant="h5"
                     sx={{
                       fontWeight: 700,
-                      fontSize: { xs: "1.25rem", sm: "1.5rem" },
+                      fontSize: { xs: "1.1rem", sm: "1.5rem" },
                       color: "text.primary",
-                      mt: -1.25, // Move title up by ~10px
                     }}
                   >
                     נוכחות יומית
@@ -825,7 +810,6 @@ const DailyAttendance: React.FC = () => {
                     sx={{
                       color: "primary.main",
                       bgcolor: "primary.50",
-                      mt: -1.25, // Align with title
                       "&:hover": {
                         backgroundColor: "primary.main",
                         color: "white",
@@ -843,7 +827,7 @@ const DailyAttendance: React.FC = () => {
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 1,
+                    gap: { xs: 0.5, sm: 1 },
                     flexWrap: "wrap",
                   }}
                 >
@@ -852,7 +836,7 @@ const DailyAttendance: React.FC = () => {
                     color="primary"
                     sx={{
                       fontWeight: 600,
-                      fontSize: { xs: "0.95rem", sm: "1.1rem" },
+                      fontSize: { xs: "0.85rem", sm: "1.1rem" },
                     }}
                   >
                     {getGroupName()}
@@ -863,8 +847,8 @@ const DailyAttendance: React.FC = () => {
                         bgcolor: "warning.main",
                         color: "white",
                         borderRadius: 1.5,
-                        px: 1.5,
-                        py: 0.5,
+                        px: { xs: 1, sm: 1.5 },
+                        py: { xs: 0.25, sm: 0.5 },
                         boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
                       }}
                     >
@@ -872,7 +856,7 @@ const DailyAttendance: React.FC = () => {
                         variant="caption"
                         sx={{
                           fontWeight: 600,
-                          fontSize: "0.7rem",
+                          fontSize: { xs: "0.6rem", sm: "0.7rem" },
                         }}
                       >
                         נסגר
@@ -882,67 +866,57 @@ const DailyAttendance: React.FC = () => {
                 </Box>
               </Box>
 
-              {/* DateTime Widget and Complete Button */}
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-end",
-                  gap: 1.5,
-                }}
-              >
-                <DateTimeWidget variant="compact" size="large" />
-                {!isAttendanceClosedComputed && (
-                  <Button
-                    onClick={handleCompleteAttendance}
-                    size="small"
-                    variant="contained"
-                    startIcon={<DoneIcon />}
-                    sx={{
-                      bgcolor: "primary.main",
+              {/* Complete Button - Optimized for mobile */}
+              {!isAttendanceClosedComputed && (
+                <Button
+                  onClick={handleCompleteAttendance}
+                  size="small"
+                  variant="contained"
+                  startIcon={<DoneIcon />}
+                  sx={{
+                    bgcolor: "primary.main",
+                    color: "white",
+                    px: { xs: 1.5, sm: 2 },
+                    py: { xs: 0.75, sm: 1 },
+                    fontSize: { xs: "0.75rem", sm: "0.8rem" },
+                    fontWeight: 600,
+                    borderRadius: 2,
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                    "&:hover": {
+                      bgcolor: "primary.dark",
                       color: "white",
-                      px: 2,
-                      py: 1,
-                      fontSize: "0.8rem",
-                      fontWeight: 600,
-                      borderRadius: 2,
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                      "&:hover": {
-                        bgcolor: "primary.dark",
-                        color: "white",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
-                        transform: "translateY(-1px)",
-                      },
-                      transition: "all 0.2s ease-in-out",
-                    }}
-                  >
-                    סגור נוכחות
-                  </Button>
-                )}
-              </Box>
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+                      transform: "translateY(-1px)",
+                    },
+                    transition: "all 0.2s ease-in-out",
+                  }}
+                >
+                  סגור נוכחות
+                </Button>
+              )}
             </Box>
 
-            {/* Attendance Summary - Compact mobile design */}
+            {/* Attendance Summary - Ultra compact mobile design */}
             {children.length > 0 && (
               <Fade in={!isInitialLoading && children.length > 0} timeout={400}>
                 <Box
                   sx={{
-                    mt: { xs: 1.5, sm: 2 },
+                    mt: { xs: 1, sm: 2 },
                     display: "flex",
                     flexDirection: { xs: "column", sm: "row" },
-                    gap: { xs: 1, sm: 1 },
+                    gap: { xs: 0.5, sm: 1 },
                     flexWrap: { xs: "nowrap", sm: "wrap" },
                   }}
                 >
-                  {/* Mobile: Compact horizontal scroll */}
+                  {/* Mobile: Ultra compact horizontal layout */}
                   <Box
                     sx={{
                       display: { xs: "flex", sm: "none" },
-                      gap: 1.5,
-                      pb: 0.5,
+                      gap: { xs: 1, sm: 1.5 },
+                      pb: 0.25,
                       justifyContent: "space-evenly",
                       px: 0,
-                      py: 1,
+                      py: { xs: 0.5, sm: 1 },
                     }}
                   >
                     {attendanceStatusOptions.map((option, index) => {
@@ -992,7 +966,7 @@ const DailyAttendance: React.FC = () => {
                             }`,
                             borderRadius: 3,
                             cursor: "pointer",
-                            minHeight: 70,
+                            minHeight: { xs: 60, sm: 70 },
                             position: "relative",
                             overflow: "hidden",
                             transform:
@@ -1224,6 +1198,10 @@ const DailyAttendance: React.FC = () => {
                     sx={{
                       fontSize: { xs: "0.7rem", sm: "0.75rem" },
                       fontWeight: 500,
+                      "& .MuiChip-deleteIcon": {
+                        marginRight: "4px",
+                        marginLeft: "4px",
+                      },
                     }}
                   />
                   <Typography
@@ -1242,15 +1220,16 @@ const DailyAttendance: React.FC = () => {
           </Box>
         </Fade>
 
-        {/* Children List - Maximized height for mobile */}
+        {/* Children List - Ultra optimized for mobile space */}
         <Box
           sx={{
             flex: 1,
-            overflow: "hidden",
+            overflow: "auto",
             px: { xs: 0, sm: 2 },
             pb: 0,
-            mt: { xs: 0.5, sm: 0 },
+            mt: { xs: 0.25, sm: 0 },
             position: "relative",
+            direction: "rtl",
           }}
         >
           {isInitialLoading ? (
@@ -1276,53 +1255,17 @@ const DailyAttendance: React.FC = () => {
                 </Typography>
               </Box>
             </Fade>
-          ) : filteredChildren.length > 5 ? (
-            // Use virtualization for larger lists
-            <Fade in={!isInitialLoading} timeout={500}>
-              <Box sx={{ height: "100%", px: { xs: 2, sm: 2 }, pb: 4 }}>
-                <VirtualList
-                  height={listHeight}
-                  itemCount={filteredChildren.length}
-                  itemSize={100} // Reduced item size for smaller gaps
-                  width="100%"
-                  overscanCount={8}
-                  itemKey={(index, data) =>
-                    data.children[index]?.id || `child-${index}`
-                  }
-                  itemData={{
-                    children: filteredChildren,
-                    attendanceRecords,
-                    attendanceTimestamps,
-                    onStatusChange: handleStatusChange,
-                  }}
-                >
-                  {({ index, style, data }) => (
-                    <div style={style}>
-                      <AttendanceChildListItem
-                        key={data.children[index].id}
-                        child={data.children[index]}
-                        attendanceStatus={
-                          data.attendanceRecords[data.children[index].id!] ||
-                          "missing"
-                        }
-                        updateTime={
-                          data.attendanceTimestamps[data.children[index].id!]
-                        }
-                        onStatusChange={data.onStatusChange}
-                        index={index}
-                        isAttendanceClosed={isAttendanceClosedComputed}
-                      />
-                    </div>
-                  )}
-                </VirtualList>
-                {/* Small spacer for extra scroll space */}
-                <Box sx={{ height: 20 }} />
-              </Box>
-            </Fade>
           ) : (
             // Use regular rendering for smaller lists
             <Fade in={!isInitialLoading} timeout={500}>
-              <Box sx={{ height: "100%", px: { xs: 2, sm: 2 }, pb: 4 }}>
+              <Box
+                sx={{
+                  height: "100%",
+                  px: { xs: 2, sm: 2 },
+                  pb: "calc(72px + env(safe-area-inset-bottom) + 20px)",
+                  direction: "rtl",
+                }}
+              >
                 {filteredChildren.map((child, index) => (
                   <AttendanceChildListItem
                     key={child.id}
