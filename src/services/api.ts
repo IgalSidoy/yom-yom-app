@@ -14,14 +14,14 @@ import {
 } from "../types/enums";
 import { ApiAttendanceStatus } from "../types/attendance";
 import { FeedPost } from "../types/posts";
+import { deleteRefreshToken } from "../utils/cookieUtils";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL || "http://localhost:3001";
 
 // Utility function to redirect to login
 const redirectToLogin = () => {
-  // Clear any stored tokens
-  document.cookie =
-    "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  // Clear any stored tokens using the utility function
+  deleteRefreshToken();
 
   // Dispatch event to clear access token from context
   const event = new CustomEvent("updateAccessToken", { detail: null });
@@ -131,25 +131,9 @@ const processQueue = (error: any, token: string | null = null) => {
 // Function to get a new access token using refresh token
 export const getNewAccessToken = async () => {
   try {
-    // Get the refresh token from cookies
-    const cookies = document.cookie.split(";");
-    const refreshTokenCookie = cookies.find((cookie) => {
-      const trimmedCookie = cookie.trim();
-      return trimmedCookie.startsWith("refreshToken=");
-    });
-
-    let refreshToken = null;
-    if (refreshTokenCookie) {
-      const parts = refreshTokenCookie.split("=");
-      if (parts.length >= 2) {
-        refreshToken = parts.slice(1).join("="); // Handle tokens that might contain '=' characters
-      }
-    }
-
-    if (!refreshToken) {
-      throw new Error("No refresh token found in cookies");
-    }
-
+    // Since the refresh token is httpOnly, we can't read it from JavaScript
+    // But the browser will automatically send it with the request when withCredentials: true
+    // The server should read the refresh token from the httpOnly cookie
     const response = await refreshApi.post(
       "/api/v1/auth/refresh",
       {},
@@ -157,7 +141,7 @@ export const getNewAccessToken = async () => {
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
-          Authorization: `Bearer ${refreshToken}`, // Add the refresh token to Authorization header
+          // Don't manually add Authorization header - let the server read from httpOnly cookie
         },
         withCredentials: true,
       }
