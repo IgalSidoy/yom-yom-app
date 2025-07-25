@@ -39,6 +39,26 @@ export interface AttendanceMetadata {
   childrenAttendanceData: FeedChildAttendanceData[];
 }
 
+export interface FeedChildFoodData {
+  childId: string;
+  childFirstName: string;
+  childLastName: string;
+  foodDetails: string;
+  status: "FullyEaten" | "PartiallyEaten" | "NotEaten" | "Refused";
+  updatedByUserId: string;
+}
+
+export interface FoodEvent {
+  id: string;
+  type: "Breakfast" | "MorningSnack" | "Lunch" | "AfternoonSnack" | "Dinner";
+  timestamp: string;
+  children: FeedChildFoodData[];
+}
+
+export interface FoodMetadata {
+  foodEvents: FoodEvent[];
+}
+
 export interface FeedPost {
   id: string;
   state: string; // Add state field (e.g., "Closed", "Open")
@@ -48,7 +68,7 @@ export interface FeedPost {
   accountId: string;
   groupId: string;
   createdById: string;
-  type: "SleepPost" | "AttendancePost";
+  type: "SleepPost" | "AttendancePost" | "FoodPost";
   title: string;
   description: string;
   activityDate: string;
@@ -60,6 +80,7 @@ export interface FeedPost {
   metadata: {
     sleepMetadata?: SleepMetadata;
     attendanceMetadata?: AttendanceMetadata;
+    foodMetadata?: FoodMetadata;
   };
 }
 

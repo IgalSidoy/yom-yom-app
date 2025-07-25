@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Typography, Box, useTheme, useMediaQuery } from "@mui/material";
+import { UI_COLORS } from "../../config/colors";
 import { Skeleton, Fade, Slide, Box as MuiBox } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../config/routes";
@@ -367,7 +368,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
               py: 1,
               pb: "calc(72px + env(safe-area-inset-bottom) + 20px)",
               flex: 1,
-              bgcolor: "background.default",
+              bgcolor: UI_COLORS.BACKGROUND_LIGHT,
               overflow: "auto",
               position: "relative",
             }}
@@ -493,7 +494,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
             sx={{
               p: { sm: 3, md: 4 },
               flex: 1,
-              bgcolor: "background.default",
+              bgcolor: UI_COLORS.BACKGROUND_LIGHT,
               overflow: "auto",
               position: "relative",
             }}
