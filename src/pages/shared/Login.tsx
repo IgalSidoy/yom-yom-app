@@ -263,7 +263,7 @@ const Login: React.FC = () => {
                     },
                     maxLength: 12,
                     inputMode: "numeric",
-                    pattern: "[0-9-]*",
+                    pattern: "[0-9\\-]*",
                   }}
                   onKeyPress={(e) => {
                     // Allow only numbers and hyphen

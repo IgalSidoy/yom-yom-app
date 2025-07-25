@@ -15,35 +15,6 @@ export const useAddToHomeScreen = () => {
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
 
-  // Debug logging on mount
-  useEffect(() => {
-    console.log("=== Add to Home Screen Hook Debug ===");
-    console.log("User Agent:", navigator.userAgent);
-    console.log("Is iOS:", /iPad|iPhone|iPod/.test(navigator.userAgent));
-    console.log(
-      "Is Chrome Mobile:",
-      /Chrome/.test(navigator.userAgent) && /Mobile/.test(navigator.userAgent)
-    );
-    console.log(
-      "Is Standalone:",
-      window.matchMedia &&
-        window.matchMedia("(display-mode: standalone)").matches
-    );
-    console.log("Service Worker:", "serviceWorker" in navigator);
-
-    // Check PWA criteria
-    const hasManifest = !!document.querySelector('link[rel="manifest"]');
-    const hasHttps =
-      window.location.protocol === "https:" ||
-      window.location.hostname === "localhost";
-    const hasServiceWorker = "serviceWorker" in navigator;
-
-    console.log("Has Manifest:", hasManifest);
-    console.log("Has HTTPS:", hasHttps);
-    console.log("Has Service Worker:", hasServiceWorker);
-    console.log("=====================================");
-  }, []);
-
   useEffect(() => {
     // Check if the app is already installed
     const checkIfInstalled = () => {
@@ -67,7 +38,6 @@ export const useAddToHomeScreen = () => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setIsInstallable(true);
-      console.log("beforeinstallprompt event fired - app is installable");
     };
 
     // Listen for the appinstalled event
@@ -75,7 +45,6 @@ export const useAddToHomeScreen = () => {
       setIsInstalled(true);
       setIsInstallable(false);
       setDeferredPrompt(null);
-      console.log("App installed successfully");
     };
 
     // Check if already installed
@@ -105,19 +74,16 @@ export const useAddToHomeScreen = () => {
     }
 
     if (!deferredPrompt) {
-      console.log("No deferred prompt available - showing manual instructions");
       showManualInstallInstructions();
       return false;
     }
 
     try {
-      console.log("Showing install prompt...");
       // Show the install prompt
       await deferredPrompt.prompt();
 
       // Wait for the user to respond to the prompt
       const { outcome } = await deferredPrompt.userChoice;
-      console.log("Install prompt outcome:", outcome);
 
       if (outcome === "accepted") {
         setIsInstalled(true);
@@ -140,11 +106,6 @@ export const useAddToHomeScreen = () => {
     const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
     const isChromeMobile = /Chrome/.test(userAgent) && /Mobile/.test(userAgent);
 
-    console.log("User Agent:", userAgent);
-    console.log("Is iOS:", isIOS);
-    console.log("Is Safari:", isSafari);
-    console.log("Is Chrome Mobile:", isChromeMobile);
-
     let instructions = "";
 
     if (isIOS) {
@@ -163,7 +124,6 @@ export const useAddToHomeScreen = () => {
       instructions = 'חפש באפשרויות הדפדפן "הוסף למסך הבית"';
     }
 
-    console.log("Instructions:", instructions);
     alert(instructions);
   };
 

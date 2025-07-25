@@ -743,10 +743,6 @@ export const mapApiStatusToSleepStatus = (apiStatus: string): SleepStatus => {
 
 // Map API attendance status to feed status format
 export const mapAttendanceStatusForFeed = (apiStatus: string): string => {
-  console.log(
-    `🔄 [API] Mapping attendance status: ${apiStatus} -> feed format`
-  );
-
   const mappedStatus = (() => {
     switch (apiStatus.toLowerCase()) {
       case "arrived":
@@ -769,7 +765,6 @@ export const mapAttendanceStatusForFeed = (apiStatus: string): string => {
     }
   })();
 
-  console.log(`✅ [API] Mapped status: ${apiStatus} -> ${mappedStatus}`);
   return mappedStatus;
 };
 
@@ -833,12 +828,6 @@ export interface GroupAttendance {
 // Daily Reports API functions
 export const dailyReportsApi = {
   getDailyReport: async (groupId: string, date: string) => {
-    console.log("🌐 [API] getDailyReport called:", { groupId, date });
-    console.log(
-      "🌐 [API] Request URL:",
-      `/api/v1/daily-reports?groupId=${groupId}&date=${date}`
-    );
-
     try {
       const response = await api.get(
         `/api/v1/daily-reports?groupId=${groupId}&date=${date}`,
@@ -850,15 +839,6 @@ export const dailyReportsApi = {
           withCredentials: true,
         }
       );
-
-      console.log("✅ [API] getDailyReport response received:", {
-        status: response.status,
-        hasData: !!response.data,
-        dataKeys: response.data ? Object.keys(response.data) : [],
-        hasSleepData: !!response.data?.sleepData,
-        sleepDataStatus: response.data?.sleepData?.status,
-        childrenCount: response.data?.sleepData?.children?.length || 0,
-      });
 
       // Map the API response to use proper enums
       const mappedData = {
@@ -878,21 +858,9 @@ export const dailyReportsApi = {
           : null,
       };
 
-      console.log("🔄 [API] getDailyReport data mapped:", {
-        reportId: mappedData?.id,
-        hasSleepData: !!mappedData?.sleepData,
-        sleepDataStatus: mappedData?.sleepData?.status,
-        childrenCount: mappedData?.sleepData?.children?.length || 0,
-      });
-
       return mappedData;
     } catch (error: any) {
-      console.error("💥 [API] getDailyReport error:", {
-        error: error,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-      });
+      console.error("getDailyReport error:", error);
       throw error;
     }
   },

@@ -73,21 +73,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   // Listen for access token updates
   useEffect(() => {
     const handleAccessTokenUpdate = (event: CustomEvent) => {
-      console.log("🔄 [AppContext] Access token update received:", {
-        hasToken: !!event.detail,
-        tokenLength: event.detail?.length || 0,
-      });
       setAccessToken(event.detail);
     };
 
     const handleGetAccessToken = () => {
-      console.log(
-        "🔄 [AppContext] Access token request received, responding with:",
-        {
-          hasToken: !!accessToken,
-          tokenLength: accessToken?.length || 0,
-        }
-      );
       // Dispatch an event with the current access token
       const event = new CustomEvent("accessTokenResponse", {
         detail: accessToken,

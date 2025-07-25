@@ -427,6 +427,10 @@ const CreateFoodPostPage: React.FC = () => {
           height: "100vh",
           overflow: "auto",
           p: isMobile ? 2 : 4,
+          // Ensure proper mobile viewport handling
+          "@media (max-width: 600px)": {
+            height: "100dvh", // Use dynamic viewport height for mobile
+          },
         }}
       >
         {/* Header */}
@@ -652,6 +656,11 @@ const CreateFoodPostPage: React.FC = () => {
               gap: 2,
               width: "100%",
               maxWidth: 400,
+              // Better mobile button layout
+              "@media (max-width: 600px)": {
+                gap: 1.5,
+                mt: 2, // Add top margin on mobile
+              },
             }}
           >
             <Button
@@ -667,6 +676,11 @@ const CreateFoodPostPage: React.FC = () => {
                   bgcolor: "primary.main",
                   color: "white",
                 },
+                // Better mobile button styling
+                "@media (max-width: 600px)": {
+                  py: 2,
+                  fontSize: "1rem",
+                },
               }}
             >
               חזור לדשבורד
@@ -680,6 +694,11 @@ const CreateFoodPostPage: React.FC = () => {
                 py: 1.5,
                 "&:hover": {
                   bgcolor: "primary.dark",
+                },
+                // Better mobile button styling
+                "@media (max-width: 600px)": {
+                  py: 2,
+                  fontSize: "1rem",
                 },
               }}
             >
@@ -719,6 +738,10 @@ const CreateFoodPostPage: React.FC = () => {
         flexDirection: "column",
         height: "100vh",
         overflow: "hidden",
+        // Ensure proper mobile viewport handling
+        "@media (max-width: 600px)": {
+          height: "100dvh", // Use dynamic viewport height for mobile
+        },
       }}
     >
       <CreateFoodPostModal

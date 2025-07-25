@@ -164,10 +164,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const handleUpdateAccessToken = (event: CustomEvent) => {
       const newToken = event.detail;
-      console.log("AuthContext: Received token update", {
-        hasNewToken: !!newToken,
-        currentToken: !!accessToken,
-      });
 
       if (newToken !== accessToken) {
         setAccessToken(newToken);
