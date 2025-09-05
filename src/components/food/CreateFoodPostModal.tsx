@@ -14,33 +14,226 @@ import {
   Divider,
   Fade,
   Skeleton,
-  Tabs,
-  Tab,
   Card,
   CardContent,
+  IconButton,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Stack,
-  IconButton,
   Menu,
   ListItemIcon,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Drawer,
+  List,
   ListItemButton,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useMediaQuery } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import ClearIcon from "@mui/icons-material/Clear";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import WarningIcon from "@mui/icons-material/Warning";
 import CancelIcon from "@mui/icons-material/Cancel";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import RestaurantIcon from "@mui/icons-material/Restaurant";
+import ClearIcon from "@mui/icons-material/Clear";
 import { Child, DailyReport } from "../../services/api";
 import { FoodEventType, FoodStatus } from "../../types/enums";
 import { useFeed } from "../../contexts/FeedContext";
 
-// FoodChildItem component defined outside to prevent recreation on every render
+// Helper function to get food type labels
+const getFoodTypeLabel = (eventType: FoodEventType): string => {
+  switch (eventType) {
+    case FoodEventType.Breakfast:
+      return "ארוחת בוקר";
+    case FoodEventType.MorningSnack:
+      return "חטיף בוקר";
+    case FoodEventType.Lunch:
+      return "ארוחת צהריים";
+    case FoodEventType.AfternoonSnack:
+      return "חטיף אחר הצהריים";
+    case FoodEventType.Dinner:
+      return "ארוחת ערב";
+    default:
+      return "מזון";
+  }
+};
+
+// Quick Actions Panel Component
+interface QuickActionsPanelProps {
+  bulkFoodDetails: string;
+  onBulkFoodDetailsChange: (value: string) => void;
+  onApplyFoodDetails: () => void;
+  onApplyStatus: (status: FoodStatus) => void;
+  onClearAll: () => void;
+}
+
+const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
+  bulkFoodDetails,
+  onBulkFoodDetailsChange,
+  onApplyFoodDetails,
+  onApplyStatus,
+  onClearAll,
+}) => {
+  const statusActions = [
+    {
+      label: "אכלו הכל",
+      status: FoodStatus.FullyEaten,
+      icon: <CheckCircleIcon />,
+      color: "success" as const,
+    },
+    {
+      label: "אכלו חלקית",
+      status: FoodStatus.PartiallyEaten,
+      icon: <WarningIcon />,
+      color: "warning" as const,
+    },
+    {
+      label: "סירבו",
+      status: FoodStatus.Refused,
+      icon: <CancelIcon />,
+      color: "error" as const,
+    },
+  ];
+
+  const panelStyles = {
+    position: "absolute" as const,
+    top: "100%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    mt: 1,
+    zIndex: 1000,
+    width: "calc(100% - 32px)",
+    maxWidth: 320,
+    bgcolor: "background.paper",
+    borderRadius: 3,
+    boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+    border: "1px solid",
+    borderColor: "divider",
+    overflow: "hidden",
+    animation: "slideIn 0.2s ease-out",
+    "@keyframes slideIn": {
+      "0%": {
+        opacity: 0,
+        transform: "translateX(-50%) translateY(-8px) scale(0.96)",
+      },
+      "100%": {
+        opacity: 1,
+        transform: "translateX(-50%) translateY(0) scale(1)",
+      },
+    },
+  };
+
+  const textFieldStyles = {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 2,
+      "&:hover": {
+        "& .MuiOutlinedInput-notchedOutline": {
+          borderColor: "primary.main",
+        },
+      },
+      "&.Mui-focused": {
+        "& .MuiOutlinedInput-notchedOutline": {
+          borderColor: "primary.main",
+        },
+      },
+    },
+  };
+
+  const buttonStyles = {
+    borderRadius: 2,
+    py: 1.2,
+    fontSize: "0.875rem",
+  };
+
+  return (
+    <Box sx={panelStyles}>
+      <Box sx={{ p: 2 }}>
+        {/* Food Details Section */}
+        <Box sx={{ mb: 2 }}>
+          <TextField
+            fullWidth
+            size="small"
+            multiline
+            rows={2}
+            value={bulkFoodDetails}
+            onChange={(e) => onBulkFoodDetailsChange(e.target.value)}
+            placeholder="פרטי מזון לכולם..."
+            sx={textFieldStyles}
+          />
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={onApplyFoodDetails}
+            disabled={!bulkFoodDetails.trim()}
+            endIcon={<RestaurantIcon />}
+            sx={{
+              mt: 1,
+              bgcolor: "primary.main",
+              "&:hover": {
+                bgcolor: "primary.dark",
+              },
+              borderRadius: 2,
+              py: 1.2,
+              fontSize: "0.875rem",
+              fontWeight: 600,
+            }}
+          >
+            החל מזון
+          </Button>
+        </Box>
+
+        {/* Status Actions */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          {statusActions.map((action) => (
+            <Button
+              key={action.status}
+              fullWidth
+              variant="outlined"
+              color={action.color}
+              onClick={() => onApplyStatus(action.status)}
+              endIcon={action.icon}
+              sx={{
+                ...buttonStyles,
+                borderColor: `${action.color}.main`,
+                color: `${action.color}.main`,
+                "&:hover": {
+                  bgcolor: `${action.color}.main`,
+                  color: "white",
+                },
+              }}
+            >
+              {action.label}
+            </Button>
+          ))}
+
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={onClearAll}
+            endIcon={<ClearIcon />}
+            sx={{
+              ...buttonStyles,
+              borderColor: "grey.400",
+              color: "grey.600",
+              "&:hover": {
+                bgcolor: "grey.100",
+                borderColor: "grey.500",
+              },
+            }}
+          >
+            נקה הכל
+          </Button>
+        </Box>
+      </Box>
+    </Box>
+  );
+};
+
+// Simplified FoodChildItem component
 const FoodChildItem = React.memo<{
   child: FoodChild;
   isDisabled: boolean;
@@ -56,96 +249,87 @@ const FoodChildItem = React.memo<{
   };
 
   return (
-    <ListItem
+    <Card
       sx={{
+        mb: 2,
         border: "1px solid",
         borderColor: "divider",
-        borderRadius: 1,
-        mb: 1,
-        bgcolor: "background.paper",
-        p: 2,
+        transition: "all 0.3s ease",
+        "&:hover": {
+          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+        },
       }}
     >
-      <ListItemAvatar>
-        <Avatar
-          sx={{
-            bgcolor: "primary.main",
-            width: 40,
-            height: 40,
-            fontSize: "1rem",
-          }}
-        >
-          {child.firstName.charAt(0)}
-        </Avatar>
-      </ListItemAvatar>
+      <CardContent sx={{ p: 2 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+          {child.firstName} {child.lastName}
+        </Typography>
 
-      <ListItemText
-        primary={
-          <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1 }}>
-            {child.firstName} {child.lastName}
-          </Typography>
-        }
-        secondary={
-          <Box>
-            <TextField
-              fullWidth
-              size="small"
-              label="פרטי מזון"
-              value={child.foodDetails}
-              onChange={(e) => handleFoodDetailsChange(e.target.value)}
-              disabled={isDisabled}
-              placeholder="הכנס פרטי מזון..."
-              sx={{ mb: 2 }}
-            />
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              <Chip
-                label="אכל הכל"
-                size="small"
-                color={
-                  child.status === FoodStatus.FullyEaten ? "success" : "default"
-                }
-                variant={
-                  child.status === FoodStatus.FullyEaten ? "filled" : "outlined"
-                }
-                onClick={() => handleStatusChange(FoodStatus.FullyEaten)}
-                disabled={isDisabled}
-                sx={{ cursor: "pointer" }}
-              />
-              <Chip
-                label="אכל חלקית"
-                size="small"
-                color={
-                  child.status === FoodStatus.PartiallyEaten
-                    ? "warning"
-                    : "default"
-                }
-                variant={
-                  child.status === FoodStatus.PartiallyEaten
-                    ? "filled"
-                    : "outlined"
-                }
-                onClick={() => handleStatusChange(FoodStatus.PartiallyEaten)}
-                disabled={isDisabled}
-                sx={{ cursor: "pointer" }}
-              />
-              <Chip
-                label="סירב"
-                size="small"
-                color={
-                  child.status === FoodStatus.Refused ? "error" : "default"
-                }
-                variant={
-                  child.status === FoodStatus.Refused ? "filled" : "outlined"
-                }
-                onClick={() => handleStatusChange(FoodStatus.Refused)}
-                disabled={isDisabled}
-                sx={{ cursor: "pointer" }}
-              />
-            </Stack>
-          </Box>
-        }
-      />
-    </ListItem>
+        <TextField
+          fullWidth
+          size="small"
+          label="פרטי מזון"
+          value={child.foodDetails}
+          onChange={(e) => handleFoodDetailsChange(e.target.value)}
+          disabled={isDisabled}
+          placeholder="הכנס פרטי מזון..."
+          sx={{ mb: 2 }}
+        />
+
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+          <Chip
+            label="אכל הכל"
+            size="small"
+            color={
+              child.status === FoodStatus.FullyEaten ? "success" : "default"
+            }
+            variant={
+              child.status === FoodStatus.FullyEaten ? "filled" : "outlined"
+            }
+            onClick={() => handleStatusChange(FoodStatus.FullyEaten)}
+            disabled={isDisabled}
+            icon={
+              child.status === FoodStatus.FullyEaten ? (
+                <CheckCircleIcon />
+              ) : undefined
+            }
+            sx={{ cursor: "pointer" }}
+          />
+          <Chip
+            label="אכל חלקית"
+            size="small"
+            color={
+              child.status === FoodStatus.PartiallyEaten ? "warning" : "default"
+            }
+            variant={
+              child.status === FoodStatus.PartiallyEaten ? "filled" : "outlined"
+            }
+            onClick={() => handleStatusChange(FoodStatus.PartiallyEaten)}
+            disabled={isDisabled}
+            icon={
+              child.status === FoodStatus.PartiallyEaten ? (
+                <WarningIcon />
+              ) : undefined
+            }
+            sx={{ cursor: "pointer" }}
+          />
+          <Chip
+            label="סירב"
+            size="small"
+            color={child.status === FoodStatus.Refused ? "error" : "default"}
+            variant={
+              child.status === FoodStatus.Refused ? "filled" : "outlined"
+            }
+            onClick={() => handleStatusChange(FoodStatus.Refused)}
+            disabled={isDisabled}
+            icon={
+              child.status === FoodStatus.Refused ? <CancelIcon /> : undefined
+            }
+            sx={{ cursor: "pointer" }}
+          />
+        </Box>
+      </CardContent>
+    </Card>
   );
 });
 
@@ -179,24 +363,6 @@ interface CreateFoodPostModalProps {
   dailyReport?: DailyReport | null;
 }
 
-// Helper function to get food type labels
-const getFoodTypeLabel = (eventType: FoodEventType): string => {
-  switch (eventType) {
-    case FoodEventType.Breakfast:
-      return "ארוחת בוקר";
-    case FoodEventType.MorningSnack:
-      return "חטיף בוקר";
-    case FoodEventType.Lunch:
-      return "ארוחת צהריים";
-    case FoodEventType.AfternoonSnack:
-      return "חטיף אחר הצהריים";
-    case FoodEventType.Dinner:
-      return "ארוחת ערב";
-    default:
-      return "מזון";
-  }
-};
-
 const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
   isOpen,
   onClose,
@@ -211,70 +377,69 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { refreshFeed } = useFeed();
 
-  // Default title variations - memoized to prevent infinite loops
-  const defaultTitles = React.useMemo(
-    () => [
-      "דיווח מזון יומי - " + groupName,
-      "מעקב תזונה - " + groupName,
-      "דיווח ארוחות - " + groupName,
-      "ארוחות ילדים - " + groupName,
-      "דיווח תזונה יומי - " + groupName,
-    ],
-    [groupName]
-  );
-
-  // Simple state management
-  const [title, setTitle] = useState("");
-  const [titleIndex, setTitleIndex] = useState(0);
+  // State with food event type selection
   const [selectedEventType, setSelectedEventType] = useState<FoodEventType>(
-    FoodEventType.Breakfast
+    FoodEventType.Lunch
   );
   const [foodChildren, setFoodChildren] = useState<FoodChild[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [foodTypeDetails, setFoodTypeDetails] = useState<{
-    [key in FoodEventType]: string;
-  }>({
-    [FoodEventType.Breakfast]: "",
-    [FoodEventType.MorningSnack]: "",
-    [FoodEventType.Lunch]: "",
-    [FoodEventType.AfternoonSnack]: "",
-    [FoodEventType.Dinner]: "",
-  });
 
-  // Menu states
-  const [bulkMenuAnchor, setBulkMenuAnchor] = useState<null | HTMLElement>(
-    null
-  );
-  const [actionsMenuAnchor, setActionsMenuAnchor] =
-    useState<null | HTMLElement>(null);
+  // Mobile shortcuts state
+  const [showShortcutsDrawer, setShowShortcutsDrawer] = useState(false);
+  const [showFoodDetailsDialog, setShowFoodDetailsDialog] = useState(false);
+  const [bulkFoodDetails, setBulkFoodDetails] = useState("");
 
-  // Ref to track if title has been initialized
-  const titleInitializedRef = React.useRef(false);
-
-  // Initialize children when modal opens or data changes
+  // Initialize children when modal opens
   useEffect(() => {
     if (isOpen) {
-      // Initialize children
       let initialChildren: FoodChild[] = [];
 
       if (
         dailyReport?.foodData?.events &&
         dailyReport.foodData.events.length > 0
       ) {
-        // Use daily report data for the selected event type
+        // Use existing data for the selected event type
         const currentEvent = dailyReport.foodData.events.find(
           (event) => event.type === selectedEventType
         );
 
         if (currentEvent) {
-          initialChildren = currentEvent.children.map((child) => ({
-            childId: child.childId,
-            firstName: child.firstName,
-            lastName: child.lastName,
-            foodDetails: child.foodDetails,
-            status: child.status,
-          }));
+          // Create a map of child names from props for fallback
+          const childNameMap = new Map<
+            string,
+            { firstName: string; lastName: string }
+          >();
+          children.forEach((child) => {
+            if (child.id) {
+              childNameMap.set(child.id, {
+                firstName: child.firstName,
+                lastName: child.lastName,
+              });
+            }
+          });
+
+          initialChildren = currentEvent.children.map((child) => {
+            // Use child names from food event, fallback to props if empty
+            let firstName = child.firstName;
+            let lastName = child.lastName;
+
+            if (!firstName || !lastName) {
+              const nameFromProps = childNameMap.get(child.childId);
+              if (nameFromProps) {
+                firstName = nameFromProps.firstName;
+                lastName = nameFromProps.lastName;
+              }
+            }
+
+            return {
+              childId: child.childId,
+              firstName: firstName || "",
+              lastName: lastName || "",
+              foodDetails: child.foodDetails,
+              status: child.status,
+            };
+          });
         }
       } else if (children.length > 0) {
         // Use props children
@@ -293,73 +458,18 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
     }
   }, [isOpen, dailyReport?.foodData, children, selectedEventType]);
 
-  // Initialize food type details from daily report
-  useEffect(() => {
-    if (isOpen && dailyReport?.foodData?.events) {
-      const newFoodTypeDetails: { [key in FoodEventType]: string } = {
-        [FoodEventType.Breakfast]: "",
-        [FoodEventType.MorningSnack]: "",
-        [FoodEventType.Lunch]: "",
-        [FoodEventType.AfternoonSnack]: "",
-        [FoodEventType.Dinner]: "",
-      };
-
-      // Load food details from existing events
-      dailyReport.foodData.events.forEach((event) => {
-        if (event.children.length > 0) {
-          // Use the first child's food details as the common details for this event type
-          newFoodTypeDetails[event.type] = event.children[0].foodDetails || "";
-        }
-      });
-
-      setFoodTypeDetails(newFoodTypeDetails);
-    }
-  }, [isOpen, dailyReport?.foodData?.events]);
-
-  // Initialize title when modal opens or title index changes
-  useEffect(() => {
-    if (isOpen) {
-      if (!titleInitializedRef.current) {
-        // Initial load - use daily report title or default title
-        const initialTitle =
-          dailyReport?.foodData?.title || defaultTitles[titleIndex];
-        setTitle(initialTitle);
-        titleInitializedRef.current = true;
-      } else {
-        // Title index changed (random button clicked) - update title
-        setTitle(defaultTitles[titleIndex]);
-      }
-    }
-  }, [isOpen, dailyReport?.foodData?.title, defaultTitles, titleIndex]);
-
   // Cleanup when modal closes
   useEffect(() => {
     if (!isOpen) {
-      setTitle("");
       setFoodChildren([]);
       setErrors({});
       setIsLoading(false);
-      titleInitializedRef.current = false;
-      setFoodTypeDetails({
-        [FoodEventType.Breakfast]: "",
-        [FoodEventType.MorningSnack]: "",
-        [FoodEventType.Lunch]: "",
-        [FoodEventType.AfternoonSnack]: "",
-        [FoodEventType.Dinner]: "",
-      });
+      setSelectedEventType(FoodEventType.Lunch);
+      setShowShortcutsDrawer(false);
+      setShowFoodDetailsDialog(false);
+      setBulkFoodDetails("");
     }
   }, [isOpen]);
-
-  // Title change handler
-  const handleTitleChange = useCallback((newTitle: string) => {
-    setTitle(newTitle);
-  }, []);
-
-  // Next title handler
-  const handleNextTitle = useCallback(() => {
-    const nextIndex = (titleIndex + 1) % defaultTitles.length;
-    setTitleIndex(nextIndex);
-  }, [titleIndex, defaultTitles.length]);
 
   // Update child food status
   const updateChildFoodStatus = useCallback(
@@ -385,17 +495,12 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
     []
   );
 
-  // Apply food details to all children
-  const applyFoodDetailsToAllChildren = useCallback((foodDetails: string) => {
-    setFoodChildren((prev) =>
-      prev.map((child) => ({
-        ...child,
-        foodDetails: foodDetails,
-      }))
-    );
+  // Handle event type change
+  const handleEventTypeChange = useCallback((eventType: FoodEventType) => {
+    setSelectedEventType(eventType);
   }, []);
 
-  // Apply status to all children
+  // Bulk actions
   const applyStatusToAllChildren = useCallback((status: FoodStatus) => {
     setFoodChildren((prev) =>
       prev.map((child) => ({
@@ -403,10 +508,22 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
         status: status,
       }))
     );
-    setBulkMenuAnchor(null);
+    setShowShortcutsDrawer(false);
   }, []);
 
-  // Clear all children status
+  const applyFoodDetailsToAllChildren = useCallback(() => {
+    if (bulkFoodDetails.trim()) {
+      setFoodChildren((prev) =>
+        prev.map((child) => ({
+          ...child,
+          foodDetails: bulkFoodDetails.trim(),
+        }))
+      );
+      setBulkFoodDetails("");
+      setShowShortcutsDrawer(false);
+    }
+  }, [bulkFoodDetails]);
+
   const clearAllChildrenStatus = useCallback(() => {
     setFoodChildren((prev) =>
       prev.map((child) => ({
@@ -415,47 +532,12 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
         foodDetails: "",
       }))
     );
-    setFoodTypeDetails((prev) => ({
-      ...prev,
-      [selectedEventType]: "",
-    }));
-    setActionsMenuAnchor(null);
-  }, [selectedEventType]);
-
-  // Handle food type details change
-  const handleFoodTypeDetailsChange = useCallback(
-    (eventType: FoodEventType, details: string) => {
-      setFoodTypeDetails((prev) => ({
-        ...prev,
-        [eventType]: details,
-      }));
-    },
-    []
-  );
-
-  // Handle event type change
-  const handleEventTypeChange = useCallback(
-    (event: React.SyntheticEvent, newValue: FoodEventType) => {
-      setSelectedEventType(newValue);
-
-      // Apply the food type details to all children when switching tabs
-      const currentFoodDetails = foodTypeDetails[newValue];
-      if (currentFoodDetails) {
-        applyFoodDetailsToAllChildren(currentFoodDetails);
-      }
-    },
-    [foodTypeDetails, applyFoodDetailsToAllChildren]
-  );
+    setShowShortcutsDrawer(false);
+  }, []);
 
   // Submit handler
   const handleSubmit = useCallback(async () => {
-    console.log("🎯 [CreateFoodPostModal] handleSubmit function called");
-
-    // Prevent multiple submissions
-    if (isLoading) {
-      console.log("🎯 [CreateFoodPostModal] Already loading, ignoring submit");
-      return;
-    }
+    if (isLoading) return;
 
     try {
       setIsLoading(true);
@@ -464,11 +546,6 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
       // Validation
       const newErrors: { [key: string]: string } = {};
 
-      if (!title.trim()) {
-        newErrors.title = "כותרת היא שדה חובה";
-      }
-
-      // Count children with food data
       const childrenWithFoodData = foodChildren.filter(
         (child) => child.status !== FoodStatus.NotEaten
       ).length;
@@ -483,7 +560,6 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
         return;
       }
 
-      // Check if we have a daily report to update
       if (!dailyReport?.id) {
         setErrors({
           submit: "לא נמצא דיווח יומי לעדכון",
@@ -492,9 +568,8 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
         return;
       }
 
-      // Prepare form data for navigation
       const formData: CreateFoodPostData = {
-        title: title.trim(),
+        title: `דיווח מזון - ${groupName}`,
         groupId,
         groupName,
         foodDate: new Date().toISOString().split("T")[0],
@@ -506,26 +581,13 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
         ],
       };
 
-      console.log(
-        "🎯 [CreateFoodPostModal] About to call onSubmit with data:",
-        formData
-      );
-
-      // Call onSubmit to trigger navigation
       onSubmit(formData);
-      console.log("🎯 [CreateFoodPostModal] onSubmit called successfully");
 
-      // Refresh feed to get updated data
       setTimeout(async () => {
         try {
-          console.log("🎯 [CreateFoodPostModal] Refreshing feed data...");
           await refreshFeed();
-          console.log("🎯 [CreateFoodPostModal] Feed refreshed successfully");
         } catch (apiError) {
-          console.error(
-            "Feed refresh failed but navigation should continue:",
-            apiError
-          );
+          console.error("Feed refresh failed:", apiError);
         }
       }, 100);
     } catch (error) {
@@ -539,7 +601,6 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
       setIsLoading(false);
     }
   }, [
-    title,
     foodChildren,
     selectedEventType,
     dailyReport?.id,
@@ -550,19 +611,7 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
     refreshFeed,
   ]);
 
-  // Count children by status
-  const eatenCount = foodChildren.filter(
-    (child) => child.status === FoodStatus.FullyEaten
-  ).length;
-  const partiallyEatenCount = foodChildren.filter(
-    (child) => child.status === FoodStatus.PartiallyEaten
-  ).length;
-  const refusedCount = foodChildren.filter(
-    (child) => child.status === FoodStatus.Refused
-  ).length;
-  const totalChildrenCount = foodChildren.length;
-
-  // Memoize callback functions to prevent unnecessary re-renders
+  // Memoize callback functions
   const handleStatusChange = React.useCallback(
     (childId: string, status: FoodStatus) => {
       updateChildFoodStatus(childId, status);
@@ -576,6 +625,18 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
     },
     [updateChildFoodDetails]
   );
+
+  // Count children by status
+  const eatenCount = foodChildren.filter(
+    (child) => child.status === FoodStatus.FullyEaten
+  ).length;
+  const partiallyEatenCount = foodChildren.filter(
+    (child) => child.status === FoodStatus.PartiallyEaten
+  ).length;
+  const refusedCount = foodChildren.filter(
+    (child) => child.status === FoodStatus.Refused
+  ).length;
+  const totalChildrenCount = foodChildren.length;
 
   // Show loading state
   if (isLoadingDailyReport) {
@@ -593,32 +654,22 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
           flexDirection: "column",
           height: "100vh",
           overflow: "hidden",
+          "@media (max-width: 600px)": {
+            height: "100dvh",
+          },
         }}
       >
-        <Box sx={{ p: 1, borderBottom: "1px solid", borderColor: "divider" }}>
-          <Typography variant="h6">יצירת פוסט מזון</Typography>
+        <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider" }}>
+          <Typography variant="h6">טוען נתונים...</Typography>
         </Box>
-
-        <Box sx={{ flex: 1, p: 1 }}>
+        <Box sx={{ flex: 1, p: 2 }}>
           {Array.from({ length: 3 }).map((_, index) => (
-            <Box key={index} sx={{ mb: 1 }}>
-              <Box sx={{ display: "flex", gap: 2, p: 1 }}>
-                <Skeleton variant="circular" width={40} height={40} />
-                <Box sx={{ flex: 1 }}>
-                  <Skeleton variant="text" width="60%" sx={{ mb: 1 }} />
-                  <Skeleton
-                    variant="text"
-                    width="100%"
-                    height={40}
-                    sx={{ mb: 1 }}
-                  />
-                  <Box sx={{ display: "flex", gap: 1 }}>
-                    <Skeleton variant="rectangular" width={80} height={32} />
-                    <Skeleton variant="rectangular" width={90} height={32} />
-                    <Skeleton variant="rectangular" width={60} height={32} />
-                  </Box>
-                </Box>
-              </Box>
+            <Box key={index} sx={{ mb: 2 }}>
+              <Skeleton
+                variant="rectangular"
+                height={120}
+                sx={{ borderRadius: 2 }}
+              />
             </Box>
           ))}
         </Box>
@@ -641,97 +692,100 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
         flexDirection: "column",
         height: "100vh",
         overflow: "hidden",
+        "@media (max-width: 600px)": {
+          height: "100dvh",
+        },
       }}
     >
-      {/* Compact Header */}
-      <Box sx={{ p: 1, borderBottom: "1px solid", borderColor: "divider" }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-          <Typography variant="h6" sx={{ flex: 1 }}>
-            יצירת פוסט מזון - {groupName}
-          </Typography>
-          <IconButton
-            size="small"
-            onClick={(e) => setActionsMenuAnchor(e.currentTarget)}
-          >
-            <MoreVertIcon />
-          </IconButton>
-        </Box>
-
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          <TextField
-            size="small"
-            label="כותרת"
-            value={title}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            error={!!errors.title}
-            sx={{ flex: 1 }}
-          />
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={handleNextTitle}
-            sx={{ minWidth: "auto", px: 1 }}
-          >
-            ↻
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Compact Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-        <Tabs
-          value={selectedEventType}
-          onChange={handleEventTypeChange}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{ minHeight: 40 }}
-        >
-          <Tab label="בוקר" value={FoodEventType.Breakfast} />
-          <Tab label="חטיף בוקר" value={FoodEventType.MorningSnack} />
-          <Tab label="צהריים" value={FoodEventType.Lunch} />
-          <Tab label="חטיף אחה" value={FoodEventType.AfternoonSnack} />
-          <Tab label="ערב" value={FoodEventType.Dinner} />
-        </Tabs>
-      </Box>
-
-      {/* Compact Controls */}
-      <Box sx={{ p: 1, borderBottom: "1px solid", borderColor: "divider" }}>
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          <TextField
-            size="small"
-            label={`פרטי מזון - ${getFoodTypeLabel(selectedEventType)}`}
-            value={foodTypeDetails[selectedEventType]}
-            onChange={(e) =>
-              handleFoodTypeDetailsChange(selectedEventType, e.target.value)
-            }
-            disabled={isLoading}
-            placeholder="פרטי מזון לכולם..."
-            sx={{ flex: 1 }}
-          />
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() =>
-              applyFoodDetailsToAllChildren(foodTypeDetails[selectedEventType])
-            }
-            disabled={isLoading || !foodTypeDetails[selectedEventType].trim()}
-          >
-            החל
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={(e) => setBulkMenuAnchor(e.currentTarget)}
-          >
-            סמן כולם
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Stats Bar */}
+      {/* Header */}
       <Box
         sx={{
-          p: 1,
+          p: 2,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          bgcolor: "background.paper",
+          position: "relative",
+          "@media (max-width: 600px)": {
+            p: 2,
+          },
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+          <IconButton onClick={onClose} sx={{ color: "text.secondary" }}>
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 600,
+              flex: 1,
+              "@media (max-width: 600px)": {
+                fontSize: "1.1rem",
+              },
+            }}
+          >
+            דיווח מזון - {groupName}
+          </Typography>
+          {/* Mobile Shortcuts Button */}
+          {isMobile && (
+            <IconButton
+              onClick={() => setShowShortcutsDrawer(true)}
+              sx={{
+                color: "white",
+                bgcolor: "primary.main",
+                width: 40,
+                height: 40,
+                boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+                "&:hover": {
+                  bgcolor: "primary.dark",
+                  boxShadow: "0 6px 16px rgba(25, 118, 210, 0.4)",
+                  transform: "translateY(-1px)",
+                },
+                transition: "all 0.2s ease-in-out",
+              }}
+            >
+              <RestaurantIcon />
+            </IconButton>
+          )}
+        </Box>
+
+        {/* Food Event Type Selection */}
+        <FormControl fullWidth size="small">
+          <InputLabel>סוג ארוחה</InputLabel>
+          <Select
+            value={selectedEventType}
+            onChange={(e) =>
+              handleEventTypeChange(e.target.value as FoodEventType)
+            }
+            disabled={isLoading}
+            label="סוג ארוחה"
+          >
+            <MenuItem value={FoodEventType.Breakfast}>ארוחת בוקר</MenuItem>
+            <MenuItem value={FoodEventType.MorningSnack}>חטיף בוקר</MenuItem>
+            <MenuItem value={FoodEventType.Lunch}>ארוחת צהריים</MenuItem>
+            <MenuItem value={FoodEventType.AfternoonSnack}>
+              חטיף אחר הצהריים
+            </MenuItem>
+            <MenuItem value={FoodEventType.Dinner}>ארוחת ערב</MenuItem>
+          </Select>
+        </FormControl>
+
+        {/* Quick Actions Section - Mobile Only */}
+        {isMobile && showShortcutsDrawer && (
+          <QuickActionsPanel
+            bulkFoodDetails={bulkFoodDetails}
+            onBulkFoodDetailsChange={setBulkFoodDetails}
+            onApplyFoodDetails={applyFoodDetailsToAllChildren}
+            onApplyStatus={applyStatusToAllChildren}
+            onClearAll={clearAllChildrenStatus}
+          />
+        )}
+      </Box>
+
+      {/* Stats Summary */}
+      <Box
+        sx={{
+          p: 2,
           borderBottom: "1px solid",
           borderColor: "divider",
           bgcolor: "background.paper",
@@ -769,7 +823,7 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
       {(errors.children ||
         errors.submit ||
         dailyReport?.foodData?.status === "Closed") && (
-        <Box sx={{ p: 1 }}>
+        <Box sx={{ p: 2 }}>
           {errors.children && (
             <Alert severity="error" sx={{ mb: 1 }}>
               {errors.children}
@@ -790,8 +844,17 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
         </Box>
       )}
 
-      {/* Children List - Takes most of the space */}
-      <Box sx={{ flex: 1, overflow: "auto", p: 1 }}>
+      {/* Children List */}
+      <Box
+        sx={{
+          flex: 1,
+          overflow: "auto",
+          p: 2,
+          "@media (max-width: 600px)": {
+            pb: 2,
+          },
+        }}
+      >
         {foodChildren.map((child) => (
           <FoodChildItem
             key={child.childId}
@@ -803,18 +866,35 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
         ))}
       </Box>
 
-      {/* Compact Footer */}
+      {/* Footer */}
       <Box
         sx={{
           display: "flex",
-          gap: 1,
-          p: 1,
+          gap: 2,
+          p: 2,
           borderTop: "1px solid",
           borderColor: "divider",
           bgcolor: "background.paper",
+          "@media (max-width: 600px)": {
+            p: 2,
+            position: "sticky",
+            bottom: 0,
+            zIndex: 10,
+            boxShadow: "0 -2px 8px rgba(0,0,0,0.1)",
+          },
         }}
       >
-        <Button variant="outlined" onClick={onClose} sx={{ flex: 1 }}>
+        <Button
+          variant="outlined"
+          onClick={onClose}
+          sx={{
+            flex: 1,
+            "@media (max-width: 600px)": {
+              py: 1.5,
+              fontSize: "1rem",
+            },
+          }}
+        >
           ביטול
         </Button>
         <Button
@@ -825,75 +905,25 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
             isLoadingDailyReport ||
             dailyReport?.foodData?.status === "Closed"
           }
-          startIcon={
-            isLoading ? (
-              <Skeleton variant="circular" width={20} height={20} />
-            ) : dailyReport?.foodData?.status === "Closed" ? (
-              <Box sx={{ color: "white", fontSize: "1.2rem" }}>🔒</Box>
-            ) : null
-          }
-          sx={{ flex: 1 }}
+          sx={{
+            flex: 1,
+            bgcolor: "primary.main",
+            "&:hover": {
+              bgcolor: "primary.dark",
+            },
+            "@media (max-width: 600px)": {
+              py: 1.5,
+              fontSize: "1rem",
+            },
+          }}
         >
-          {isLoading ? (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Skeleton variant="text" width={60} />
-              <Skeleton variant="circular" width={16} height={16} />
-            </Box>
-          ) : isLoadingDailyReport ? (
-            "טוען..."
-          ) : dailyReport?.foodData?.status === "Closed" ? (
-            "נסגר"
-          ) : dailyReport?.foodData?.status === "Active" ? (
-            "עדכן"
-          ) : (
-            "צור"
-          )}
+          {isLoading
+            ? "שומר..."
+            : dailyReport?.foodData?.status === "Closed"
+            ? "נסגר"
+            : "שמור"}
         </Button>
       </Box>
-
-      {/* Bulk Actions Menu */}
-      <Menu
-        anchorEl={bulkMenuAnchor}
-        open={Boolean(bulkMenuAnchor)}
-        onClose={() => setBulkMenuAnchor(null)}
-      >
-        <MenuItem
-          onClick={() => applyStatusToAllChildren(FoodStatus.FullyEaten)}
-        >
-          <ListItemIcon>
-            <CheckCircleIcon color="success" />
-          </ListItemIcon>
-          אכלו הכל
-        </MenuItem>
-        <MenuItem
-          onClick={() => applyStatusToAllChildren(FoodStatus.PartiallyEaten)}
-        >
-          <ListItemIcon>
-            <WarningIcon color="warning" />
-          </ListItemIcon>
-          אכלו חלקית
-        </MenuItem>
-        <MenuItem onClick={() => applyStatusToAllChildren(FoodStatus.Refused)}>
-          <ListItemIcon>
-            <CancelIcon color="error" />
-          </ListItemIcon>
-          סירבו
-        </MenuItem>
-      </Menu>
-
-      {/* Actions Menu */}
-      <Menu
-        anchorEl={actionsMenuAnchor}
-        open={Boolean(actionsMenuAnchor)}
-        onClose={() => setActionsMenuAnchor(null)}
-      >
-        <MenuItem onClick={clearAllChildrenStatus}>
-          <ListItemIcon>
-            <ClearIcon />
-          </ListItemIcon>
-          נקה הכל
-        </MenuItem>
-      </Menu>
     </Box>
   );
 };

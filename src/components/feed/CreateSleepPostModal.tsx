@@ -1032,23 +1032,30 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
         sx={{
           display: "flex",
           gap: 2,
-          pt: 1,
-          pb: isMobile ? 2 : 0, // Increased bottom padding for mobile
+          p: 2,
           borderTop: "1px solid",
           borderColor: "divider",
-          p: isMobile ? 1.5 : 2,
-          position: "sticky",
-          bottom: 0,
-          bgcolor: "background.default",
-          zIndex: 10,
-          boxShadow: "0 -2px 8px rgba(0,0,0,0.1)",
-          // Add safe area bottom padding for mobile
-          paddingBottom: isMobile
-            ? "calc(1rem + env(safe-area-inset-bottom))"
-            : "1rem",
+          bgcolor: "background.paper",
+          "@media (max-width: 600px)": {
+            p: 2,
+            position: "sticky",
+            bottom: 0,
+            zIndex: 10,
+            boxShadow: "0 -2px 8px rgba(0,0,0,0.1)",
+          },
         }}
       >
-        <Button variant="outlined" onClick={onClose} sx={{ flex: 1 }}>
+        <Button
+          variant="outlined"
+          onClick={onClose}
+          sx={{
+            flex: 1,
+            "@media (max-width: 600px)": {
+              py: 1.5,
+              fontSize: "1rem",
+            },
+          }}
+        >
           ביטול
         </Button>
         <Button
@@ -1059,47 +1066,23 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
             isLoadingDailyReport ||
             dailyReport?.sleepData?.status === "Closed"
           }
-          startIcon={
-            isLoading ? (
-              <Skeleton variant="circular" width={20} height={20} />
-            ) : dailyReport?.sleepData?.status === "Closed" ? (
-              <Box sx={{ color: "white", fontSize: "1.2rem" }}>🔒</Box>
-            ) : null
-          }
           sx={{
             flex: 1,
-            bgcolor:
-              dailyReport?.sleepData?.status === "Closed"
-                ? "#6c757d"
-                : "#9C27B0",
+            bgcolor: "primary.main",
             "&:hover": {
-              bgcolor:
-                dailyReport?.sleepData?.status === "Closed"
-                  ? "#6c757d"
-                  : "#7B1FA2",
+              bgcolor: "primary.dark",
             },
-            "&:disabled": {
-              bgcolor:
-                dailyReport?.sleepData?.status === "Closed"
-                  ? "#6c757d"
-                  : "#9C27B080",
+            "@media (max-width: 600px)": {
+              py: 1.5,
+              fontSize: "1rem",
             },
           }}
         >
-          {isLoading ? (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Skeleton variant="text" width={60} />
-              <Skeleton variant="circular" width={16} height={16} />
-            </Box>
-          ) : isLoadingDailyReport ? (
-            "טוען נתונים..."
-          ) : dailyReport?.sleepData?.status === "Closed" ? (
-            "דיווח שינה נסגר"
-          ) : dailyReport?.sleepData?.status === "Updated" ? (
-            "עדכן פוסט שינה"
-          ) : (
-            "צור פוסט שינה"
-          )}
+          {isLoading
+            ? "שומר..."
+            : dailyReport?.sleepData?.status === "Closed"
+            ? "נסגר"
+            : "שמור"}
         </Button>
       </Box>
     </Box>

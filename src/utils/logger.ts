@@ -22,7 +22,9 @@ class Logger {
   }
 
   private log(level: LogLevel, message: string, data?: any): void {
-    // Enable console logging for debugging
+    // Disable console logging in development
+    // Uncomment the lines below if you need logging
+    /*
     const timestamp = new Date().toISOString();
     const logMessage = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
 
@@ -40,6 +42,7 @@ class Logger {
         console.debug(logMessage, data || "");
         break;
     }
+    */
   }
 
   public info(message: string, data?: any): void {

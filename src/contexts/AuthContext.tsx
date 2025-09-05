@@ -10,6 +10,7 @@ import React, {
 import { useNavigate, useLocation } from "react-router-dom";
 import api, { getNewAccessToken, updateAccessToken } from "../services/api";
 import { AxiosError } from "axios";
+import { getRefreshToken, hasRefreshToken } from "../utils/cookieUtils";
 
 interface User {
   id: string;
@@ -48,59 +49,55 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const location = useLocation();
   const isInitialMount = useRef(true);
   const initialPath = useRef(location.pathname);
+  const isCheckingAuth = useRef(false); // Prevent multiple simultaneous auth checks
 
   // Define checkAuth function with useCallback to prevent recreation on every render
   const checkAuth = useCallback(async () => {
+    // Prevent multiple simultaneous auth checks
+    if (isCheckingAuth.current) {
+      return;
+    }
+
+    isCheckingAuth.current = true;
+
     try {
-      // Check if we have a refresh token
-      const cookies = document.cookie.split(";");
-      const refreshTokenCookie = cookies.find((cookie) => {
-        const trimmedCookie = cookie.trim();
-        return trimmedCookie.startsWith("refreshToken=");
-      });
+      // Since the refresh token is httpOnly, we can't check if it exists from JavaScript
+      // We'll try to refresh and let the server handle it
+      const token = await getNewAccessToken();
 
-      let refreshToken = null;
-      if (refreshTokenCookie) {
-        const parts = refreshTokenCookie.split("=");
-        if (parts.length >= 2) {
-          refreshToken = parts.slice(1).join("="); // Handle tokens that might contain '=' characters
+      if (token) {
+        setAccessToken(token);
+
+        // Check if user was trying to access a specific page
+        const currentPath = location.pathname;
+
+        // If user is on login page, redirect to dashboard
+        if (currentPath === "/login") {
+          navigate("/dashboard", { replace: true });
+        } else if (currentPath === "/") {
+          // If user is on root, redirect to dashboard
+          navigate("/dashboard", { replace: true });
         }
-      }
-
-      if (refreshToken) {
-        // Use the getNewAccessToken function which handles the refresh token from cookies
-        const token = await getNewAccessToken();
-
-        if (token) {
-          setAccessToken(token);
-
-          // Check if user was trying to access a specific page
-          const currentPath = location.pathname;
-
-          // If user is on login page, redirect to dashboard
-          if (currentPath === "/login") {
-            navigate("/dashboard", { replace: true });
-          } else if (currentPath === "/") {
-            // If user is on root, redirect to dashboard
-            navigate("/dashboard", { replace: true });
-          }
-          // If user is already on a valid page, just continue
-        } else {
-          setAccessToken(null);
-          navigate("/login", { replace: true });
-        }
+        // If user is already on a valid page, just continue
       } else {
         setAccessToken(null);
         navigate("/login", { replace: true });
       }
     } catch (error) {
       console.error("Authentication check failed:", error);
+
+      // Clear access token and redirect to login
       setAccessToken(null);
-      navigate("/login", { replace: true });
+
+      // Only redirect if we're not already on login page to prevent infinite loops
+      if (location.pathname !== "/login") {
+        navigate("/login", { replace: true });
+      }
     } finally {
       setIsLoading(false);
+      isCheckingAuth.current = false; // Reset the flag
     }
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   // Sync token with AppContext via custom event
   useEffect(() => {
@@ -128,7 +125,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isInitialMount.current = false;
 
     checkAuth();
-  }, [checkAuth]); // Include checkAuth in dependencies since it's used in useEffect
+  }, [checkAuth]); // Only depend on checkAuth to prevent infinite loops
 
   // Listen for force logout events from API layer
   useEffect(() => {
@@ -164,10 +161,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const handleUpdateAccessToken = (event: CustomEvent) => {
       const newToken = event.detail;
-      console.log("AuthContext: Received token update", {
-        hasNewToken: !!newToken,
-        currentToken: !!accessToken,
-      });
 
       if (newToken !== accessToken) {
         setAccessToken(newToken);

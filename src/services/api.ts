@@ -14,14 +14,14 @@ import {
 } from "../types/enums";
 import { ApiAttendanceStatus } from "../types/attendance";
 import { FeedPost } from "../types/posts";
+import { deleteRefreshToken } from "../utils/cookieUtils";
 
 const baseURL = process.env.REACT_APP_API_BASE_URL || "http://localhost:3001";
 
 // Utility function to redirect to login
 const redirectToLogin = () => {
-  // Clear any stored tokens
-  document.cookie =
-    "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  // Clear any stored tokens using the utility function
+  deleteRefreshToken();
 
   // Dispatch event to clear access token from context
   const event = new CustomEvent("updateAccessToken", { detail: null });
@@ -131,25 +131,9 @@ const processQueue = (error: any, token: string | null = null) => {
 // Function to get a new access token using refresh token
 export const getNewAccessToken = async () => {
   try {
-    // Get the refresh token from cookies
-    const cookies = document.cookie.split(";");
-    const refreshTokenCookie = cookies.find((cookie) => {
-      const trimmedCookie = cookie.trim();
-      return trimmedCookie.startsWith("refreshToken=");
-    });
-
-    let refreshToken = null;
-    if (refreshTokenCookie) {
-      const parts = refreshTokenCookie.split("=");
-      if (parts.length >= 2) {
-        refreshToken = parts.slice(1).join("="); // Handle tokens that might contain '=' characters
-      }
-    }
-
-    if (!refreshToken) {
-      throw new Error("No refresh token found in cookies");
-    }
-
+    // Since the refresh token is httpOnly, we can't read it from JavaScript
+    // But the browser will automatically send it with the request when withCredentials: true
+    // The server should read the refresh token from the httpOnly cookie
     const response = await refreshApi.post(
       "/api/v1/auth/refresh",
       {},
@@ -157,7 +141,7 @@ export const getNewAccessToken = async () => {
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
-          Authorization: `Bearer ${refreshToken}`, // Add the refresh token to Authorization header
+          // Don't manually add Authorization header - let the server read from httpOnly cookie
         },
         withCredentials: true,
       }
@@ -743,10 +727,6 @@ export const mapApiStatusToSleepStatus = (apiStatus: string): SleepStatus => {
 
 // Map API attendance status to feed status format
 export const mapAttendanceStatusForFeed = (apiStatus: string): string => {
-  console.log(
-    `🔄 [API] Mapping attendance status: ${apiStatus} -> feed format`
-  );
-
   const mappedStatus = (() => {
     switch (apiStatus.toLowerCase()) {
       case "arrived":
@@ -769,7 +749,6 @@ export const mapAttendanceStatusForFeed = (apiStatus: string): string => {
     }
   })();
 
-  console.log(`✅ [API] Mapped status: ${apiStatus} -> ${mappedStatus}`);
   return mappedStatus;
 };
 
@@ -833,12 +812,6 @@ export interface GroupAttendance {
 // Daily Reports API functions
 export const dailyReportsApi = {
   getDailyReport: async (groupId: string, date: string) => {
-    console.log("🌐 [API] getDailyReport called:", { groupId, date });
-    console.log(
-      "🌐 [API] Request URL:",
-      `/api/v1/daily-reports?groupId=${groupId}&date=${date}`
-    );
-
     try {
       const response = await api.get(
         `/api/v1/daily-reports?groupId=${groupId}&date=${date}`,
@@ -850,15 +823,6 @@ export const dailyReportsApi = {
           withCredentials: true,
         }
       );
-
-      console.log("✅ [API] getDailyReport response received:", {
-        status: response.status,
-        hasData: !!response.data,
-        dataKeys: response.data ? Object.keys(response.data) : [],
-        hasSleepData: !!response.data?.sleepData,
-        sleepDataStatus: response.data?.sleepData?.status,
-        childrenCount: response.data?.sleepData?.children?.length || 0,
-      });
 
       // Map the API response to use proper enums
       const mappedData = {
@@ -878,21 +842,9 @@ export const dailyReportsApi = {
           : null,
       };
 
-      console.log("🔄 [API] getDailyReport data mapped:", {
-        reportId: mappedData?.id,
-        hasSleepData: !!mappedData?.sleepData,
-        sleepDataStatus: mappedData?.sleepData?.status,
-        childrenCount: mappedData?.sleepData?.children?.length || 0,
-      });
-
       return mappedData;
     } catch (error: any) {
-      console.error("💥 [API] getDailyReport error:", {
-        error: error,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-      });
+      console.error("getDailyReport error:", error);
       throw error;
     }
   },
