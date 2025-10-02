@@ -14,7 +14,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useAttendance } from "../../contexts/AttendanceContext";
 import { useApp } from "../../contexts/AppContext";
-import DailyAttendance from "../../components/DailyAttendance";
+import DailyAttendance from "../../shared/components/ui/DailyAttendance";
 import { ROUTES } from "../../config/routes";
 
 const Attendance = () => {

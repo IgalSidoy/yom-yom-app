@@ -7,11 +7,11 @@ import { ApiAttendanceStatus } from "../../types/attendance";
 import { attendanceApi, GroupAttendance } from "../../services/api";
 import SwipeableCards, {
   SwipeableCardsRef,
-} from "../../components/SwipeableCards";
-import ParentQuickActionsSlide from "../../components/dashboard/ParentQuickActionsSlide";
-import ParentChildrenInfoSlide from "../../components/dashboard/ParentChildrenInfoSlide";
-import DateTimeWidget from "../../components/DateTimeWidget";
-import DashboardContainer from "../../components/dashboard/DashboardContainer";
+} from "../../shared/components/ui/SwipeableCards";
+import ParentQuickActionsSlide from "../../features/dashboard/components/ParentQuickActionsSlide";
+import ParentChildrenInfoSlide from "../../features/dashboard/components/ParentChildrenInfoSlide";
+import DateTimeWidget from "../../shared/components/ui/DateTimeWidget";
+import DashboardContainer from "../../features/dashboard/components/DashboardContainer";
 
 const ParentDashboard: React.FC = () => {
   const { user } = useApp();

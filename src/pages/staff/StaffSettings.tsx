@@ -26,7 +26,7 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { useApp } from "../../contexts/AppContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { userApi, User } from "../../services/api";
-import Notification from "../../components/Notification";
+import Notification from "../../shared/components/ui/Notification";
 
 const StaffSettings = () => {
   const { language, setLanguage } = useLanguage();

@@ -21,7 +21,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useApp } from "../../contexts/AppContext";
 import { useDailyReport } from "../../contexts/DailyReportContext";
 import { childApi, DailyReport, Child } from "../../services/api";
-import CreateSleepPostModal from "../../components/feed/CreateSleepPostModal";
+import CreateSleepPostModal from "../../features/feed/components/CreateSleepPostModal";
 
 interface LocationState {
   groupId?: string;

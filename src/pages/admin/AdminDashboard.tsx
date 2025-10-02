@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
-import DashboardContainer from "../../components/dashboard/DashboardContainer";
+import DashboardContainer from "../../features/dashboard/components/DashboardContainer";
 
 const AdminDashboard: React.FC = () => (
   <DashboardContainer>

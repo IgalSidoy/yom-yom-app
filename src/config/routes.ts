@@ -9,6 +9,16 @@ export const ROUTES = {
   // Protected routes
   DASHBOARD: "/dashboard",
   SETTINGS: "/settings",
+  ADMIN_SETTINGS: "/admin/settings",
+
+  // Admin settings sub-routes
+  ADMIN_PROFILE: "/admin/settings/profile",
+  ADMIN_ORGANIZATION: "/admin/settings/organization",
+  ADMIN_ACCOUNTS: "/admin/settings/accounts",
+  ADMIN_GROUPS: "/admin/settings/groups",
+  ADMIN_USERS: "/admin/settings/users",
+  ADMIN_CHILDREN: "/admin/settings/children",
+
   FEED: "/feed",
   ATTENDANCE: "/attendance",
 

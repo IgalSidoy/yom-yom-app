@@ -6,7 +6,7 @@ import {
   FetchDailyReportButton,
   FeedDateSelector,
   FeedPost,
-} from "../../components/feed";
+} from "../../features/feed/components";
 import { useApp } from "../../contexts/AppContext";
 import { useDailyReport } from "../../contexts/DailyReportContext";
 import { useFeed } from "../../contexts/FeedContext";

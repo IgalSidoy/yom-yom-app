@@ -1,19 +1,26 @@
 import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ROUTES } from "./config/routes";
-import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedRoute from "./shared/components/ui/ProtectedRoute";
 import Login from "./pages/shared/Login";
 import Onboarding from "./pages/shared/Onboarding";
 import Settings from "./pages/shared/Settings";
 import CreateSleepPostPage from "./pages/shared/CreateSleepPostPage";
 import CreateFoodPostPage from "./pages/shared/CreateFoodPostPage";
 import NotFound from "./pages/shared/NotFound";
-import BottomNav from "./components/BottomNav";
+import BottomNav from "./shared/components/layout/BottomNav";
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import StaffFeed from "./pages/staff/StaffFeed";
 import Attendance from "./pages/staff/Attendance";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminFeed from "./pages/admin/AdminFeed";
+import AdminSettingsPageNew from "./features/admin/pages/AdminSettingsPageNew";
+import ProfileSettings from "./features/admin/components/settings/ProfileSettings";
+import OrganizationSettings from "./features/admin/components/settings/OrganizationSettings";
+import AccountsSettings from "./features/admin/components/settings/AccountsSettings";
+import GroupsSettings from "./features/admin/components/settings/GroupsSettings";
+import UsersSettings from "./features/admin/components/settings/UsersSettings";
+import ChildrenSettings from "./features/admin/components/settings/ChildrenSettings";
 import ParentDashboard from "./pages/parents/ParentDashboard";
 import ParentFeed from "./pages/parents/ParentFeed";
 import { useApp } from "./contexts/AppContext";
@@ -115,6 +122,62 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <Settings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.ADMIN_SETTINGS}
+          element={
+            <ProtectedRoute>
+              <AdminSettingsPageNew />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.ADMIN_PROFILE}
+          element={
+            <ProtectedRoute>
+              <ProfileSettings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.ADMIN_ORGANIZATION}
+          element={
+            <ProtectedRoute>
+              <OrganizationSettings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.ADMIN_ACCOUNTS}
+          element={
+            <ProtectedRoute>
+              <AccountsSettings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.ADMIN_GROUPS}
+          element={
+            <ProtectedRoute>
+              <GroupsSettings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.ADMIN_USERS}
+          element={
+            <ProtectedRoute>
+              <UsersSettings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.ADMIN_CHILDREN}
+          element={
+            <ProtectedRoute>
+              <ChildrenSettings />
             </ProtectedRoute>
           }
         />

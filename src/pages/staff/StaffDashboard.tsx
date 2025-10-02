@@ -12,12 +12,12 @@ import { ROUTES } from "../../config/routes";
 import { useApp } from "../../contexts/AppContext";
 import { useAttendance } from "../../contexts/AttendanceContext";
 import { ApiAttendanceStatus } from "../../types/attendance";
-import SwipeableCards from "../../components/SwipeableCards";
-import QuickActionsSlide from "../../components/dashboard/QuickActionsSlide";
-import StatisticsSlide from "../../components/dashboard/StatisticsSlide";
-import AdditionalInfoSlide from "../../components/dashboard/AdditionalInfoSlide";
-import DateTimeWidget from "../../components/DateTimeWidget";
-import DashboardContainer from "../../components/dashboard/DashboardContainer";
+import SwipeableCards from "../../shared/components/ui/SwipeableCards";
+import QuickActionsSlide from "../../features/dashboard/components/QuickActionsSlide";
+import StatisticsSlide from "../../features/dashboard/components/StatisticsSlide";
+import AdditionalInfoSlide from "../../features/dashboard/components/AdditionalInfoSlide";
+import DateTimeWidget from "../../shared/components/ui/DateTimeWidget";
+import DashboardContainer from "../../features/dashboard/components/DashboardContainer";
 
 const StaffDashboard: React.FC = () => {
   const { user, isLoadingUser } = useApp();

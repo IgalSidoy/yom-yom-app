@@ -21,7 +21,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useApp } from "../../contexts/AppContext";
 import { useDailyReport } from "../../contexts/DailyReportContext";
 import { Child, updateDailyReportFoodData } from "../../services/api";
-import CreateFoodPostModal from "../../components/food/CreateFoodPostModal";
+import CreateFoodPostModal from "../../features/food/components/CreateFoodPostModal";
 import { generateGuid } from "../../utils/guid";
 
 interface LocationState {

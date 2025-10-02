@@ -36,11 +36,11 @@ import {
   Child,
   ChildWithParents,
 } from "../../services/api";
-import Notification from "../../components/Notification";
-import AccountCard from "../../components/AccountCard";
-import GroupCard from "../../components/GroupCard";
-import UserManagementCard from "../../components/UserManagementCard";
-import ChildManagementCard from "../../components/ChildManagementCard";
+import Notification from "../../shared/components/ui/Notification";
+import AccountCard from "../../features/admin/components/AccountCard";
+import GroupCard from "../../features/admin/components/GroupCard";
+import UserManagementCard from "../../features/admin/components/UserManagementCard";
+import ChildManagementCard from "../../features/admin/components/ChildManagementCard";
 
 interface UserProfile {
   firstName: string;

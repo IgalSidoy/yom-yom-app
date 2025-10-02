@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import { useAuth } from "../../contexts/AuthContext";
 import { useApp } from "../../contexts/AppContext";
-import Notification from "../../components/Notification";
+import Notification from "../../shared/components/ui/Notification";
 
 const Login: React.FC = () => {
   const [mobile, setMobile] = useState("054-");
