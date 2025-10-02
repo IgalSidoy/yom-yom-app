@@ -8,6 +8,9 @@ export const ROUTES = {
 
   // Protected routes
   DASHBOARD: "/dashboard",
+  ADMIN_DASHBOARD: "/admin/dashboard",
+  STAFF_DASHBOARD: "/staff/dashboard",
+  PARENT_DASHBOARD: "/parent/dashboard",
   SETTINGS: "/settings",
   ADMIN_SETTINGS: "/admin/settings",
 
@@ -57,6 +60,20 @@ export const buildRoute = (
   });
 
   return route;
+};
+
+// Helper function to get role-based dashboard route
+export const getRoleBasedDashboardRoute = (userRole?: string): string => {
+  switch (userRole) {
+    case "Admin":
+      return ROUTES.ADMIN_DASHBOARD;
+    case "Staff":
+      return ROUTES.STAFF_DASHBOARD;
+    case "Parent":
+      return ROUTES.PARENT_DASHBOARD;
+    default:
+      return ROUTES.DASHBOARD;
+  }
 };
 
 // Type for route keys

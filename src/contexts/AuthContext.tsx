@@ -73,10 +73,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // If user is on login page, redirect to dashboard
         if (currentPath === "/login") {
-          navigate("/dashboard", { replace: true });
+          // Don't redirect here - let AppContext handle role-based redirect after user data is loaded
+          // This will be handled by the AppContext when user data is fetched
         } else if (currentPath === "/") {
           // If user is on root, redirect to dashboard
-          navigate("/dashboard", { replace: true });
+          // Don't redirect here - let AppContext handle role-based redirect after user data is loaded
         }
         // If user is already on a valid page, just continue
       } else {
@@ -181,13 +182,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [accessToken]);
 
   // Define all functions that use hooks before any early returns
-  const login = useCallback(
-    (data: LoginData) => {
-      setAccessToken(data.token);
-      navigate("/dashboard");
-    },
-    [navigate]
-  );
+  const login = useCallback((data: LoginData) => {
+    setAccessToken(data.token);
+    // Don't navigate here - let AppContext handle role-based redirect after user data is loaded
+  }, []);
 
   const logout = useCallback(() => {
     setAccessToken(null);

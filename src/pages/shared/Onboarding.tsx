@@ -14,6 +14,7 @@ import {
 import { useNavigate, Link } from "react-router-dom";
 import CheckIcon from "@mui/icons-material/Check";
 import { useAuth } from "../../contexts/AuthContext";
+import { useApp } from "../../contexts/AppContext";
 import MobileLayout from "../../shared/components/layout/MobileLayout";
 
 const steps = [1, 2, 3];
@@ -49,6 +50,7 @@ const Onboarding: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
+  const { triggerInitialLogin } = useApp();
   const [form, setForm] = useState({
     email: "",
     businessId: "",
@@ -165,7 +167,8 @@ const Onboarding: React.FC = () => {
         accountId: data.accountId,
         organizationId: data.organizationId,
       });
-      navigate("/dashboard");
+      // Trigger role-based redirect after user data is loaded
+      triggerInitialLogin();
     } catch (error) {
       setErrors({
         email: "שגיאה בשליחת הטופס. אנא נסה שוב.",

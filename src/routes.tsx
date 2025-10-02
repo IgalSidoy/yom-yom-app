@@ -119,6 +119,30 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
+          path={ROUTES.ADMIN_DASHBOARD}
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.STAFF_DASHBOARD}
+          element={
+            <ProtectedRoute>
+              <StaffDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.PARENT_DASHBOARD}
+          element={
+            <ProtectedRoute>
+              <ParentDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path={ROUTES.SETTINGS}
           element={
             <ProtectedRoute>

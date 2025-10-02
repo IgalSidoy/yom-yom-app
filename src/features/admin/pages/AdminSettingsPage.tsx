@@ -40,12 +40,7 @@ const AdminSettingsPage: React.FC = () => {
   };
 
   return (
-    <PageLayout
-      title="הגדרות מנהל"
-      subtitle="ניהול הגדרות המערכת"
-      showHeader={true}
-      stickyHeader={true}
-    >
+    <PageLayout title="הגדרות מנהל" showHeader={true} stickyHeader={true}>
       <Box sx={{ bgcolor: "background.default", minHeight: "100vh" }}>
         <TabNavigation
           tabs={tabs}

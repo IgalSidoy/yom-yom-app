@@ -24,7 +24,8 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
-  const { setUserId, setAccountId, setOrganizationId } = useApp();
+  const { setUserId, setAccountId, setOrganizationId, triggerInitialLogin } =
+    useApp();
   const [notification, setNotification] = useState({
     open: false,
     message: "",
@@ -169,7 +170,8 @@ const Login: React.FC = () => {
         organizationId: data.organizationId,
       });
 
-      navigate("/dashboard");
+      // Trigger role-based redirect after user data is loaded
+      triggerInitialLogin();
     } catch (err) {
       showNotification("קוד לא תקין. אנא נסה שוב.", "error");
     } finally {

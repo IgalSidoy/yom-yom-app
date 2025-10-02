@@ -12,6 +12,7 @@ import PeopleIcon from "@mui/icons-material/People";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useLanguage } from "../../../contexts/LanguageContext";
 import { useApp } from "../../../contexts/AppContext";
+import { ROUTES } from "../../../config/routes";
 
 type NavLabel =
   | "Home"
@@ -31,7 +32,7 @@ const navLabels: NavLabelsMap = {
     Home: "בית",
     Feed: "פיד",
     Settings: "הגדרות",
-    AdminSettings: "הגדרות מנהל",
+    AdminSettings: "הגדרות",
     StaffDashboard: "נוכחות",
   },
   rus: {
@@ -58,8 +59,22 @@ const BottomNav: React.FC = () => {
 
   // Define navigation items based on user role
   const getNavItems = () => {
+    // Get role-based home route
+    const getHomeRoute = () => {
+      switch (user?.role) {
+        case "Admin":
+          return ROUTES.ADMIN_DASHBOARD;
+        case "Staff":
+          return ROUTES.STAFF_DASHBOARD;
+        case "Parent":
+          return ROUTES.PARENT_DASHBOARD;
+        default:
+          return ROUTES.DASHBOARD;
+      }
+    };
+
     const baseItems = [
-      { label: "Home" as NavLabel, icon: <HomeIcon />, path: "/dashboard" },
+      { label: "Home" as NavLabel, icon: <HomeIcon />, path: getHomeRoute() },
       { label: "Feed" as NavLabel, icon: <DynamicFeedIcon />, path: "/feed" },
     ];
 

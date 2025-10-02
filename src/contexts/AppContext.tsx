@@ -6,6 +6,8 @@ import React, {
   useEffect,
 } from "react";
 import { User, userApi } from "../services/api";
+import { useNavigate } from "react-router-dom";
+import { getRoleBasedDashboardRoute } from "../config/routes";
 
 interface AppContextType {
   user: User | null;
@@ -24,6 +26,7 @@ interface AppContextType {
   isLoadingUser: boolean;
   userChangeTimestamp: number;
   notifyUserChange: () => void;
+  triggerInitialLogin: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -41,6 +44,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoadingUser, setIsLoadingUser] = useState<boolean>(false);
   const [userChangeTimestamp, setUserChangeTimestamp] = useState<number>(0);
+  const [isInitialLogin, setIsInitialLogin] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   // Fetch user data when access token is available
   useEffect(() => {
@@ -59,6 +64,20 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           if (userData.organizationId) {
             setOrganizationId(userData.organizationId);
           }
+
+          // Handle role-based redirect after initial login
+          if (isInitialLogin) {
+            const dashboardRoute = getRoleBasedDashboardRoute(userData.role);
+            navigate(dashboardRoute, { replace: true });
+            setIsInitialLogin(false);
+          } else {
+            // Handle redirect for existing authenticated users on login or root pages
+            const currentPath = window.location.pathname;
+            if (currentPath === "/login" || currentPath === "/") {
+              const dashboardRoute = getRoleBasedDashboardRoute(userData.role);
+              navigate(dashboardRoute, { replace: true });
+            }
+          }
         } catch (error) {
           // Don't clear the token here, let the auth context handle auth errors
         } finally {
@@ -68,7 +87,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     };
 
     fetchUserData();
-  }, [accessToken]);
+  }, [accessToken, user, isInitialLogin, navigate]);
 
   // Listen for access token updates
   useEffect(() => {
@@ -117,6 +136,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setUserChangeTimestamp(Date.now());
   };
 
+  const triggerInitialLogin = () => {
+    setIsInitialLogin(true);
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -136,6 +159,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         isLoadingUser,
         userChangeTimestamp,
         notifyUserChange,
+        triggerInitialLogin,
       }}
     >
       {children}
