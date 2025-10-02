@@ -15,12 +15,15 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Fab,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
 import { useNavigate } from "react-router-dom";
 import { Button, Card } from "../../../../shared/components";
 import { AdminSettingsLayout } from "../../../../shared/components/layout";
 import { accountApi, Account } from "../../../../services/api";
 import Notification from "../../../../shared/components/ui/Notification";
+import { THEME_COLORS, UI_COLORS } from "../../../../config/colors";
 
 const AccountsSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -135,22 +138,29 @@ const AccountsSettings: React.FC = () => {
   const AccountCard = useMemo(
     () =>
       React.memo(({ account }: { account: Account }) => (
-        <Paper
-          elevation={0}
+        <Box
           sx={{
             p: 3,
-            borderRadius: 0,
-            border: "none",
-            borderBottom: "1px solid",
-            borderColor: "divider",
             width: "100%",
-            bgcolor: "background.paper",
+            bgcolor: THEME_COLORS.BACKGROUND,
+            backgroundColor: THEME_COLORS.BACKGROUND,
+            borderRadius: 0, // Override theme border radius
+            margin: 0, // Remove any margins
+            paddingTop: 2, // Remove top padding to eliminate gaps
+            paddingBottom: 1, // Remove bottom padding to eliminate gaps
+            paddingLeft: 3, // Keep left padding
+            paddingRight: 3, // Keep right padding
+            borderBottom: "1px solid",
+            borderColor: UI_COLORS.BORDER_LIGHT,
             transition: "all 0.2s ease-in-out",
             "&:hover": {
               bgcolor: "action.hover",
             },
+            "&:first-child": {
+              paddingTop: 3, // Only first card has top padding
+            },
             "&:last-child": {
-              borderBottom: "none",
+              paddingBottom: 3, // Only last card has bottom padding
             },
           }}
         >
@@ -163,7 +173,14 @@ const AccountsSettings: React.FC = () => {
             }}
           >
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 600,
+                  mb: 1,
+                  color: THEME_COLORS.TEXT_PRIMARY,
+                }}
+              >
                 {account.branchName}
               </Typography>
             </Box>
@@ -194,6 +211,14 @@ const AccountsSettings: React.FC = () => {
                     color: "error.main",
                     borderRadius: 2,
                     textTransform: "none",
+                    border: "1px solid",
+                    borderColor: "error.main",
+                    opacity: 0.7,
+                    "&:hover": {
+                      backgroundColor: "error.main",
+                      color: "white",
+                      opacity: 1,
+                    },
                   }}
                 >
                   מחיקה
@@ -212,29 +237,49 @@ const AccountsSettings: React.FC = () => {
             <Box sx={{ flex: 1 }}>
               <Typography
                 variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", mb: 0.5 }}
+                sx={{
+                  display: "block",
+                  mb: 0.5,
+                  color: THEME_COLORS.TEXT_PRIMARY,
+                  fontSize: "0.75rem",
+                }}
               >
                 נוצר בתאריך
               </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 500,
+                  color: THEME_COLORS.TEXT_PRIMARY,
+                }}
+              >
                 {formatDate(account.created)}
               </Typography>
             </Box>
             <Box sx={{ flex: 1 }}>
               <Typography
                 variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", mb: 0.5 }}
+                sx={{
+                  display: "block",
+                  mb: 0.5,
+                  color: THEME_COLORS.TEXT_PRIMARY,
+                  fontSize: "0.75rem",
+                }}
               >
                 עודכן בתאריך
               </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 500,
+                  color: THEME_COLORS.TEXT_PRIMARY,
+                }}
+              >
                 {formatDate(account.updated)}
               </Typography>
             </Box>
           </Box>
-        </Paper>
+        </Box>
       )),
     [formatDate, handleEditAccount, handleDeleteClick]
   );
@@ -245,6 +290,7 @@ const AccountsSettings: React.FC = () => {
         <TableRow
           hover
           sx={{
+            bgcolor: "background.paper",
             "&:hover": {
               boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
               transform: "translateY(-2px)",
@@ -319,6 +365,14 @@ const AccountsSettings: React.FC = () => {
                     color: "error.main",
                     borderRadius: 2,
                     textTransform: "none",
+                    border: "1px solid",
+                    borderColor: "error.main",
+                    opacity: 0.7,
+                    "&:hover": {
+                      backgroundColor: "error.main",
+                      color: "white",
+                      opacity: 1,
+                    },
                   }}
                 >
                   מחיקה
@@ -361,16 +415,24 @@ const AccountsSettings: React.FC = () => {
           display: { xs: "flex", sm: "block" },
           flexDirection: { xs: "column", sm: "row" },
           minHeight: 0, // Allow flex child to shrink
+          borderRadius: 1, // Override Card component border radius
+          boxShadow: "none", // Remove any shadows
+          border: "none", // Remove any borders
+          backgroundColor: THEME_COLORS.BACKGROUND,
         }}
       >
         <Box
           sx={{
-            p: 3,
+            padding: 0, // Remove all padding
             flex: 1,
             display: "flex",
             flexDirection: "column",
             minHeight: 0, // Allow flex child to shrink
             overflow: "hidden",
+            bgcolor: THEME_COLORS.BACKGROUND, // Use theme background color
+            borderRadius: 0, // Override theme border radius
+            margin: 0, // Remove margins
+            border: "none", // Remove borders
           }}
         >
           {error && (
@@ -409,9 +471,10 @@ const AccountsSettings: React.FC = () => {
                   display: { xs: "block", md: "none" },
                   flex: 1,
                   overflow: "auto",
-                  mx: { xs: -3, sm: 0 }, // Extend to full width on mobile
+                  margin: 0, // Remove negative margins
+                  padding: 0, // Remove padding
                   minHeight: 0, // Allow flex child to shrink
-                  // Custom scrollbar styling for better mobile experience
+                  borderRadius: 0, // Override theme border radius
                   "&::-webkit-scrollbar": {
                     width: "4px",
                   },
@@ -460,9 +523,11 @@ const AccountsSettings: React.FC = () => {
                   component={Paper}
                   elevation={0}
                   sx={{
-                    border: "1px solid",
-                    borderColor: "divider",
-                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
+                    border: "none",
+                    borderRadius: 0,
+                    boxShadow: "none",
+                    margin: 0,
+                    padding: 0,
                   }}
                 >
                   <Table>
@@ -524,35 +589,30 @@ const AccountsSettings: React.FC = () => {
           )}
         </Box>
 
-        {/* Add Button Row - Always visible at bottom */}
-        <Box
+        {/* Floating Add Button - Mobile only */}
+        <Fab
+          color="primary"
+          aria-label="add account"
+          onClick={handleCreateAccount}
           sx={{
-            p: 3,
-            borderTop: { xs: "1px solid", sm: "none" },
-            borderColor: "divider",
-            bgcolor: "background.paper",
-            display: { xs: "block", sm: "none" }, // Only show on mobile
+            position: "fixed",
+            bottom: {
+              xs: "calc(72px + env(safe-area-inset-bottom) + 24px)",
+              sm: "96px",
+            },
+            right: 24,
+            display: { xs: "flex", sm: "none" }, // Only show on mobile
+            boxShadow: "0 4px 16px rgba(255, 145, 77, 0.4)",
+            "&:hover": {
+              boxShadow: "0 6px 20px rgba(255, 145, 77, 0.5)",
+              transform: "scale(1.05)",
+            },
+            transition: "all 0.2s ease-in-out",
+            zIndex: 1000,
           }}
         >
-          <Button
-            variant="primary"
-            onClick={handleCreateAccount}
-            fullWidth
-            sx={{
-              borderRadius: 2,
-              textTransform: "none",
-              fontWeight: 600,
-              py: 1.5,
-              boxShadow: "0 2px 8px rgba(255, 145, 77, 0.3)",
-              "&:hover": {
-                boxShadow: "0 4px 12px rgba(255, 145, 77, 0.4)",
-                transform: "translateY(-1px)",
-              },
-            }}
-          >
-            הוספת סניף חדש
-          </Button>
-        </Box>
+          <AddIcon />
+        </Fab>
       </Card>
 
       {/* Delete Confirmation Dialog */}
@@ -579,7 +639,20 @@ const AccountsSettings: React.FC = () => {
             פעולה זו לא ניתנת לביטול ותמחק את כל הנתונים הקשורים לסניף זה.
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ p: 3, gap: 2 }}>
+        <DialogActions
+          sx={{
+            p: 3,
+            gap: 2,
+            display: "flex",
+            justifyContent: "center", // Center buttons
+            flexDirection: { xs: "column", sm: "row" }, // Stack on mobile, row on desktop
+            alignItems: "center",
+            "& .MuiButton-root": {
+              minWidth: { xs: "120px", sm: "auto" }, // Ensure consistent button width on mobile
+              flex: { xs: "none", sm: "none" },
+            },
+          }}
+        >
           <Button
             onClick={handleDeleteCancel}
             variant="outline"
