@@ -20,6 +20,7 @@ import OrganizationSettings from "./features/admin/components/settings/Organizat
 import AccountsSettings from "./features/admin/components/settings/AccountsSettings";
 import AccountEditPage from "./features/admin/components/settings/AccountEditPage";
 import GroupsSettings from "./features/admin/components/settings/GroupsSettings";
+import GroupEditPage from "./features/admin/components/settings/GroupEditPage";
 import UsersSettings from "./features/admin/components/settings/UsersSettings";
 import ChildrenSettings from "./features/admin/components/settings/ChildrenSettings";
 import ParentDashboard from "./pages/parents/ParentDashboard";
@@ -203,6 +204,22 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <GroupsSettings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.ADMIN_GROUP_EDIT}
+          element={
+            <ProtectedRoute>
+              <GroupEditPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.ADMIN_GROUP_CREATE}
+          element={
+            <ProtectedRoute>
+              <GroupEditPage />
             </ProtectedRoute>
           }
         />
