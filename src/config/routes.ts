@@ -15,6 +15,8 @@ export const ROUTES = {
   ADMIN_PROFILE: "/admin/settings/profile",
   ADMIN_ORGANIZATION: "/admin/settings/organization",
   ADMIN_ACCOUNTS: "/admin/settings/accounts",
+  ADMIN_ACCOUNT_EDIT: "/admin/settings/accounts/:id/edit",
+  ADMIN_ACCOUNT_CREATE: "/admin/settings/accounts/new",
   ADMIN_GROUPS: "/admin/settings/groups",
   ADMIN_USERS: "/admin/settings/users",
   ADMIN_CHILDREN: "/admin/settings/children",

@@ -49,13 +49,13 @@ const AdminSettingsLayout: React.FC<AdminSettingsLayoutProps> = ({
           borderColor: "divider",
         }}
       >
-        <Container maxWidth={maxWidth}>
+        <Container maxWidth={maxWidth} sx={{ px: { xs: 1, sm: 2 } }}>
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              minHeight: 64,
-              px: { xs: 2, sm: 0 },
+              minHeight: { xs: 56, sm: 64 },
+              px: { xs: 1, sm: 0 },
             }}
           >
             {/* Left section - Empty */}
@@ -109,11 +109,19 @@ const AdminSettingsLayout: React.FC<AdminSettingsLayoutProps> = ({
       </AppBar>
 
       {/* Content */}
-      <Container maxWidth={maxWidth} sx={{ py: 4 }}>
+      <Container
+        maxWidth={maxWidth}
+        sx={{
+          py: { xs: 2, sm: 4 },
+          px: { xs: 1, sm: 2 },
+          width: "100%",
+        }}
+      >
         <Box
           sx={{
             maxWidth: "100%",
             mx: "auto",
+            width: "100%",
             "& > *": {
               width: "100%",
             },

@@ -16,12 +16,18 @@ import { Button, Card } from "../../../../shared/components";
 import { AdminSettingsLayout } from "../../../../shared/components/layout";
 import { useApp } from "../../../../contexts/AppContext";
 import { userApi, User } from "../../../../services/api";
+import Notification from "../../../../shared/components/ui/Notification";
 
 const UsersSettings: React.FC = () => {
   const { user } = useApp();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notification, setNotification] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "info" | "warning",
+  });
 
   const formatDate = (dateString: string) => {
     if (!dateString || dateString === "0001-01-01T00:00:00") {
@@ -66,6 +72,21 @@ const UsersSettings: React.FC = () => {
     }
   };
 
+  const showNotification = (
+    message: string,
+    severity: "success" | "error" | "info" | "warning" = "success"
+  ) => {
+    setNotification({
+      open: true,
+      message,
+      severity,
+    });
+  };
+
+  const handleCloseNotification = () => {
+    setNotification((prev) => ({ ...prev, open: false }));
+  };
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -74,6 +95,7 @@ const UsersSettings: React.FC = () => {
       setUsers(response.data.users);
     } catch (err) {
       setError("שגיאה בטעינת רשימת המשתמשים");
+      showNotification("שגיאה בטעינת רשימת המשתמשים", "error");
     } finally {
       setLoading(false);
     }
@@ -98,8 +120,10 @@ const UsersSettings: React.FC = () => {
       setLoading(true);
       await userApi.deleteUser(userId);
       await fetchUsers(); // Refresh the list
+      showNotification("המשתמש נמחק בהצלחה", "success");
     } catch (err) {
       setError("שגיאה במחיקת המשתמש");
+      showNotification("שגיאה במחיקת המשתמש", "error");
     } finally {
       setLoading(false);
     }
@@ -125,6 +149,12 @@ const UsersSettings: React.FC = () => {
       title="ניהול משתמשים"
       subtitle={`${users.length} משתמשים זמינים`}
     >
+      <Notification
+        open={notification.open}
+        message={notification.message}
+        severity={notification.severity}
+        onClose={handleCloseNotification}
+      />
       <Card
         actions={
           <Button variant="primary" onClick={handleCreateUser}>
@@ -132,115 +162,118 @@ const UsersSettings: React.FC = () => {
           </Button>
         }
       >
-      <Box sx={{ p: 3 }}>
-        {error && (
-          <Typography color="error" sx={{ mb: 2 }}>
-            {error}
-          </Typography>
-        )}
+        <Box sx={{ p: 3 }}>
+          {error && (
+            <Typography color="error" sx={{ mb: 2 }}>
+              {error}
+            </Typography>
+          )}
 
-        {users.length === 0 ? (
-          <Box sx={{ textAlign: "center", py: 4 }}>
-            <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
-              אין משתמשים זמינים
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              התחל על ידי הוספת משתמש ראשון
-            </Typography>
-            <Button variant="primary" onClick={handleCreateUser}>
-              הוספת משתמש ראשון
-            </Button>
-          </Box>
-        ) : (
-          <TableContainer
-            component={Paper}
-            elevation={0}
-            sx={{ border: "1px solid", borderColor: "divider" }}
-          >
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>משתמש</TableCell>
-                  <TableCell>תפקיד</TableCell>
-                  <TableCell>אימייל</TableCell>
-                  <TableCell>נייד</TableCell>
-                  <TableCell>נוצר בתאריך</TableCell>
-                  <TableCell>פעולות</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id} hover>
-                    <TableCell>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 2 }}
-                      >
-                        <Avatar
-                          sx={{
-                            bgcolor: "primary.main",
-                            width: 40,
-                            height: 40,
-                            fontSize: "1rem",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {user.firstName.charAt(0).toUpperCase()}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {user.firstName} {user.lastName}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={getRoleLabel(user.role)}
-                        color={getRoleColor(user.role) as any}
-                        size="small"
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">{user.email}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {user.mobile || "לא זמין"}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {formatDate(user.created)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: "flex", gap: 1 }}>
-                        <Button
-                          variant="outline"
-                          size="small"
-                          onClick={() => handleEditUser(user)}
-                        >
-                          עריכה
-                        </Button>
-                        <Button
-                          variant="text"
-                          size="small"
-                          onClick={() => handleDeleteUser(user.id)}
-                          sx={{ color: "error.main" }}
-                        >
-                          מחיקה
-                        </Button>
-                      </Box>
-                    </TableCell>
+          {users.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 4 }}>
+              <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+                אין משתמשים זמינים
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                התחל על ידי הוספת משתמש ראשון
+              </Typography>
+              <Button variant="primary" onClick={handleCreateUser}>
+                הוספת משתמש ראשון
+              </Button>
+            </Box>
+          ) : (
+            <TableContainer
+              component={Paper}
+              elevation={0}
+              sx={{ border: "1px solid", borderColor: "divider" }}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>משתמש</TableCell>
+                    <TableCell>תפקיד</TableCell>
+                    <TableCell>אימייל</TableCell>
+                    <TableCell>נייד</TableCell>
+                    <TableCell>נוצר בתאריך</TableCell>
+                    <TableCell>פעולות</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Box>
-    </Card>
+                </TableHead>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id} hover>
+                      <TableCell>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
+                        >
+                          <Avatar
+                            sx={{
+                              bgcolor: "primary.main",
+                              width: 40,
+                              height: 40,
+                              fontSize: "1rem",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {user.firstName.charAt(0).toUpperCase()}
+                          </Avatar>
+                          <Box>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontWeight: 600 }}
+                            >
+                              {user.firstName} {user.lastName}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={getRoleLabel(user.role)}
+                          color={getRoleColor(user.role) as any}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">{user.email}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {user.mobile || "לא זמין"}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {formatDate(user.created)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: "flex", gap: 1 }}>
+                          <Button
+                            variant="outline"
+                            size="small"
+                            onClick={() => handleEditUser(user)}
+                          >
+                            עריכה
+                          </Button>
+                          <Button
+                            variant="text"
+                            size="small"
+                            onClick={() => handleDeleteUser(user.id)}
+                            sx={{ color: "error.main" }}
+                          >
+                            מחיקה
+                          </Button>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Box>
+      </Card>
     </AdminSettingsLayout>
   );
 };

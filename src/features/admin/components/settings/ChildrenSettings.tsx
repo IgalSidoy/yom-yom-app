@@ -18,6 +18,7 @@ import { Button, Card } from "../../../../shared/components";
 import { AdminSettingsLayout } from "../../../../shared/components/layout";
 import { useApp } from "../../../../contexts/AppContext";
 import { childApi, ChildWithParents } from "../../../../services/api";
+import Notification from "../../../../shared/components/ui/Notification";
 import SearchIcon from "@mui/icons-material/Search";
 
 const ChildrenSettings: React.FC = () => {
@@ -29,6 +30,11 @@ const ChildrenSettings: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notification, setNotification] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "info" | "warning",
+  });
 
   const formatDate = (dateString: string) => {
     if (!dateString || dateString === "0001-01-01T00:00:00") {
@@ -74,6 +80,21 @@ const ChildrenSettings: React.FC = () => {
     return "לא זמין";
   };
 
+  const showNotification = (
+    message: string,
+    severity: "success" | "error" | "info" | "warning" = "success"
+  ) => {
+    setNotification({
+      open: true,
+      message,
+      severity,
+    });
+  };
+
+  const handleCloseNotification = () => {
+    setNotification((prev) => ({ ...prev, open: false }));
+  };
+
   const fetchChildren = async () => {
     if (!user?.accountId) return;
 
@@ -85,6 +106,7 @@ const ChildrenSettings: React.FC = () => {
       setFilteredChildren(response.children);
     } catch (err) {
       setError("שגיאה בטעינת רשימת הילדים");
+      showNotification("שגיאה בטעינת רשימת הילדים", "error");
     } finally {
       setLoading(false);
     }
@@ -121,8 +143,10 @@ const ChildrenSettings: React.FC = () => {
       setLoading(true);
       await childApi.deleteChild(childId);
       await fetchChildren(); // Refresh the list
+      showNotification("הילד נמחק בהצלחה", "success");
     } catch (err) {
       setError("שגיאה במחיקת הילד");
+      showNotification("שגיאה במחיקת הילד", "error");
     } finally {
       setLoading(false);
     }
@@ -145,6 +169,12 @@ const ChildrenSettings: React.FC = () => {
       title="ניהול ילדים"
       subtitle={`${filteredChildren.length} ילדים זמינים`}
     >
+      <Notification
+        open={notification.open}
+        message={notification.message}
+        severity={notification.severity}
+        onClose={handleCloseNotification}
+      />
       <Card
         actions={
           <Button variant="primary" onClick={handleCreateChild}>

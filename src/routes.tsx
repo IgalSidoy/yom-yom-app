@@ -18,6 +18,7 @@ import AdminSettingsPageNew from "./features/admin/pages/AdminSettingsPageNew";
 import ProfileSettings from "./features/admin/components/settings/ProfileSettings";
 import OrganizationSettings from "./features/admin/components/settings/OrganizationSettings";
 import AccountsSettings from "./features/admin/components/settings/AccountsSettings";
+import AccountEditPage from "./features/admin/components/settings/AccountEditPage";
 import GroupsSettings from "./features/admin/components/settings/GroupsSettings";
 import UsersSettings from "./features/admin/components/settings/UsersSettings";
 import ChildrenSettings from "./features/admin/components/settings/ChildrenSettings";
@@ -154,6 +155,22 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <AccountsSettings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.ADMIN_ACCOUNT_EDIT}
+          element={
+            <ProtectedRoute>
+              <AccountEditPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.ADMIN_ACCOUNT_CREATE}
+          element={
+            <ProtectedRoute>
+              <AccountEditPage />
             </ProtectedRoute>
           }
         />
