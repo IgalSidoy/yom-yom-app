@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography, Paper } from "@mui/material";
 import { Button, Card, FormField } from "../../../../shared/components";
+import { AdminSettingsLayout } from "../../../../shared/components/layout";
 import { useApp } from "../../../../contexts/AppContext";
 import { organizationApi, Organization } from "../../../../services/api";
 
@@ -123,148 +124,158 @@ const OrganizationSettings: React.FC = () => {
 
   if (loading && !organization.id) {
     return (
-      <Card title="פרטי הגן" subtitle="טוען פרטי הארגון...">
-        <Box sx={{ p: 3, textAlign: "center" }}>
-          <Typography>טוען...</Typography>
-        </Box>
-      </Card>
+      <AdminSettingsLayout
+        title="פרטי הגן"
+        subtitle="טוען פרטי הארגון..."
+      >
+        <Card>
+          <Box sx={{ p: 3, textAlign: "center" }}>
+            <Typography>טוען...</Typography>
+          </Box>
+        </Card>
+      </AdminSettingsLayout>
     );
   }
 
   return (
-    <Card title="פרטי הגן" subtitle="עדכון פרטי הארגון">
-      <Box sx={{ p: 3 }}>
-        {error && (
-          <Typography color="error" sx={{ mb: 2 }}>
-            {error}
-          </Typography>
-        )}
+    <AdminSettingsLayout
+      title="פרטי הגן"
+      subtitle="עדכון פרטי הארגון"
+    >
+      <Card>
+        <Box sx={{ p: 3 }}>
+          {error && (
+            <Typography color="error" sx={{ mb: 2 }}>
+              {error}
+            </Typography>
+          )}
 
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
-              gap: 3,
-            }}
-          >
-            <Box sx={{ flex: 1 }}>
-              <FormField
-                name="businessId"
-                label="מספר עוסק"
-                value={organization.businessId}
-                onChange={(e) => handleChange("businessId", e.target.value)}
-                disabled={loading}
-              />
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 3,
+              }}
+            >
+              <Box sx={{ flex: 1 }}>
+                <FormField
+                  name="businessId"
+                  label="מספר עוסק"
+                  value={organization.businessId}
+                  onChange={(e) => handleChange("businessId", e.target.value)}
+                  disabled={loading}
+                />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <FormField
+                  name="name"
+                  label="שם הארגון"
+                  value={organization.name}
+                  onChange={(e) => handleChange("name", e.target.value)}
+                  disabled={loading}
+                />
+              </Box>
             </Box>
-            <Box sx={{ flex: 1 }}>
-              <FormField
-                name="name"
-                label="שם הארגון"
-                value={organization.name}
-                onChange={(e) => handleChange("name", e.target.value)}
-                disabled={loading}
-              />
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 3,
+              }}
+            >
+              <Box sx={{ flex: 1 }}>
+                <FormField
+                  name="email"
+                  label="אימייל"
+                  type="email"
+                  value={organization.email}
+                  onChange={(e) => handleChange("email", e.target.value)}
+                  disabled={loading}
+                />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <FormField
+                  name="phone"
+                  label="נייד"
+                  type="tel"
+                  value={organization.phone}
+                  onChange={(e) => handleChange("phone", e.target.value)}
+                  disabled={loading}
+                />
+              </Box>
+            </Box>
+
+            {/* Organization Info */}
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 3,
+              }}
+            >
+              <Box sx={{ flex: 1 }}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 1,
+                    bgcolor: "background.paper",
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block", mb: 0.5 }}
+                  >
+                    נוצר בתאריך
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {formatDate(organization.created)}
+                  </Typography>
+                </Paper>
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 1,
+                    bgcolor: "background.paper",
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block", mb: 0.5 }}
+                  >
+                    עודכן בתאריך
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {formatDate(organization.updated)}
+                  </Typography>
+                </Paper>
+              </Box>
             </Box>
           </Box>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
-              gap: 3,
-            }}
-          >
-            <Box sx={{ flex: 1 }}>
-              <FormField
-                name="email"
-                label="אימייל"
-                type="email"
-                value={organization.email}
-                onChange={(e) => handleChange("email", e.target.value)}
-                disabled={loading}
-              />
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <FormField
-                name="phone"
-                label="נייד"
-                type="tel"
-                value={organization.phone}
-                onChange={(e) => handleChange("phone", e.target.value)}
-                disabled={loading}
-              />
-            </Box>
-          </Box>
 
-          {/* Organization Info */}
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
-              gap: 3,
-            }}
-          >
-            <Box sx={{ flex: 1 }}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2,
-                  border: "1px solid",
-                  borderColor: "divider",
-                  borderRadius: 1,
-                  bgcolor: "background.paper",
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", mb: 0.5 }}
-                >
-                  נוצר בתאריך
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {formatDate(organization.created)}
-                </Typography>
-              </Paper>
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2,
-                  border: "1px solid",
-                  borderColor: "divider",
-                  borderRadius: 1,
-                  bgcolor: "background.paper",
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", mb: 0.5 }}
-                >
-                  עודכן בתאריך
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {formatDate(organization.updated)}
-                </Typography>
-              </Paper>
-            </Box>
+          <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
+            <Button
+              variant="primary"
+              onClick={handleSave}
+              disabled={loading || !isModified}
+              loading={loading}
+            >
+              שמירת שינויים
+            </Button>
           </Box>
         </Box>
-
-        <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
-          <Button
-            variant="primary"
-            onClick={handleSave}
-            disabled={loading || !isModified}
-            loading={loading}
-          >
-            שמירת שינויים
-          </Button>
-        </Box>
-      </Box>
-    </Card>
+      </Card>
+    </AdminSettingsLayout>
   );
 };
 

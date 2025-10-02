@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@mui/material";
 import { Button, Card } from "../../../../shared/components";
+import { AdminSettingsLayout } from "../../../../shared/components/layout";
 import { useApp } from "../../../../contexts/AppContext";
 import { userApi, User } from "../../../../services/api";
 
@@ -106,24 +107,31 @@ const UsersSettings: React.FC = () => {
 
   if (loading && users.length === 0) {
     return (
-      <Card title="ניהול משתמשים" subtitle="טוען רשימת משתמשים...">
-        <Box sx={{ p: 3, textAlign: "center" }}>
-          <Typography>טוען...</Typography>
-        </Box>
-      </Card>
+      <AdminSettingsLayout
+        title="ניהול משתמשים"
+        subtitle="טוען רשימת משתמשים..."
+      >
+        <Card>
+          <Box sx={{ p: 3, textAlign: "center" }}>
+            <Typography>טוען...</Typography>
+          </Box>
+        </Card>
+      </AdminSettingsLayout>
     );
   }
 
   return (
-    <Card
+    <AdminSettingsLayout
       title="ניהול משתמשים"
       subtitle={`${users.length} משתמשים זמינים`}
-      actions={
-        <Button variant="primary" onClick={handleCreateUser}>
-          הוספת משתמש חדש
-        </Button>
-      }
     >
+      <Card
+        actions={
+          <Button variant="primary" onClick={handleCreateUser}>
+            הוספת משתמש חדש
+          </Button>
+        }
+      >
       <Box sx={{ p: 3 }}>
         {error && (
           <Typography color="error" sx={{ mb: 2 }}>
@@ -233,6 +241,7 @@ const UsersSettings: React.FC = () => {
         )}
       </Box>
     </Card>
+    </AdminSettingsLayout>
   );
 };
 

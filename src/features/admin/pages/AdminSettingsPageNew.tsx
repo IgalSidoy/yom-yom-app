@@ -1,7 +1,16 @@
 import React from "react";
-import { Box, Container, Typography, AppBar, Toolbar } from "@mui/material";
+import {
+  Box,
+  Container,
+  Typography,
+  AppBar,
+  Toolbar,
+  IconButton,
+} from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useMediaQuery } from "@mui/material";
+import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 import {
   Person as PersonIcon,
   Business as BusinessIcon,
@@ -24,28 +33,14 @@ import { ROUTES } from "../../../config/routes";
 const AdminSettingsPageNew: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const navigate = useNavigate();
+
+  const handleBack = () => {
+    navigate("/admin/dashboard");
+  };
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
-      <AppBar
-        position="sticky"
-        elevation={0}
-        sx={{
-          bgcolor: "background.default",
-          borderBottom: 1,
-          borderColor: "divider",
-        }}
-      >
-        <Toolbar>
-          <Typography
-            variant={isMobile ? "h6" : "h5"}
-            sx={{ fontWeight: 600, color: "text.primary" }}
-          >
-            הגדרות מנהל
-          </Typography>
-        </Toolbar>
-      </AppBar>
-
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Box sx={{ mb: 4 }}>
           <Typography

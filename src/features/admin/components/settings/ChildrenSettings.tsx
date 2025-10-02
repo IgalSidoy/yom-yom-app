@@ -15,6 +15,7 @@ import {
   InputAdornment,
 } from "@mui/material";
 import { Button, Card } from "../../../../shared/components";
+import { AdminSettingsLayout } from "../../../../shared/components/layout";
 import { useApp } from "../../../../contexts/AppContext";
 import { childApi, ChildWithParents } from "../../../../services/api";
 import SearchIcon from "@mui/icons-material/Search";
@@ -129,163 +130,171 @@ const ChildrenSettings: React.FC = () => {
 
   if (loading && children.length === 0) {
     return (
-      <Card title="ניהול ילדים" subtitle="טוען רשימת ילדים...">
-        <Box sx={{ p: 3, textAlign: "center" }}>
-          <Typography>טוען...</Typography>
-        </Box>
-      </Card>
+      <AdminSettingsLayout title="ניהול ילדים" subtitle="טוען רשימת ילדים...">
+        <Card>
+          <Box sx={{ p: 3, textAlign: "center" }}>
+            <Typography>טוען...</Typography>
+          </Box>
+        </Card>
+      </AdminSettingsLayout>
     );
   }
 
   return (
-    <Card
+    <AdminSettingsLayout
       title="ניהול ילדים"
       subtitle={`${filteredChildren.length} ילדים זמינים`}
-      actions={
-        <Button variant="primary" onClick={handleCreateChild}>
-          הוספת ילד חדש
-        </Button>
-      }
     >
-      <Box sx={{ p: 3 }}>
-        {error && (
-          <Typography color="error" sx={{ mb: 2 }}>
-            {error}
-          </Typography>
-        )}
-
-        {/* Search Bar */}
-        <Box sx={{ mb: 3 }}>
-          <TextField
-            fullWidth
-            placeholder="חיפוש ילדים לפי שם או הורה..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 2,
-              },
-            }}
-          />
-        </Box>
-
-        {filteredChildren.length === 0 ? (
-          <Box sx={{ textAlign: "center", py: 4 }}>
-            <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
-              {searchTerm
-                ? "לא נמצאו ילדים התואמים לחיפוש"
-                : "אין ילדים זמינים"}
+      <Card
+        actions={
+          <Button variant="primary" onClick={handleCreateChild}>
+            הוספת ילד חדש
+          </Button>
+        }
+      >
+        <Box sx={{ p: 3 }}>
+          {error && (
+            <Typography color="error" sx={{ mb: 2 }}>
+              {error}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              {searchTerm
-                ? "נסה לשנות את מונח החיפוש"
-                : "התחל על ידי הוספת ילד ראשון"}
-            </Typography>
-            {!searchTerm && (
-              <Button variant="primary" onClick={handleCreateChild}>
-                הוספת ילד ראשון
-              </Button>
-            )}
+          )}
+
+          {/* Search Bar */}
+          <Box sx={{ mb: 3 }}>
+            <TextField
+              fullWidth
+              placeholder="חיפוש ילדים לפי שם או הורה..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                },
+              }}
+            />
           </Box>
-        ) : (
-          <TableContainer
-            component={Paper}
-            elevation={0}
-            sx={{ border: "1px solid", borderColor: "divider" }}
-          >
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>ילד</TableCell>
-                  <TableCell>הורה</TableCell>
-                  <TableCell>גיל</TableCell>
-                  <TableCell>קבוצה</TableCell>
-                  <TableCell>נוצר בתאריך</TableCell>
-                  <TableCell>פעולות</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredChildren.map((child) => (
-                  <TableRow key={child.id} hover>
-                    <TableCell>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 2 }}
-                      >
-                        <Avatar
-                          sx={{
-                            bgcolor: "primary.main",
-                            width: 40,
-                            height: 40,
-                            fontSize: "1rem",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {child.firstName.charAt(0).toUpperCase()}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {child.firstName} {child.lastName}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {getParentName(child)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {calculateAge(child.dateOfBirth)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={child.groupName || "ללא קבוצה"}
-                        color="secondary"
-                        size="small"
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {formatDate(child.created || "")}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: "flex", gap: 1 }}>
-                        <Button
-                          variant="outline"
-                          size="small"
-                          onClick={() => handleEditChild(child)}
-                        >
-                          עריכה
-                        </Button>
-                        <Button
-                          variant="text"
-                          size="small"
-                          onClick={() => handleDeleteChild(child.id || "")}
-                          sx={{ color: "error.main" }}
-                        >
-                          מחיקה
-                        </Button>
-                      </Box>
-                    </TableCell>
+
+          {filteredChildren.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 4 }}>
+              <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+                {searchTerm
+                  ? "לא נמצאו ילדים התואמים לחיפוש"
+                  : "אין ילדים זמינים"}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                {searchTerm
+                  ? "נסה לשנות את מונח החיפוש"
+                  : "התחל על ידי הוספת ילד ראשון"}
+              </Typography>
+              {!searchTerm && (
+                <Button variant="primary" onClick={handleCreateChild}>
+                  הוספת ילד ראשון
+                </Button>
+              )}
+            </Box>
+          ) : (
+            <TableContainer
+              component={Paper}
+              elevation={0}
+              sx={{ border: "1px solid", borderColor: "divider" }}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>ילד</TableCell>
+                    <TableCell>הורה</TableCell>
+                    <TableCell>גיל</TableCell>
+                    <TableCell>קבוצה</TableCell>
+                    <TableCell>נוצר בתאריך</TableCell>
+                    <TableCell>פעולות</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Box>
-    </Card>
+                </TableHead>
+                <TableBody>
+                  {filteredChildren.map((child) => (
+                    <TableRow key={child.id} hover>
+                      <TableCell>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
+                        >
+                          <Avatar
+                            sx={{
+                              bgcolor: "primary.main",
+                              width: 40,
+                              height: 40,
+                              fontSize: "1rem",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {child.firstName.charAt(0).toUpperCase()}
+                          </Avatar>
+                          <Box>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontWeight: 600 }}
+                            >
+                              {child.firstName} {child.lastName}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {getParentName(child)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {calculateAge(child.dateOfBirth)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={child.groupName || "ללא קבוצה"}
+                          color="secondary"
+                          size="small"
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {formatDate(child.created || "")}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: "flex", gap: 1 }}>
+                          <Button
+                            variant="outline"
+                            size="small"
+                            onClick={() => handleEditChild(child)}
+                          >
+                            עריכה
+                          </Button>
+                          <Button
+                            variant="text"
+                            size="small"
+                            onClick={() => handleDeleteChild(child.id || "")}
+                            sx={{ color: "error.main" }}
+                          >
+                            מחיקה
+                          </Button>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Box>
+      </Card>
+    </AdminSettingsLayout>
   );
 };
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography, Paper, Chip } from "@mui/material";
 import { Button, Card } from "../../../../shared/components";
+import { AdminSettingsLayout } from "../../../../shared/components/layout";
 import { useApp } from "../../../../contexts/AppContext";
 import { accountApi, Account } from "../../../../services/api";
 
@@ -68,24 +69,31 @@ const AccountsSettings: React.FC = () => {
 
   if (loading && accounts.length === 0) {
     return (
-      <Card title="ניהול סניפים" subtitle="טוען רשימת סניפים...">
-        <Box sx={{ p: 3, textAlign: "center" }}>
-          <Typography>טוען...</Typography>
-        </Box>
-      </Card>
+      <AdminSettingsLayout
+        title="ניהול סניפים"
+        subtitle="טוען רשימת סניפים..."
+      >
+        <Card>
+          <Box sx={{ p: 3, textAlign: "center" }}>
+            <Typography>טוען...</Typography>
+          </Box>
+        </Card>
+      </AdminSettingsLayout>
     );
   }
 
   return (
-    <Card 
-      title="ניהול סניפים" 
+    <AdminSettingsLayout
+      title="ניהול סניפים"
       subtitle={`${accounts.length} סניפים זמינים`}
-      actions={
-        <Button variant="primary" onClick={handleCreateAccount}>
-          הוספת סניף חדש
-        </Button>
-      }
     >
+      <Card
+        actions={
+          <Button variant="primary" onClick={handleCreateAccount}>
+            הוספת סניף חדש
+          </Button>
+        }
+      >
       <Box sx={{ p: 3 }}>
         {error && (
           <Typography color="error" sx={{ mb: 2 }}>
@@ -182,6 +190,7 @@ const AccountsSettings: React.FC = () => {
         )}
       </Box>
     </Card>
+    </AdminSettingsLayout>
   );
 };
 

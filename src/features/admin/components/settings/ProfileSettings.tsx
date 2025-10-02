@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography } from "@mui/material";
 import { Button, Card, FormField } from "../../../../shared/components";
+import { AdminSettingsLayout } from "../../../../shared/components/layout";
 import { useApp } from "../../../../contexts/AppContext";
 import { userApi } from "../../../../services/api";
-import AdminSettingsLayout from "../layout/AdminSettingsLayout";
 
 interface UserProfile {
   firstName: string;

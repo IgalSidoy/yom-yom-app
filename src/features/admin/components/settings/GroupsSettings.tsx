@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography, Paper, Chip, Avatar } from "@mui/material";
 import { Button, Card } from "../../../../shared/components";
+import { AdminSettingsLayout } from "../../../../shared/components/layout";
 import { useApp } from "../../../../contexts/AppContext";
 import { groupApi, Group } from "../../../../services/api";
 
@@ -72,24 +73,31 @@ const GroupsSettings: React.FC = () => {
 
   if (loading && groups.length === 0) {
     return (
-      <Card title="ניהול קבוצות" subtitle="טוען רשימת קבוצות...">
-        <Box sx={{ p: 3, textAlign: "center" }}>
-          <Typography>טוען...</Typography>
-        </Box>
-      </Card>
+      <AdminSettingsLayout
+        title="ניהול קבוצות"
+        subtitle="טוען רשימת קבוצות..."
+      >
+        <Card>
+          <Box sx={{ p: 3, textAlign: "center" }}>
+            <Typography>טוען...</Typography>
+          </Box>
+        </Card>
+      </AdminSettingsLayout>
     );
   }
 
   return (
-    <Card
+    <AdminSettingsLayout
       title="ניהול קבוצות"
       subtitle={`${groups.length} קבוצות זמינות`}
-      actions={
-        <Button variant="primary" onClick={handleCreateGroup}>
-          הוספת קבוצה חדשה
-        </Button>
-      }
     >
+      <Card
+        actions={
+          <Button variant="primary" onClick={handleCreateGroup}>
+            הוספת קבוצה חדשה
+          </Button>
+        }
+      >
       <Box sx={{ p: 3 }}>
         {error && (
           <Typography color="error" sx={{ mb: 2 }}>
@@ -221,6 +229,7 @@ const GroupsSettings: React.FC = () => {
         )}
       </Box>
     </Card>
+    </AdminSettingsLayout>
   );
 };
 
