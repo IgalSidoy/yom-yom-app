@@ -10,26 +10,19 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  useTheme,
-  useMediaQuery,
   CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
 } from "@mui/material";
-import { FixedSizeList as List } from "react-window";
 import { useNavigate } from "react-router-dom";
 import { Button, Card } from "../../../../shared/components";
 import { AdminSettingsLayout } from "../../../../shared/components/layout";
-import { useApp } from "../../../../contexts/AppContext";
 import { accountApi, Account } from "../../../../services/api";
 import Notification from "../../../../shared/components/ui/Notification";
 
 const AccountsSettings: React.FC = () => {
-  const { user } = useApp();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
 
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -146,15 +139,18 @@ const AccountsSettings: React.FC = () => {
           elevation={0}
           sx={{
             p: 3,
-            mb: 2,
-            borderRadius: 2,
-            border: "1px solid",
+            borderRadius: 0,
+            border: "none",
+            borderBottom: "1px solid",
             borderColor: "divider",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
+            width: "100%",
+            bgcolor: "background.paper",
             transition: "all 0.2s ease-in-out",
             "&:hover": {
-              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
-              transform: "translateY(-2px)",
+              bgcolor: "action.hover",
+            },
+            "&:last-child": {
+              borderBottom: "none",
             },
           }}
         >
@@ -335,16 +331,6 @@ const AccountsSettings: React.FC = () => {
     [formatDate, handleEditAccount, handleDeleteClick]
   );
 
-  // Virtualized list item renderer for mobile
-  const VirtualizedItem = useCallback(
-    ({ index, style }: { index: number; style: React.CSSProperties }) => (
-      <div style={style}>
-        <AccountCard account={accounts[index]} />
-      </div>
-    ),
-    [accounts, AccountCard]
-  );
-
   if (loading && accounts.length === 0) {
     return (
       <AdminSettingsLayout title="ניהול סניפים" subtitle="טוען רשימת סניפים...">
@@ -370,28 +356,23 @@ const AccountsSettings: React.FC = () => {
         onClose={handleCloseNotification}
       />
       <Card
-        actions={
-          <Button
-            variant="primary"
-            onClick={handleCreateAccount}
-            sx={{
-              borderRadius: 2,
-              textTransform: "none",
-              fontWeight: 600,
-              px: 3,
-              py: 1.5,
-              boxShadow: "0 2px 8px rgba(255, 145, 77, 0.3)",
-              "&:hover": {
-                boxShadow: "0 4px 12px rgba(255, 145, 77, 0.4)",
-                transform: "translateY(-1px)",
-              },
-            }}
-          >
-            הוספת סניף חדש
-          </Button>
-        }
+        sx={{
+          height: { xs: "100%", sm: "auto" },
+          display: { xs: "flex", sm: "block" },
+          flexDirection: { xs: "column", sm: "row" },
+          minHeight: 0, // Allow flex child to shrink
+        }}
       >
-        <Box sx={{ p: 3 }}>
+        <Box
+          sx={{
+            p: 3,
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0, // Allow flex child to shrink
+            overflow: "hidden",
+          }}
+        >
           {error && (
             <Typography color="error" sx={{ mb: 2 }}>
               {error}
@@ -422,85 +403,155 @@ const AccountsSettings: React.FC = () => {
             </Box>
           ) : (
             <>
-              {/* Mobile: Virtualized Card Layout */}
-              <Box sx={{ display: { xs: "block", md: "none" } }}>
-                <List
-                  height={Math.min(600, accounts.length * 200)} // Dynamic height based on content
-                  itemCount={accounts.length}
-                  itemSize={200} // Height per card
-                  width="100%"
-                >
-                  {VirtualizedItem}
-                </List>
+              {/* Mobile: Scrollable Card Layout */}
+              <Box
+                sx={{
+                  display: { xs: "block", md: "none" },
+                  flex: 1,
+                  overflow: "auto",
+                  mx: { xs: -3, sm: 0 }, // Extend to full width on mobile
+                  minHeight: 0, // Allow flex child to shrink
+                  // Custom scrollbar styling for better mobile experience
+                  "&::-webkit-scrollbar": {
+                    width: "4px",
+                  },
+                  "&::-webkit-scrollbar-track": {
+                    background: "transparent",
+                  },
+                  "&::-webkit-scrollbar-thumb": {
+                    background: "rgba(0, 0, 0, 0.2)",
+                    borderRadius: "2px",
+                  },
+                  "&::-webkit-scrollbar-thumb:hover": {
+                    background: "rgba(0, 0, 0, 0.3)",
+                  },
+                }}
+              >
+                {accounts.map((account) => (
+                  <AccountCard key={account.id} account={account} />
+                ))}
               </Box>
 
               {/* Desktop: Table Layout */}
-              <TableContainer
-                component={Paper}
-                elevation={0}
-                sx={{
-                  display: { xs: "none", md: "block" },
-                  border: "1px solid",
-                  borderColor: "divider",
-                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
-                }}
-              >
-                <Table>
-                  <TableHead>
-                    <TableRow
-                      sx={{
-                        bgcolor: "background.paper",
-                        borderBottom: "1px solid",
-                        borderColor: "divider",
-                      }}
-                    >
-                      <TableCell
+              <Box sx={{ display: { xs: "none", md: "block" } }}>
+                <Box
+                  sx={{ mb: 3, display: "flex", justifyContent: "flex-end" }}
+                >
+                  <Button
+                    variant="primary"
+                    onClick={handleCreateAccount}
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: "none",
+                      fontWeight: 600,
+                      px: 3,
+                      py: 1.5,
+                      boxShadow: "0 2px 8px rgba(255, 145, 77, 0.3)",
+                      "&:hover": {
+                        boxShadow: "0 4px 12px rgba(255, 145, 77, 0.4)",
+                        transform: "translateY(-1px)",
+                      },
+                    }}
+                  >
+                    הוספת סניף חדש
+                  </Button>
+                </Box>
+                <TableContainer
+                  component={Paper}
+                  elevation={0}
+                  sx={{
+                    border: "1px solid",
+                    borderColor: "divider",
+                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
+                  }}
+                >
+                  <Table>
+                    <TableHead>
+                      <TableRow
                         sx={{
-                          fontWeight: 600,
-                          fontSize: "1rem",
-                          textAlign: "right",
+                          bgcolor: "background.paper",
+                          borderBottom: "1px solid",
+                          borderColor: "divider",
                         }}
                       >
-                        שם הסניף
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: "1rem",
-                          textAlign: "right",
-                        }}
-                      >
-                        סטטוס
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: "1rem",
-                          textAlign: "right",
-                        }}
-                      >
-                        נוצר בתאריך
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: "1rem",
-                          textAlign: "right",
-                        }}
-                      >
-                        עודכן בתאריך
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {accounts.map((account) => (
-                      <AccountTableRow key={account.id} account={account} />
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                        <TableCell
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: "1rem",
+                            textAlign: "right",
+                          }}
+                        >
+                          שם הסניף
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: "1rem",
+                            textAlign: "right",
+                          }}
+                        >
+                          סטטוס
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: "1rem",
+                            textAlign: "right",
+                          }}
+                        >
+                          נוצר בתאריך
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: "1rem",
+                            textAlign: "right",
+                          }}
+                        >
+                          עודכן בתאריך
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {accounts.map((account) => (
+                        <AccountTableRow key={account.id} account={account} />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
             </>
           )}
+        </Box>
+
+        {/* Add Button Row - Always visible at bottom */}
+        <Box
+          sx={{
+            p: 3,
+            borderTop: { xs: "1px solid", sm: "none" },
+            borderColor: "divider",
+            bgcolor: "background.paper",
+            display: { xs: "block", sm: "none" }, // Only show on mobile
+          }}
+        >
+          <Button
+            variant="primary"
+            onClick={handleCreateAccount}
+            fullWidth
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              py: 1.5,
+              boxShadow: "0 2px 8px rgba(255, 145, 77, 0.3)",
+              "&:hover": {
+                boxShadow: "0 4px 12px rgba(255, 145, 77, 0.4)",
+                transform: "translateY(-1px)",
+              },
+            }}
+          >
+            הוספת סניף חדש
+          </Button>
         </Box>
       </Card>
 

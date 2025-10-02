@@ -18,6 +18,7 @@ import StatisticsSlide from "../../features/dashboard/components/StatisticsSlide
 import AdditionalInfoSlide from "../../features/dashboard/components/AdditionalInfoSlide";
 import DateTimeWidget from "../../shared/components/ui/DateTimeWidget";
 import DashboardContainer from "../../features/dashboard/components/DashboardContainer";
+import MobileLayout from "../../shared/components/layout/MobileLayout";
 
 const StaffDashboard: React.FC = () => {
   const { user, isLoadingUser } = useApp();
@@ -176,38 +177,40 @@ const StaffDashboard: React.FC = () => {
   );
 
   return (
-    <DashboardContainer>
-      {/* Skeleton Loading State */}
-      <Fade in={!isDataReady} timeout={300}>
-        <Box sx={{ display: isDataReady ? "none" : "block" }}>
-          <HeaderSkeleton />
-          <SwipeableCardsSkeleton />
-        </Box>
-      </Fade>
+    <MobileLayout showBottomNav={true}>
+      <DashboardContainer>
+        {/* Skeleton Loading State */}
+        <Fade in={!isDataReady} timeout={300}>
+          <Box sx={{ display: isDataReady ? "none" : "block" }}>
+            <HeaderSkeleton />
+            <SwipeableCardsSkeleton />
+          </Box>
+        </Fade>
 
-      {/* Actual Dashboard Content */}
-      <Fade in={isDataReady} timeout={800}>
-        <Box sx={{ display: isDataReady ? "block" : "none" }}>
-          {/* Header */}
-          <Box sx={{ mb: 3 }}>
-            <DateTimeWidget
-              showGreeting={true}
-              userName={user?.firstName}
-              variant="full"
-              size="large"
+        {/* Actual Dashboard Content */}
+        <Fade in={isDataReady} timeout={800}>
+          <Box sx={{ display: isDataReady ? "block" : "none" }}>
+            {/* Header */}
+            <Box sx={{ mb: 3 }}>
+              <DateTimeWidget
+                showGreeting={true}
+                userName={user?.firstName}
+                variant="full"
+                size="large"
+              />
+            </Box>
+
+            {/* Swipeable Content */}
+            <SwipeableCards
+              slides={slides}
+              autoplayDelay={8000}
+              spaceBetween={30}
+              className="dashboard-swiper"
             />
           </Box>
-
-          {/* Swipeable Content */}
-          <SwipeableCards
-            slides={slides}
-            autoplayDelay={8000}
-            spaceBetween={30}
-            className="dashboard-swiper"
-          />
-        </Box>
-      </Fade>
-    </DashboardContainer>
+        </Fade>
+      </DashboardContainer>
+    </MobileLayout>
   );
 };
 

@@ -23,6 +23,7 @@ import { useDailyReport } from "../../contexts/DailyReportContext";
 import { Child, updateDailyReportFoodData } from "../../services/api";
 import CreateFoodPostModal from "../../features/food/components/CreateFoodPostModal";
 import { generateGuid } from "../../utils/guid";
+import MobileLayout from "../../shared/components/layout/MobileLayout";
 
 interface LocationState {
   groupId?: string;
@@ -285,428 +286,436 @@ const CreateFoodPostPage: React.FC = () => {
   // Show loading state
   if (isLoadingUser) {
     return (
-      <Box
-        sx={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: "background.default",
-          zIndex: 1,
-          p: isMobile ? 2 : 4,
-        }}
-      >
+      <MobileLayout showBottomNav={false}>
         <Box
           sx={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 3,
-            maxWidth: 400,
-            textAlign: "center",
+            justifyContent: "center",
+            bgcolor: "background.default",
+            zIndex: 1,
+            p: isMobile ? 2 : 4,
           }}
         >
-          <CircularProgress
-            size={isMobile ? 50 : 60}
+          <Box
             sx={{
-              mb: 2,
-              color: "#FF6B35",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 3,
+              maxWidth: 400,
+              textAlign: "center",
             }}
-          />
-          <Typography
-            variant={isMobile ? "h6" : "h5"}
-            color="text.primary"
-            sx={{ fontWeight: 600, mb: 1 }}
           >
-            טוען נתונים...
-          </Typography>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ opacity: 0.8 }}
-          >
-            מכין את הטופס ליצירת פוסט מזון
-          </Typography>
+            <CircularProgress
+              size={isMobile ? 50 : 60}
+              sx={{
+                mb: 2,
+                color: "#FF6B35",
+              }}
+            />
+            <Typography
+              variant={isMobile ? "h6" : "h5"}
+              color="text.primary"
+              sx={{ fontWeight: 600, mb: 1 }}
+            >
+              טוען נתונים...
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ opacity: 0.8 }}
+            >
+              מכין את הטופס ליצירת פוסט מזון
+            </Typography>
+          </Box>
         </Box>
-      </Box>
+      </MobileLayout>
     );
   }
 
   // Show error state
   if (error) {
     return (
-      <Box
-        sx={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: "background.default",
-          zIndex: 1,
-          p: isMobile ? 2 : 4,
-        }}
-      >
+      <MobileLayout showBottomNav={false}>
         <Box
           sx={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 3,
-            maxWidth: 400,
-            textAlign: "center",
+            justifyContent: "center",
+            bgcolor: "background.default",
+            zIndex: 1,
+            p: isMobile ? 2 : 4,
           }}
         >
-          <Alert
-            severity="error"
+          <Box
             sx={{
-              width: "100%",
-              mb: 2,
-              "& .MuiAlert-icon": {
-                fontSize: isMobile ? "2rem" : "2.5rem",
-              },
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 3,
+              maxWidth: 400,
+              textAlign: "center",
             }}
           >
-            <AlertTitle
+            <Alert
+              severity="error"
               sx={{
-                fontSize: isMobile ? "1.1rem" : "1.25rem",
-                fontWeight: 600,
+                width: "100%",
+                mb: 2,
+                "& .MuiAlert-icon": {
+                  fontSize: isMobile ? "2rem" : "2.5rem",
+                },
               }}
             >
-              שגיאה בטעינת הנתונים
-            </AlertTitle>
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              {error}
-            </Typography>
-          </Alert>
+              <AlertTitle
+                sx={{
+                  fontSize: isMobile ? "1.1rem" : "1.25rem",
+                  fontWeight: 600,
+                }}
+              >
+                שגיאה בטעינת הנתונים
+              </AlertTitle>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                {error}
+              </Typography>
+            </Alert>
 
-          <Button
-            variant="contained"
-            onClick={handleRetry}
-            startIcon={<RefreshIcon />}
-            sx={{
-              bgcolor: "#FF6B35",
-              "&:hover": {
-                bgcolor: "#F7931E",
-              },
-              px: 3,
-              py: 1.5,
-              borderRadius: 2,
-            }}
-          >
-            נסה שוב
-          </Button>
+            <Button
+              variant="contained"
+              onClick={handleRetry}
+              startIcon={<RefreshIcon />}
+              sx={{
+                bgcolor: "#FF6B35",
+                "&:hover": {
+                  bgcolor: "#F7931E",
+                },
+                px: 3,
+                py: 1.5,
+                borderRadius: 2,
+              }}
+            >
+              נסה שוב
+            </Button>
+          </Box>
         </Box>
-      </Box>
+      </MobileLayout>
     );
   }
 
   // Show closed status page
   if (isFoodReportingClosed) {
     return (
-      <Box
-        sx={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          bgcolor: "background.default",
-          zIndex: 1,
-          display: "flex",
-          flexDirection: "column",
-          height: "100vh",
-          overflow: "auto",
-          p: isMobile ? 2 : 4,
-          // Ensure proper mobile viewport handling
-          "@media (max-width: 600px)": {
-            height: "100dvh", // Use dynamic viewport height for mobile
-          },
-        }}
-      >
-        {/* Header */}
+      <MobileLayout showBottomNav={false}>
         <Box
           sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            mb: 3,
-            pb: 2,
-            borderBottom: "1px solid",
-            borderColor: "divider",
-          }}
-        >
-          <Button
-            variant="outlined"
-            onClick={handleGoBack}
-            startIcon={<ArrowBackIcon />}
-            sx={{
-              borderColor: "primary.main",
-              color: "primary.main",
-              "&:hover": {
-                borderColor: "primary.dark",
-                bgcolor: "primary.main",
-                color: "white",
-              },
-            }}
-          >
-            חזור
-          </Button>
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 700,
-              color: "text.primary",
-              flex: 1,
-            }}
-          >
-            דיווח מזון - {groupName}
-          </Typography>
-        </Box>
-
-        {/* Main Content */}
-        <Box
-          sx={{
-            flex: 1,
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            bgcolor: "background.default",
+            zIndex: 1,
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            textAlign: "center",
-            maxWidth: 600,
-            mx: "auto",
-            width: "100%",
+            height: "100vh",
+            overflow: "auto",
+            p: isMobile ? 2 : 4,
+            // Ensure proper mobile viewport handling
+            "@media (max-width: 600px)": {
+              height: "100dvh", // Use dynamic viewport height for mobile
+            },
           }}
         >
-          {/* Status Icon */}
+          {/* Header */}
           <Box
             sx={{
-              width: 120,
-              height: 120,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, #FF9800 0%, #F57C00 100%)",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              mb: 3,
-              boxShadow: "0 8px 32px rgba(255, 152, 0, 0.3)",
-            }}
-          >
-            <LockIcon
-              sx={{
-                fontSize: 60,
-                color: "white",
-              }}
-            />
-          </Box>
-
-          {/* Status Badge */}
-          <Chip
-            label="דיווח מזון נסגר"
-            color="warning"
-            icon={<CheckCircleIcon />}
-            sx={{
-              mb: 3,
-              fontSize: "1rem",
-              fontWeight: 600,
-              py: 1,
-              px: 2,
-              "& .MuiChip-icon": {
-                fontSize: "1.2rem",
-              },
-            }}
-          />
-
-          {/* Title */}
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-              color: "text.primary",
-              mb: 2,
-              fontSize: { xs: "1.75rem", sm: "2.125rem" },
-            }}
-          >
-            דיווח המזון הושלם
-          </Typography>
-
-          {/* Description */}
-          <Typography
-            variant="body1"
-            sx={{
-              color: "text.secondary",
-              mb: 4,
-              fontSize: "1.1rem",
-              lineHeight: 1.6,
-              maxWidth: 500,
-            }}
-          >
-            דיווח המזון עבור {groupName} הושלם ואין אפשרות לערוך אותו. הנתונים
-            נשמרו וניתן לצפות בהם בפיד החדשות.
-          </Typography>
-
-          {/* Info Card */}
-          <Card
-            sx={{
-              width: "100%",
-              maxWidth: 500,
-              mb: 4,
-              bgcolor: "warning.light",
-              border: "1px solid",
-              borderColor: "warning.main",
-            }}
-          >
-            <CardContent sx={{ p: 3 }}>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  color: "warning.dark",
-                  mb: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                }}
-              >
-                <CheckCircleIcon sx={{ fontSize: "1.2rem" }} />
-                מה קורה עכשיו?
-              </Typography>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "warning.dark",
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 1,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      bgcolor: "warning.dark",
-                      mt: 0.7,
-                      flexShrink: 0,
-                    }}
-                  />
-                  דיווח המזון נשמר במערכת
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "warning.dark",
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 1,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      bgcolor: "warning.dark",
-                      mt: 0.7,
-                      flexShrink: 0,
-                    }}
-                  />
-                  הורים יכולים לצפות בדיווח בפיד החדשות
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "warning.dark",
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 1,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      bgcolor: "warning.dark",
-                      mt: 0.7,
-                      flexShrink: 0,
-                    }}
-                  />
-                  לא ניתן לערוך או להוסיף נתונים נוספים
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-
-          {/* Action Buttons */}
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
               gap: 2,
-              width: "100%",
-              maxWidth: 400,
-              // Better mobile button layout
-              "@media (max-width: 600px)": {
-                gap: 1.5,
-                mt: 2, // Add top margin on mobile
-              },
+              mb: 3,
+              pb: 2,
+              borderBottom: "1px solid",
+              borderColor: "divider",
             }}
           >
             <Button
               variant="outlined"
               onClick={handleGoBack}
+              startIcon={<ArrowBackIcon />}
               sx={{
-                flex: 1,
                 borderColor: "primary.main",
                 color: "primary.main",
-                py: 1.5,
                 "&:hover": {
                   borderColor: "primary.dark",
                   bgcolor: "primary.main",
                   color: "white",
                 },
-                // Better mobile button styling
-                "@media (max-width: 600px)": {
-                  py: 2,
-                  fontSize: "1rem",
-                },
               }}
             >
-              חזור לדשבורד
+              חזור
             </Button>
-            <Button
-              variant="contained"
-              onClick={handleGoToFeed}
+            <Typography
+              variant="h5"
               sx={{
+                fontWeight: 700,
+                color: "text.primary",
                 flex: 1,
-                bgcolor: "primary.main",
-                py: 1.5,
-                "&:hover": {
-                  bgcolor: "primary.dark",
+              }}
+            >
+              דיווח מזון - {groupName}
+            </Typography>
+          </Box>
+
+          {/* Main Content */}
+          <Box
+            sx={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              maxWidth: 600,
+              mx: "auto",
+              width: "100%",
+            }}
+          >
+            {/* Status Icon */}
+            <Box
+              sx={{
+                width: 120,
+                height: 120,
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #FF9800 0%, #F57C00 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                mb: 3,
+                boxShadow: "0 8px 32px rgba(255, 152, 0, 0.3)",
+              }}
+            >
+              <LockIcon
+                sx={{
+                  fontSize: 60,
+                  color: "white",
+                }}
+              />
+            </Box>
+
+            {/* Status Badge */}
+            <Chip
+              label="דיווח מזון נסגר"
+              color="warning"
+              icon={<CheckCircleIcon />}
+              sx={{
+                mb: 3,
+                fontSize: "1rem",
+                fontWeight: 600,
+                py: 1,
+                px: 2,
+                "& .MuiChip-icon": {
+                  fontSize: "1.2rem",
                 },
-                // Better mobile button styling
+              }}
+            />
+
+            {/* Title */}
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 700,
+                color: "text.primary",
+                mb: 2,
+                fontSize: { xs: "1.75rem", sm: "2.125rem" },
+              }}
+            >
+              דיווח המזון הושלם
+            </Typography>
+
+            {/* Description */}
+            <Typography
+              variant="body1"
+              sx={{
+                color: "text.secondary",
+                mb: 4,
+                fontSize: "1.1rem",
+                lineHeight: 1.6,
+                maxWidth: 500,
+              }}
+            >
+              דיווח המזון עבור {groupName} הושלם ואין אפשרות לערוך אותו. הנתונים
+              נשמרו וניתן לצפות בהם בפיד החדשות.
+            </Typography>
+
+            {/* Info Card */}
+            <Card
+              sx={{
+                width: "100%",
+                maxWidth: 500,
+                mb: 4,
+                bgcolor: "warning.light",
+                border: "1px solid",
+                borderColor: "warning.main",
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 600,
+                    color: "warning.dark",
+                    mb: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <CheckCircleIcon sx={{ fontSize: "1.2rem" }} />
+                  מה קורה עכשיו?
+                </Typography>
+                <Box
+                  sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "warning.dark",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        bgcolor: "warning.dark",
+                        mt: 0.7,
+                        flexShrink: 0,
+                      }}
+                    />
+                    דיווח המזון נשמר במערכת
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "warning.dark",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        bgcolor: "warning.dark",
+                        mt: 0.7,
+                        flexShrink: 0,
+                      }}
+                    />
+                    הורים יכולים לצפות בדיווח בפיד החדשות
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "warning.dark",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        bgcolor: "warning.dark",
+                        mt: 0.7,
+                        flexShrink: 0,
+                      }}
+                    />
+                    לא ניתן לערוך או להוסיף נתונים נוספים
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Action Buttons */}
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
+                width: "100%",
+                maxWidth: 400,
+                // Better mobile button layout
                 "@media (max-width: 600px)": {
-                  py: 2,
-                  fontSize: "1rem",
+                  gap: 1.5,
+                  mt: 2, // Add top margin on mobile
                 },
               }}
             >
-              צפה בפיד החדשות
-            </Button>
+              <Button
+                variant="outlined"
+                onClick={handleGoBack}
+                sx={{
+                  flex: 1,
+                  borderColor: "primary.main",
+                  color: "primary.main",
+                  py: 1.5,
+                  "&:hover": {
+                    borderColor: "primary.dark",
+                    bgcolor: "primary.main",
+                    color: "white",
+                  },
+                  // Better mobile button styling
+                  "@media (max-width: 600px)": {
+                    py: 2,
+                    fontSize: "1rem",
+                  },
+                }}
+              >
+                חזור לדשבורד
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleGoToFeed}
+                sx={{
+                  flex: 1,
+                  bgcolor: "primary.main",
+                  py: 1.5,
+                  "&:hover": {
+                    bgcolor: "primary.dark",
+                  },
+                  // Better mobile button styling
+                  "@media (max-width: 600px)": {
+                    py: 2,
+                    fontSize: "1rem",
+                  },
+                }}
+              >
+                צפה בפיד החדשות
+              </Button>
+            </Box>
           </Box>
         </Box>
-      </Box>
+      </MobileLayout>
     );
   }
 
@@ -725,36 +734,38 @@ const CreateFoodPostPage: React.FC = () => {
 
   // Show the modal as a full-screen page (only when not closed)
   return (
-    <Box
-      sx={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        bgcolor: "background.default",
-        zIndex: 1,
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        overflow: "hidden",
-        // Ensure proper mobile viewport handling
-        "@media (max-width: 600px)": {
-          height: "100dvh", // Use dynamic viewport height for mobile
-        },
-      }}
-    >
-      <CreateFoodPostModal
-        isOpen={true}
-        onClose={handleClose}
-        onSubmit={handleSubmit}
-        children={children}
-        groupName={groupName}
-        groupId={groupId}
-        isLoadingDailyReport={isDailyReportLoading}
-        dailyReport={dailyReport}
-      />
-    </Box>
+    <MobileLayout showBottomNav={false}>
+      <Box
+        sx={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          bgcolor: "background.default",
+          zIndex: 1,
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          overflow: "hidden",
+          // Ensure proper mobile viewport handling
+          "@media (max-width: 600px)": {
+            height: "100dvh", // Use dynamic viewport height for mobile
+          },
+        }}
+      >
+        <CreateFoodPostModal
+          isOpen={true}
+          onClose={handleClose}
+          onSubmit={handleSubmit}
+          children={children}
+          groupName={groupName}
+          groupId={groupId}
+          isLoadingDailyReport={isDailyReportLoading}
+          dailyReport={dailyReport}
+        />
+      </Box>
+    </MobileLayout>
   );
 };
 

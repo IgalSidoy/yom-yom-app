@@ -5,23 +5,17 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* App-like mobile experience */
+  /* Mobile app experience */
   height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100vw;
+  /* Remove fixed positioning to allow scrolling */
 }
 
-/* Ensure the root element takes full viewport */
+/* Root element */
 #root {
   height: 100vh;
-  height: 100dvh;
   width: 100vw;
-  overflow: hidden;
+  /* Remove overflow hidden to allow scrolling */
 }
 
 code {

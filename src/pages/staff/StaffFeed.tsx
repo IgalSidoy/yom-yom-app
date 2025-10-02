@@ -12,6 +12,7 @@ import { useDailyReport } from "../../contexts/DailyReportContext";
 import { useFeed } from "../../contexts/FeedContext";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../config/routes";
+import MobileLayout from "../../shared/components/layout/MobileLayout";
 
 const StaffFeed: React.FC = () => {
   const { user } = useApp();
@@ -43,28 +44,30 @@ const StaffFeed: React.FC = () => {
   );
 
   return (
-    <FeedContainer
-      title="חדשות הקבוצה - צוות"
-      subtitle="צפה בחדשות ועדכונים מהקבוצה"
-      isLoading={isFeedLoading}
-      showFloatingButton={true}
-      headerContent={headerContent}
-    >
-      <Alert severity="info" sx={{ mb: 2 }}>
-        צפה בחדשות ועדכונים מהקבוצה שלך
-      </Alert>
-
-      {/* Render feed posts from context */}
-      {feedPosts.length > 0 ? (
-        feedPosts.map((post) => (
-          <FeedPost key={post.id} post={post} isClosed={post.isClosed} />
-        ))
-      ) : (
-        <Alert severity="info" sx={{ mt: 2 }}>
-          אין עדיין חדשות להצגה לתאריך זה
+    <MobileLayout showBottomNav={true}>
+      <FeedContainer
+        title="חדשות הקבוצה - צוות"
+        subtitle="צפה בחדשות ועדכונים מהקבוצה"
+        isLoading={isFeedLoading}
+        showFloatingButton={true}
+        headerContent={headerContent}
+      >
+        <Alert severity="info" sx={{ mb: 2 }}>
+          צפה בחדשות ועדכונים מהקבוצה שלך
         </Alert>
-      )}
-    </FeedContainer>
+
+        {/* Render feed posts from context */}
+        {feedPosts.length > 0 ? (
+          feedPosts.map((post) => (
+            <FeedPost key={post.id} post={post} isClosed={post.isClosed} />
+          ))
+        ) : (
+          <Alert severity="info" sx={{ mt: 2 }}>
+            אין עדיין חדשות להצגה לתאריך זה
+          </Alert>
+        )}
+      </FeedContainer>
+    </MobileLayout>
   );
 };
 

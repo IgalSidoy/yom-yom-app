@@ -13,6 +13,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { useApp } from "../../contexts/AppContext";
 import Notification from "../../shared/components/ui/Notification";
+import MobileLayout from "../../shared/components/layout/MobileLayout";
 
 const Login: React.FC = () => {
   const [mobile, setMobile] = useState("054-");
@@ -205,206 +206,208 @@ const Login: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box
-        sx={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: "#FFF6EB",
-          p: 2,
-        }}
-      >
-        <Paper
-          elevation={3}
+    <MobileLayout showBottomNav={false}>
+      <Container maxWidth="sm">
+        <Box
           sx={{
-            width: "100%",
-            maxWidth: "400px",
-            p: 4,
-            borderRadius: 3,
-            bgcolor: "#FFF9F0",
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: "#FFF6EB",
+            p: 2,
           }}
         >
-          <Box
-            component="form"
-            onSubmit={showOtp ? handleOtpSubmit : handleMobileSubmit}
+          <Paper
+            elevation={3}
             sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 3,
+              width: "100%",
+              maxWidth: "400px",
+              p: 4,
+              borderRadius: 3,
+              bgcolor: "#FFF9F0",
             }}
           >
-            <Typography
-              variant="h4"
-              sx={{ mb: 2, color: "#6B3F1D", fontWeight: 700 }}
-            >
-              התחברות
-            </Typography>
-
-            <Fade in={!showOtp} timeout={500}>
-              <Box sx={{ width: "100%" }}>
-                <TextField
-                  label="מספר טלפון"
-                  variant="outlined"
-                  value={mobile}
-                  onChange={handleMobileChange}
-                  fullWidth
-                  required
-                  placeholder="050-1234567"
-                  sx={{
-                    borderRadius: 2,
-                  }}
-                  inputProps={{
-                    style: {
-                      textAlign: "left",
-                      direction: "ltr",
-                    },
-                    maxLength: 12,
-                    inputMode: "numeric",
-                    pattern: "[0-9\\-]*",
-                  }}
-                  onKeyPress={(e) => {
-                    // Allow only numbers and hyphen
-                    const char = String.fromCharCode(e.which);
-                    if (!/[0-9-]/.test(char)) {
-                      e.preventDefault();
-                    }
-                  }}
-                />
-              </Box>
-            </Fade>
-
-            <Fade in={showOtp} timeout={500}>
-              <Box sx={{ width: "100%" }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    gap: 1,
-                    justifyContent: "center",
-                    width: "100%",
-                  }}
-                >
-                  {otp.map((digit, index) => (
-                    <TextField
-                      key={index}
-                      name={`otp-${index}`}
-                      value={digit}
-                      onChange={(e) => handleOtpChange(index, e.target.value)}
-                      inputProps={{
-                        maxLength: 1,
-                        style: {
-                          textAlign: "center",
-                          fontSize: "1.5rem",
-                          padding: "8px",
-                          textTransform: "uppercase",
-                        },
-                        pattern: "[A-Z0-9]*",
-                        inputMode: "text",
-                      }}
-                      sx={{
-                        width: "50px",
-                        "& .MuiOutlinedInput-root": {
-                          height: "50px",
-                          borderRadius: 2,
-                        },
-                      }}
-                    />
-                  ))}
-                </Box>
-                <Box sx={{ mt: 2, textAlign: "center" }}>
-                  {canResend ? (
-                    <Button
-                      onClick={handleResendCode}
-                      sx={{
-                        color: "#FF9F43",
-                        textTransform: "none",
-                        fontWeight: 500,
-                        "&:hover": {
-                          textDecoration: "underline",
-                          background: "none",
-                        },
-                      }}
-                    >
-                      שלח קוד חדש
-                    </Button>
-                  ) : (
-                    <Typography variant="body2" sx={{ color: "#666" }}>
-                      שלח קוד חדש תוך {timer} שניות
-                    </Typography>
-                  )}
-                </Box>
-              </Box>
-            </Fade>
-
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              size="large"
-              fullWidth
-              disabled={isLoading}
+            <Box
+              component="form"
+              onSubmit={showOtp ? handleOtpSubmit : handleMobileSubmit}
               sx={{
-                borderRadius: 3,
-                fontWeight: 700,
-                fontSize: 20,
-                py: 1.5,
-                bgcolor: "#FF9F43",
-                "&:hover": { bgcolor: "#FF8C1A" },
-                minHeight: "48px",
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
-                justifyContent: "center",
+                gap: 3,
               }}
             >
-              {isLoading ? (
-                <CircularProgress
-                  size={28}
-                  thickness={4}
-                  sx={{
-                    color: "#FF8C1A",
-                  }}
-                />
-              ) : showOtp ? (
-                "אימות"
-              ) : (
-                "שלח קוד"
-              )}
-            </Button>
+              <Typography
+                variant="h4"
+                sx={{ mb: 2, color: "#6B3F1D", fontWeight: 700 }}
+              >
+                התחברות
+              </Typography>
 
-            {!showOtp && (
+              <Fade in={!showOtp} timeout={500}>
+                <Box sx={{ width: "100%" }}>
+                  <TextField
+                    label="מספר טלפון"
+                    variant="outlined"
+                    value={mobile}
+                    onChange={handleMobileChange}
+                    fullWidth
+                    required
+                    placeholder="050-1234567"
+                    sx={{
+                      borderRadius: 2,
+                    }}
+                    inputProps={{
+                      style: {
+                        textAlign: "left",
+                        direction: "ltr",
+                      },
+                      maxLength: 12,
+                      inputMode: "numeric",
+                      pattern: "[0-9\\-]*",
+                    }}
+                    onKeyPress={(e) => {
+                      // Allow only numbers and hyphen
+                      const char = String.fromCharCode(e.which);
+                      if (!/[0-9-]/.test(char)) {
+                        e.preventDefault();
+                      }
+                    }}
+                  />
+                </Box>
+              </Fade>
+
+              <Fade in={showOtp} timeout={500}>
+                <Box sx={{ width: "100%" }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      gap: 1,
+                      justifyContent: "center",
+                      width: "100%",
+                    }}
+                  >
+                    {otp.map((digit, index) => (
+                      <TextField
+                        key={index}
+                        name={`otp-${index}`}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(index, e.target.value)}
+                        inputProps={{
+                          maxLength: 1,
+                          style: {
+                            textAlign: "center",
+                            fontSize: "1.5rem",
+                            padding: "8px",
+                            textTransform: "uppercase",
+                          },
+                          pattern: "[A-Z0-9]*",
+                          inputMode: "text",
+                        }}
+                        sx={{
+                          width: "50px",
+                          "& .MuiOutlinedInput-root": {
+                            height: "50px",
+                            borderRadius: 2,
+                          },
+                        }}
+                      />
+                    ))}
+                  </Box>
+                  <Box sx={{ mt: 2, textAlign: "center" }}>
+                    {canResend ? (
+                      <Button
+                        onClick={handleResendCode}
+                        sx={{
+                          color: "#FF9F43",
+                          textTransform: "none",
+                          fontWeight: 500,
+                          "&:hover": {
+                            textDecoration: "underline",
+                            background: "none",
+                          },
+                        }}
+                      >
+                        שלח קוד חדש
+                      </Button>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: "#666" }}>
+                        שלח קוד חדש תוך {timer} שניות
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              </Fade>
+
               <Button
-                variant="outlined"
+                type="submit"
+                variant="contained"
                 color="primary"
+                size="large"
                 fullWidth
                 disabled={isLoading}
                 sx={{
                   borderRadius: 3,
                   fontWeight: 700,
-                  fontSize: 16,
-                  borderColor: "#FF9F43",
-                  color: "#FF9F43",
-                  "&:hover": {
-                    borderColor: "#FF8C1A",
-                    bgcolor: "rgba(255, 159, 67, 0.04)",
-                  },
+                  fontSize: 20,
+                  py: 1.5,
+                  bgcolor: "#FF9F43",
+                  "&:hover": { bgcolor: "#FF8C1A" },
+                  minHeight: "48px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
-                onClick={() => navigate("/onboarding")}
               >
-                הרשמה
+                {isLoading ? (
+                  <CircularProgress
+                    size={28}
+                    thickness={4}
+                    sx={{
+                      color: "#FF8C1A",
+                    }}
+                  />
+                ) : showOtp ? (
+                  "אימות"
+                ) : (
+                  "שלח קוד"
+                )}
               </Button>
-            )}
-          </Box>
-        </Paper>
-      </Box>
-      <Notification
-        open={notification.open}
-        message={notification.message}
-        severity={notification.severity}
-        onClose={() => setNotification({ ...notification, open: false })}
-      />
-    </Container>
+
+              {!showOtp && (
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  fullWidth
+                  disabled={isLoading}
+                  sx={{
+                    borderRadius: 3,
+                    fontWeight: 700,
+                    fontSize: 16,
+                    borderColor: "#FF9F43",
+                    color: "#FF9F43",
+                    "&:hover": {
+                      borderColor: "#FF8C1A",
+                      bgcolor: "rgba(255, 159, 67, 0.04)",
+                    },
+                  }}
+                  onClick={() => navigate("/onboarding")}
+                >
+                  הרשמה
+                </Button>
+              )}
+            </Box>
+          </Paper>
+        </Box>
+        <Notification
+          open={notification.open}
+          message={notification.message}
+          severity={notification.severity}
+          onClose={() => setNotification({ ...notification, open: false })}
+        />
+      </Container>
+    </MobileLayout>
   );
 };
 

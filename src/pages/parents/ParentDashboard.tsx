@@ -12,6 +12,7 @@ import ParentQuickActionsSlide from "../../features/dashboard/components/ParentQ
 import ParentChildrenInfoSlide from "../../features/dashboard/components/ParentChildrenInfoSlide";
 import DateTimeWidget from "../../shared/components/ui/DateTimeWidget";
 import DashboardContainer from "../../features/dashboard/components/DashboardContainer";
+import MobileLayout from "../../shared/components/layout/MobileLayout";
 
 const ParentDashboard: React.FC = () => {
   const { user } = useApp();
@@ -133,26 +134,28 @@ const ParentDashboard: React.FC = () => {
   ];
 
   return (
-    <DashboardContainer>
-      {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <DateTimeWidget
-          showGreeting={true}
-          userName={user?.firstName}
-          variant="full"
-          size="large"
-        />
-      </Box>
+    <MobileLayout showBottomNav={true}>
+      <DashboardContainer>
+        {/* Header */}
+        <Box sx={{ mb: 3 }}>
+          <DateTimeWidget
+            showGreeting={true}
+            userName={user?.firstName}
+            variant="full"
+            size="large"
+          />
+        </Box>
 
-      {/* Swipeable Content */}
-      <SwipeableCards
-        ref={swiperRef}
-        slides={slides}
-        autoplayDelay={10000}
-        spaceBetween={30}
-        className="parent-dashboard-swiper"
-      />
-    </DashboardContainer>
+        {/* Swipeable Content */}
+        <SwipeableCards
+          ref={swiperRef}
+          slides={slides}
+          autoplayDelay={10000}
+          spaceBetween={30}
+          className="parent-dashboard-swiper"
+        />
+      </DashboardContainer>
+    </MobileLayout>
   );
 };
 

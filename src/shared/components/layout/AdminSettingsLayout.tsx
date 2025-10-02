@@ -4,13 +4,13 @@ import {
   Container,
   Typography,
   AppBar,
-  Toolbar,
   IconButton,
   useTheme,
   useMediaQuery,
 } from "@mui/material";
 import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import MobileLayout from "./MobileLayout";
 
 export interface AdminSettingsLayoutProps {
   title: string;
@@ -38,7 +38,7 @@ const AdminSettingsLayout: React.FC<AdminSettingsLayoutProps> = ({
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
+    <MobileLayout showBottomNav={true}>
       {/* Header */}
       <AppBar
         position="sticky"
@@ -47,6 +47,7 @@ const AdminSettingsLayout: React.FC<AdminSettingsLayoutProps> = ({
           bgcolor: "background.default",
           borderBottom: 1,
           borderColor: "divider",
+          flexShrink: 0, // Prevent header from shrinking
         }}
       >
         <Container maxWidth={maxWidth} sx={{ px: { xs: 1, sm: 2 } }}>
@@ -115,6 +116,10 @@ const AdminSettingsLayout: React.FC<AdminSettingsLayoutProps> = ({
           py: { xs: 2, sm: 4 },
           px: { xs: 1, sm: 2 },
           width: "100%",
+          flex: 1, // Take remaining space
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0, // Allow flex child to shrink
         }}
       >
         <Box
@@ -122,6 +127,10 @@ const AdminSettingsLayout: React.FC<AdminSettingsLayoutProps> = ({
             maxWidth: "100%",
             mx: "auto",
             width: "100%",
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0, // Allow flex child to shrink
             "& > *": {
               width: "100%",
             },
@@ -130,7 +139,7 @@ const AdminSettingsLayout: React.FC<AdminSettingsLayoutProps> = ({
           {children}
         </Box>
       </Container>
-    </Box>
+    </MobileLayout>
   );
 };
 

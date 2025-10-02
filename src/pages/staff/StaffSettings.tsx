@@ -128,12 +128,13 @@ const StaffSettings = () => {
           pt: 2,
           pb: 2,
           mb: 3,
+          px: 2,
         }}
       >
         <Typography variant="h5">הגדרות צוות</Typography>
       </Box>
 
-      <Box sx={{ maxWidth: 600, mx: "auto" }}>
+      <Box sx={{ width: "100%", px: 2 }}>
         <Accordion
           expanded={expandedAccordion === "profile"}
           onChange={handleAccordionChange("profile")}

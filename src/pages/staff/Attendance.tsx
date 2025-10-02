@@ -16,6 +16,7 @@ import { useAttendance } from "../../contexts/AttendanceContext";
 import { useApp } from "../../contexts/AppContext";
 import DailyAttendance from "../../shared/components/ui/DailyAttendance";
 import { ROUTES } from "../../config/routes";
+import MobileLayout from "../../shared/components/layout/MobileLayout";
 
 const Attendance = () => {
   const { user } = useApp();
@@ -53,238 +54,244 @@ const Attendance = () => {
   // Show closed status page
   if (isAttendanceClosedComputed) {
     return (
-      <Box
-        sx={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          bgcolor: "background.default",
-          zIndex: 1,
-          display: "flex",
-          flexDirection: "column",
-          height: { xs: "100dvh", sm: "100vh" }, // Use dynamic viewport height on mobile
-          overflow: "hidden",
-        }}
-      >
-        {/* Sticky Header */}
+      <MobileLayout showBottomNav={false}>
         <Box
           sx={{
-            display: "flex",
-            alignItems: "center",
-            p: isMobile ? 2 : 4,
-            pb: 2,
-            borderBottom: "1px solid",
-            borderColor: "divider",
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             bgcolor: "background.default",
-            zIndex: 10,
-            backdropFilter: "blur(10px)",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-            borderRadius: "0 0 12px 12px",
-            // Add safe area insets for mobile
-            paddingTop: {
-              xs: "calc(2rem + env(safe-area-inset-top))",
-              sm: "2rem",
-            },
-            paddingLeft: {
-              xs: "calc(2rem + env(safe-area-inset-left))",
-              sm: "2rem",
-            },
-            paddingRight: {
-              xs: "calc(2rem + env(safe-area-inset-right))",
-              sm: "2rem",
-            },
+            zIndex: 1,
+            display: "flex",
+            flexDirection: "column",
+            height: { xs: "100dvh", sm: "100vh" }, // Use dynamic viewport height on mobile
+            overflow: "hidden",
           }}
         >
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 700,
-              color: "text.primary",
-              flex: 1,
-              textAlign: "center",
-              background: "linear-gradient(135deg, #1976d2 0%, #1565c0 100%)",
-              backgroundClip: "text",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              textShadow: "0 1px 2px rgba(0,0,0,0.1)",
-            }}
-          >
-            נוכחות יומית - {getGroupName()}
-          </Typography>
-        </Box>
-
-        {/* Scrollable Content */}
-        <Box
-          sx={{
-            flex: 1,
-            overflow: "auto",
-            p: isMobile ? 2 : 4,
-            // Add safe area insets for mobile
-            paddingBottom: {
-              xs: "calc(2rem + env(safe-area-inset-bottom))",
-              sm: "2rem",
-            },
-            paddingLeft: {
-              xs: "calc(2rem + env(safe-area-inset-left))",
-              sm: "2rem",
-            },
-            paddingRight: {
-              xs: "calc(2rem + env(safe-area-inset-right))",
-              sm: "2rem",
-            },
-          }}
-        >
-          {/* Main Content */}
+          {/* Sticky Header */}
           <Box
             sx={{
               display: "flex",
-              flexDirection: "column",
               alignItems: "center",
-              justifyContent: "center",
-              textAlign: "center",
-              py: 4,
-              minHeight: "100%",
+              p: isMobile ? 2 : 4,
+              pb: 2,
+              borderBottom: "1px solid",
+              borderColor: "divider",
+              bgcolor: "background.default",
+              zIndex: 10,
+              backdropFilter: "blur(10px)",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              borderRadius: "0 0 12px 12px",
+              // Add safe area insets for mobile
+              paddingTop: {
+                xs: "calc(2rem + env(safe-area-inset-top))",
+                sm: "2rem",
+              },
+              paddingLeft: {
+                xs: "calc(2rem + env(safe-area-inset-left))",
+                sm: "2rem",
+              },
+              paddingRight: {
+                xs: "calc(2rem + env(safe-area-inset-right))",
+                sm: "2rem",
+              },
             }}
           >
-            {/* Lock Icon */}
-            <Box
-              sx={{
-                width: 100,
-                height: 100,
-                borderRadius: "50%",
-                bgcolor: "warning.main",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                mb: 3,
-                boxShadow: "0 8px 32px rgba(255, 152, 0, 0.3)",
-              }}
-            >
-              <LockIcon
-                sx={{
-                  fontSize: 50,
-                  color: "white",
-                }}
-              />
-            </Box>
-
-            {/* Status Badge */}
-            <Box
-              sx={{
-                bgcolor: "warning.main",
-                color: "white",
-                borderRadius: 2,
-                px: 3,
-                py: 1,
-                mb: 3,
-                boxShadow: "0 4px 12px rgba(255, 152, 0, 0.2)",
-              }}
-            >
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: 600,
-                  fontSize: "0.9rem",
-                }}
-              >
-                נוכחות נסגרה
-              </Typography>
-            </Box>
-
-            {/* Title */}
             <Typography
-              variant="h4"
+              variant="h5"
               sx={{
                 fontWeight: 700,
                 color: "text.primary",
-                mb: 2,
-                fontSize: { xs: "1.5rem", sm: "2rem" },
+                flex: 1,
+                textAlign: "center",
+                background: "linear-gradient(135deg, #1976d2 0%, #1565c0 100%)",
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                textShadow: "0 1px 2px rgba(0,0,0,0.1)",
               }}
             >
-              נוכחות היום נסגרה
+              נוכחות יומית - {getGroupName()}
             </Typography>
+          </Box>
 
-            {/* Description */}
-            <Typography
-              variant="body1"
-              sx={{
-                color: "text.secondary",
-                mb: 4,
-                maxWidth: 500,
-                lineHeight: 1.6,
-                fontSize: { xs: "1rem", sm: "1.1rem" },
-              }}
-            >
-              נוכחות היום נסגרה על ידי הצוות. לא ניתן עוד לעדכן נתוני נוכחות
-              ליום זה.
-            </Typography>
-
-            {/* Info Card */}
+          {/* Scrollable Content */}
+          <Box
+            sx={{
+              flex: 1,
+              overflow: "auto",
+              p: isMobile ? 2 : 4,
+              // Add safe area insets for mobile
+              paddingBottom: {
+                xs: "calc(2rem + env(safe-area-inset-bottom))",
+                sm: "2rem",
+              },
+              paddingLeft: {
+                xs: "calc(2rem + env(safe-area-inset-left))",
+                sm: "2rem",
+              },
+              paddingRight: {
+                xs: "calc(2rem + env(safe-area-inset-right))",
+                sm: "2rem",
+              },
+            }}
+          >
+            {/* Main Content */}
             <Box
               sx={{
-                bgcolor: "background.paper",
-                borderRadius: 3,
-                p: 3,
-                mb: 4,
-                border: "1px solid",
-                borderColor: "divider",
-                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-                maxWidth: 400,
-                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+                py: 4,
+                minHeight: "100%",
               }}
             >
-              <Typography
-                variant="h6"
+              {/* Lock Icon */}
+              <Box
                 sx={{
-                  fontWeight: 600,
-                  color: "text.primary",
-                  mb: 2,
+                  width: 100,
+                  height: 100,
+                  borderRadius: "50%",
+                  bgcolor: "warning.main",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  mb: 3,
+                  boxShadow: "0 8px 32px rgba(255, 152, 0, 0.3)",
                 }}
               >
-                פרטי הנוכחות
+                <LockIcon
+                  sx={{
+                    fontSize: 50,
+                    color: "white",
+                  }}
+                />
+              </Box>
+
+              {/* Status Badge */}
+              <Box
+                sx={{
+                  bgcolor: "warning.main",
+                  color: "white",
+                  borderRadius: 2,
+                  px: 3,
+                  py: 1,
+                  mb: 3,
+                  boxShadow: "0 4px 12px rgba(255, 152, 0, 0.2)",
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  נוכחות נסגרה
+                </Typography>
+              </Box>
+
+              {/* Title */}
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 700,
+                  color: "text.primary",
+                  mb: 2,
+                  fontSize: { xs: "1.5rem", sm: "2rem" },
+                }}
+              >
+                נוכחות היום נסגרה
               </Typography>
-              <Box sx={{ textAlign: "right" }}>
+
+              {/* Description */}
+              <Typography
+                variant="body1"
+                sx={{
+                  color: "text.secondary",
+                  mb: 4,
+                  maxWidth: 500,
+                  lineHeight: 1.6,
+                  fontSize: { xs: "1rem", sm: "1.1rem" },
+                }}
+              >
+                נוכחות היום נסגרה על ידי הצוות. לא ניתן עוד לעדכן נתוני נוכחות
+                ליום זה.
+              </Typography>
+
+              {/* Info Card */}
+              <Box
+                sx={{
+                  bgcolor: "background.paper",
+                  borderRadius: 3,
+                  p: 3,
+                  mb: 4,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+                  maxWidth: 400,
+                  width: "100%",
+                }}
+              >
                 <Typography
-                  variant="body2"
+                  variant="h6"
                   sx={{
-                    color: "text.secondary",
-                    mb: 1,
+                    fontWeight: 600,
+                    color: "text.primary",
+                    mb: 2,
                   }}
                 >
-                  <strong>קבוצה:</strong> {getGroupName()}
+                  פרטי הנוכחות
                 </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "text.secondary",
-                    mb: 1,
-                  }}
-                >
-                  <strong>תאריך:</strong>{" "}
-                  {new Date().toLocaleDateString("he-IL")}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "text.secondary",
-                  }}
-                >
-                  <strong>סטטוס:</strong> נסגר
-                </Typography>
+                <Box sx={{ textAlign: "right" }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.secondary",
+                      mb: 1,
+                    }}
+                  >
+                    <strong>קבוצה:</strong> {getGroupName()}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.secondary",
+                      mb: 1,
+                    }}
+                  >
+                    <strong>תאריך:</strong>{" "}
+                    {new Date().toLocaleDateString("he-IL")}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.secondary",
+                    }}
+                  >
+                    <strong>סטטוס:</strong> נסגר
+                  </Typography>
+                </Box>
               </Box>
             </Box>
           </Box>
         </Box>
-      </Box>
+      </MobileLayout>
     );
   }
 
   // Show regular attendance component if not closed
   // Note: DailyAttendance component handles its own loading state with skeleton animations
 
-  return <DailyAttendance />;
+  return (
+    <MobileLayout showBottomNav={true}>
+      <DailyAttendance />
+    </MobileLayout>
+  );
 };
 
 export default Attendance;
