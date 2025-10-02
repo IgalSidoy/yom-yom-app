@@ -289,6 +289,7 @@ export interface User {
   organizationId: string;
   role: string;
   groupId?: string;
+  groupName?: string;
   created: string;
   updated: string;
 }
@@ -320,6 +321,16 @@ export const userApi = {
       withCredentials: true,
     });
     return response as { data: UsersResponse };
+  },
+  getUserById: async (userId: string) => {
+    const response = await api.get(`/api/v1/user/${userId}`, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    return response as { data: UserResponse };
   },
   createUser: async (user: Omit<User, "id">) => {
     const response = await api.post(

@@ -22,6 +22,7 @@ import AccountEditPage from "./features/admin/components/settings/AccountEditPag
 import GroupsSettings from "./features/admin/components/settings/GroupsSettings";
 import GroupEditPage from "./features/admin/components/settings/GroupEditPage";
 import UsersSettings from "./features/admin/components/settings/UsersSettings";
+import UserEditPage from "./features/admin/components/settings/UserEditPage";
 import ChildrenSettings from "./features/admin/components/settings/ChildrenSettings";
 import ParentDashboard from "./pages/parents/ParentDashboard";
 import ParentFeed from "./pages/parents/ParentFeed";
@@ -228,6 +229,22 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <UsersSettings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.ADMIN_USER_EDIT}
+          element={
+            <ProtectedRoute>
+              <UserEditPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={ROUTES.ADMIN_USER_CREATE}
+          element={
+            <ProtectedRoute>
+              <UserEditPage />
             </ProtectedRoute>
           }
         />
