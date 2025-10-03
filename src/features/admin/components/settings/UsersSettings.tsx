@@ -27,6 +27,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Skeleton,
+  Fade,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -170,6 +172,7 @@ const UsersSettings: React.FC = () => {
   const fetchUsers = useCallback(async () => {
     try {
       setError(null);
+      setLoading(true); // Set loading to true when starting fetch
       const response = await userApi.getUsers();
       // Filter users by selected account ID
       const filteredUsers = selectedAccountId
@@ -263,209 +266,217 @@ const UsersSettings: React.FC = () => {
   // Memoized components for performance
   const UserCard = useMemo(
     () =>
-      React.memo(({ user }: { user: User }) => (
-        <Box
-          sx={{
-            width: "100%",
-            bgcolor: THEME_COLORS.BACKGROUND,
-            backgroundColor: THEME_COLORS.BACKGROUND,
-            borderRadius: 0, // Override theme border radius
-            margin: 0, // Remove any margins
-            paddingTop: 2, // Remove top padding to eliminate gaps
-            paddingBottom: 1, // Remove bottom padding to eliminate gaps
-            paddingLeft: { xs: 2, sm: 3 }, // Responsive left padding
-            paddingRight: { xs: 2, sm: 3 }, // Responsive right padding
-            borderBottom: "1px solid",
-            borderColor: UI_COLORS.BORDER_LIGHT,
-            transition: "all 0.2s ease-in-out",
-            "&:hover": {
-              bgcolor: "action.hover",
-            },
-            "&:first-child": {
-              paddingTop: { xs: 2, sm: 3 }, // Responsive top padding
-            },
-            "&:last-child": {
-              paddingBottom: { xs: 2, sm: 3 }, // Responsive bottom padding
-            },
+      React.memo(({ user, index = 0 }: { user: User; index?: number }) => (
+        <Fade
+          in={true}
+          timeout={500}
+          style={{
+            transitionDelay: `${index * 100}ms`, // Staggered animation
           }}
         >
           <Box
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-              mb: 2,
+              width: "100%",
+              bgcolor: THEME_COLORS.BACKGROUND,
+              backgroundColor: THEME_COLORS.BACKGROUND,
+              borderRadius: 0, // Override theme border radius
+              margin: 0, // Remove any margins
+              paddingTop: 2, // Remove top padding to eliminate gaps
+              paddingBottom: 1, // Remove bottom padding to eliminate gaps
+              paddingLeft: { xs: 2, sm: 3 }, // Responsive left padding
+              paddingRight: { xs: 2, sm: 3 }, // Responsive right padding
+              borderBottom: "1px solid",
+              borderColor: UI_COLORS.BORDER_LIGHT,
+              transition: "all 0.2s ease-in-out",
+              "&:hover": {
+                bgcolor: "action.hover",
+              },
+              "&:first-child": {
+                paddingTop: { xs: 2, sm: 3 }, // Responsive top padding
+              },
+              "&:last-child": {
+                paddingBottom: { xs: 2, sm: 3 }, // Responsive bottom padding
+              },
             }}
           >
-            <Box>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  mb: 1,
-                  color: THEME_COLORS.TEXT_PRIMARY,
-                }}
-              >
-                {user.firstName} {user.lastName}
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: THEME_COLORS.TEXT_SECONDARY,
-                  fontSize: "0.875rem",
-                  mb: 0.5,
-                }}
-              >
-                {user.email}
-              </Typography>
-              {user.mobile && (
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                mb: 2,
+              }}
+            >
+              <Box>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 600,
+                    mb: 1,
+                    color: THEME_COLORS.TEXT_PRIMARY,
+                  }}
+                >
+                  {user.firstName} {user.lastName}
+                </Typography>
                 <Typography
                   variant="body2"
                   sx={{
                     color: THEME_COLORS.TEXT_SECONDARY,
-                    fontSize: "0.8rem",
+                    fontSize: "0.875rem",
+                    mb: 0.5,
                   }}
                 >
-                  {formatPhoneNumber(user.mobile)}
+                  {user.email}
                 </Typography>
-              )}
+                {user.mobile && (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: THEME_COLORS.TEXT_SECONDARY,
+                      fontSize: "0.8rem",
+                    }}
+                  >
+                    {formatPhoneNumber(user.mobile)}
+                  </Typography>
+                )}
+              </Box>
+              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                <Button
+                  variant="outline"
+                  size="small"
+                  onClick={() => handleEditUser(user)}
+                  sx={{ borderRadius: 2, textTransform: "none" }}
+                >
+                  עריכה
+                </Button>
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => handleDeleteClick(user)}
+                  sx={{
+                    color: "error.main",
+                    borderRadius: 2,
+                    textTransform: "none",
+                    border: "1px solid",
+                    borderColor: "error.main",
+                    opacity: 0.7,
+                    "&:hover": {
+                      backgroundColor: "error.main",
+                      color: "white",
+                      opacity: 1,
+                    },
+                  }}
+                >
+                  מחיקה
+                </Button>
+              </Box>
             </Box>
-            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-              <Button
-                variant="outline"
-                size="small"
-                onClick={() => handleEditUser(user)}
-                sx={{ borderRadius: 2, textTransform: "none" }}
-              >
-                עריכה
-              </Button>
-              <Button
-                variant="text"
-                size="small"
-                onClick={() => handleDeleteClick(user)}
-                sx={{
-                  color: "error.main",
-                  borderRadius: 2,
-                  textTransform: "none",
-                  border: "1px solid",
-                  borderColor: "error.main",
-                  opacity: 0.7,
-                  "&:hover": {
-                    backgroundColor: "error.main",
-                    color: "white",
-                    opacity: 1,
-                  },
-                }}
-              >
-                מחיקה
-              </Button>
-            </Box>
-          </Box>
 
-          {/* Badges Section */}
-          <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 1,
-              mb: 2,
-              justifyContent: "flex-start",
-            }}
-          >
-            <Chip
-              label={getRoleLabel(user.role)}
-              color={getRoleColor(user.role) as any}
-              size="small"
-              variant="filled"
+            {/* Badges Section */}
+            <Box
               sx={{
-                borderRadius: 1,
-                opacity: 1,
-                fontWeight: 600,
-                fontSize: "0.75rem",
-                backgroundColor:
-                  getRoleColor(user.role) === "primary"
-                    ? THEME_COLORS.PRIMARY
-                    : undefined,
-                color: "white",
-                "&:hover": {
-                  opacity: 0.9,
-                },
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 1,
+                mb: 2,
+                justifyContent: "flex-start",
               }}
-            />
-            {getGroupName(user) && (
+            >
               <Chip
-                label={getGroupName(user)!}
+                label={getRoleLabel(user.role)}
+                color={getRoleColor(user.role) as any}
                 size="small"
-                variant="outlined"
+                variant="filled"
                 sx={{
                   borderRadius: 1,
-                  fontWeight: 500,
-                  fontSize: "0.7rem",
-                  borderColor: THEME_COLORS.SECONDARY,
-                  color: THEME_COLORS.TEXT_PRIMARY,
-                  backgroundColor: THEME_COLORS.SECONDARY,
+                  opacity: 1,
+                  fontWeight: 600,
+                  fontSize: "0.75rem",
+                  backgroundColor:
+                    getRoleColor(user.role) === "primary"
+                      ? THEME_COLORS.PRIMARY
+                      : undefined,
+                  color: "white",
                   "&:hover": {
-                    backgroundColor: THEME_COLORS.SECONDARY,
-                    opacity: 0.8,
+                    opacity: 0.9,
                   },
                 }}
               />
-            )}
-          </Box>
+              {getGroupName(user) && (
+                <Chip
+                  label={getGroupName(user)!}
+                  size="small"
+                  variant="outlined"
+                  sx={{
+                    borderRadius: 1,
+                    fontWeight: 500,
+                    fontSize: "0.7rem",
+                    borderColor: THEME_COLORS.SECONDARY,
+                    color: THEME_COLORS.TEXT_PRIMARY,
+                    backgroundColor: THEME_COLORS.SECONDARY,
+                    "&:hover": {
+                      backgroundColor: THEME_COLORS.SECONDARY,
+                      opacity: 0.8,
+                    },
+                  }}
+                />
+              )}
+            </Box>
 
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
-              gap: 2,
-            }}
-          >
-            <Box sx={{ flex: 1 }}>
-              <Typography
-                variant="caption"
-                sx={{
-                  display: "block",
-                  mb: 0.5,
-                  color: THEME_COLORS.TEXT_PRIMARY,
-                  fontSize: "0.75rem",
-                }}
-              >
-                נוצר בתאריך
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: 500,
-                  color: THEME_COLORS.TEXT_PRIMARY,
-                }}
-              >
-                {formatDate(user.created)}
-              </Typography>
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <Typography
-                variant="caption"
-                sx={{
-                  display: "block",
-                  mb: 0.5,
-                  color: THEME_COLORS.TEXT_PRIMARY,
-                  fontSize: "0.75rem",
-                }}
-              >
-                עודכן בתאריך
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: 500,
-                  color: THEME_COLORS.TEXT_PRIMARY,
-                }}
-              >
-                {formatDate(user.updated)}
-              </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
+              }}
+            >
+              <Box sx={{ flex: 1 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: "block",
+                    mb: 0.5,
+                    color: THEME_COLORS.TEXT_PRIMARY,
+                    fontSize: "0.75rem",
+                  }}
+                >
+                  נוצר בתאריך
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 500,
+                    color: THEME_COLORS.TEXT_PRIMARY,
+                  }}
+                >
+                  {formatDate(user.created)}
+                </Typography>
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: "block",
+                    mb: 0.5,
+                    color: THEME_COLORS.TEXT_PRIMARY,
+                    fontSize: "0.75rem",
+                  }}
+                >
+                  עודכן בתאריך
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 500,
+                    color: THEME_COLORS.TEXT_PRIMARY,
+                  }}
+                >
+                  {formatDate(user.updated)}
+                </Typography>
+              </Box>
             </Box>
           </Box>
-        </Box>
+        </Fade>
       )),
     [
       formatDate,
@@ -479,146 +490,154 @@ const UsersSettings: React.FC = () => {
 
   const UserTableRow = useMemo(
     () =>
-      React.memo(({ user }: { user: User }) => (
-        <TableRow
-          hover
-          sx={{
-            bgcolor: "background.paper",
-            "&:hover": {
-              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
-              transform: "translateY(-2px)",
-            },
-            transition: "all 0.2s ease-in-out",
+      React.memo(({ user, index = 0 }: { user: User; index?: number }) => (
+        <Fade
+          in={true}
+          timeout={500}
+          style={{
+            transitionDelay: `${index * 100}ms`, // Staggered animation
           }}
         >
-          <TableCell
+          <TableRow
+            hover
             sx={{
-              textAlign: "right",
+              bgcolor: "background.paper",
+              "&:hover": {
+                boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
+                transform: "translateY(-2px)",
+              },
+              transition: "all 0.2s ease-in-out",
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <Avatar
-                sx={{
-                  bgcolor: THEME_COLORS.PRIMARY,
-                  width: 40,
-                  height: 40,
-                  fontSize: "1rem",
-                  fontWeight: 600,
-                }}
-              >
-                {user.firstName.charAt(0).toUpperCase()}
-              </Avatar>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  {user.firstName} {user.lastName}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user.email}
-                </Typography>
-              </Box>
-            </Box>
-          </TableCell>
-          <TableCell
-            sx={{
-              textAlign: "right",
-            }}
-          >
-            <Chip
-              label={getRoleLabel(user.role)}
-              color={getRoleColor(user.role) as any}
-              size="small"
-              variant="filled"
+            <TableCell
               sx={{
-                borderRadius: 1,
-                opacity: 1,
-                fontWeight: 600,
-                fontSize: "0.75rem",
-                backgroundColor:
-                  getRoleColor(user.role) === "primary"
-                    ? THEME_COLORS.PRIMARY
-                    : undefined,
-                color: "white",
-                "&:hover": {
-                  opacity: 0.9,
-                },
+                textAlign: "right",
               }}
-            />
-          </TableCell>
-          <TableCell
-            sx={{
-              textAlign: "right",
-            }}
-          >
-            {getGroupName(user) ? (
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Avatar
+                  sx={{
+                    bgcolor: THEME_COLORS.PRIMARY,
+                    width: 40,
+                    height: 40,
+                    fontSize: "1rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {user.firstName.charAt(0).toUpperCase()}
+                </Avatar>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    {user.firstName} {user.lastName}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {user.email}
+                  </Typography>
+                </Box>
+              </Box>
+            </TableCell>
+            <TableCell
+              sx={{
+                textAlign: "right",
+              }}
+            >
               <Chip
-                label={getGroupName(user)!}
+                label={getRoleLabel(user.role)}
+                color={getRoleColor(user.role) as any}
                 size="small"
-                variant="outlined"
+                variant="filled"
                 sx={{
                   borderRadius: 1,
-                  fontWeight: 500,
+                  opacity: 1,
+                  fontWeight: 600,
                   fontSize: "0.75rem",
-                  borderColor: THEME_COLORS.SECONDARY,
-                  color: THEME_COLORS.TEXT_PRIMARY,
-                  backgroundColor: THEME_COLORS.SECONDARY,
+                  backgroundColor:
+                    getRoleColor(user.role) === "primary"
+                      ? THEME_COLORS.PRIMARY
+                      : undefined,
+                  color: "white",
                   "&:hover": {
-                    backgroundColor: THEME_COLORS.SECONDARY,
-                    opacity: 0.8,
+                    opacity: 0.9,
                   },
                 }}
               />
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                ללא קבוצה
+            </TableCell>
+            <TableCell
+              sx={{
+                textAlign: "right",
+              }}
+            >
+              {getGroupName(user) ? (
+                <Chip
+                  label={getGroupName(user)!}
+                  size="small"
+                  variant="outlined"
+                  sx={{
+                    borderRadius: 1,
+                    fontWeight: 500,
+                    fontSize: "0.75rem",
+                    borderColor: THEME_COLORS.SECONDARY,
+                    color: THEME_COLORS.TEXT_PRIMARY,
+                    backgroundColor: THEME_COLORS.SECONDARY,
+                    "&:hover": {
+                      backgroundColor: THEME_COLORS.SECONDARY,
+                      opacity: 0.8,
+                    },
+                  }}
+                />
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  ללא קבוצה
+                </Typography>
+              )}
+            </TableCell>
+            <TableCell
+              sx={{
+                textAlign: "right",
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                {user.mobile ? formatPhoneNumber(user.mobile) : "לא זמין"}
               </Typography>
-            )}
-          </TableCell>
-          <TableCell
-            sx={{
-              textAlign: "right",
-            }}
-          >
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              {user.mobile ? formatPhoneNumber(user.mobile) : "לא זמין"}
-            </Typography>
-          </TableCell>
-          <TableCell
-            sx={{
-              textAlign: "right",
-            }}
-          >
-            <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
-              <Button
-                variant="outline"
-                size="small"
-                onClick={() => handleEditUser(user)}
-                sx={{ borderRadius: 2, textTransform: "none" }}
-              >
-                עריכה
-              </Button>
-              <Button
-                variant="text"
-                size="small"
-                onClick={() => handleDeleteClick(user)}
-                sx={{
-                  color: "error.main",
-                  borderRadius: 2,
-                  textTransform: "none",
-                  border: "1px solid",
-                  borderColor: "error.main",
-                  opacity: 0.7,
-                  "&:hover": {
-                    backgroundColor: "error.main",
-                    color: "white",
-                    opacity: 1,
-                  },
-                }}
-              >
-                מחיקה
-              </Button>
-            </Box>
-          </TableCell>
-        </TableRow>
+            </TableCell>
+            <TableCell
+              sx={{
+                textAlign: "right",
+              }}
+            >
+              <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+                <Button
+                  variant="outline"
+                  size="small"
+                  onClick={() => handleEditUser(user)}
+                  sx={{ borderRadius: 2, textTransform: "none" }}
+                >
+                  עריכה
+                </Button>
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => handleDeleteClick(user)}
+                  sx={{
+                    color: "error.main",
+                    borderRadius: 2,
+                    textTransform: "none",
+                    border: "1px solid",
+                    borderColor: "error.main",
+                    opacity: 0.7,
+                    "&:hover": {
+                      backgroundColor: "error.main",
+                      color: "white",
+                      opacity: 1,
+                    },
+                  }}
+                >
+                  מחיקה
+                </Button>
+              </Box>
+            </TableCell>
+          </TableRow>
+        </Fade>
       )),
     [
       formatDate,
@@ -630,16 +649,448 @@ const UsersSettings: React.FC = () => {
     ]
   );
 
+  // Skeleton components for loading states
+  const UserCardSkeleton = useMemo(
+    () =>
+      React.memo(() => (
+        <Fade in={true} timeout={300}>
+          <Box
+            sx={{
+              width: "100%",
+              bgcolor: THEME_COLORS.BACKGROUND,
+              borderRadius: 0,
+              margin: 0,
+              paddingTop: 2,
+              paddingBottom: 1,
+              paddingLeft: { xs: 2, sm: 3 },
+              paddingRight: { xs: 2, sm: 3 },
+              borderBottom: "1px solid",
+              borderColor: UI_COLORS.BORDER_LIGHT,
+              transition: "all 0.2s ease-in-out",
+              "&:first-child": {
+                paddingTop: { xs: 2, sm: 3 },
+              },
+              "&:last-child": {
+                paddingBottom: { xs: 2, sm: 3 },
+              },
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                mb: 2,
+              }}
+            >
+              <Box>
+                <Skeleton
+                  variant="text"
+                  width="140px"
+                  height={24}
+                  sx={{
+                    mb: 1,
+                    bgcolor: "rgba(0,0,0,0.08)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+                <Skeleton
+                  variant="text"
+                  width="180px"
+                  height={16}
+                  sx={{
+                    mb: 0.5,
+                    bgcolor: "rgba(0,0,0,0.06)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+                <Skeleton
+                  variant="text"
+                  width="120px"
+                  height={16}
+                  sx={{
+                    bgcolor: "rgba(0,0,0,0.06)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+              </Box>
+              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                <Skeleton
+                  variant="rectangular"
+                  width={60}
+                  height={32}
+                  sx={{
+                    borderRadius: 2,
+                    bgcolor: "rgba(0,0,0,0.08)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+                <Skeleton
+                  variant="rectangular"
+                  width={60}
+                  height={32}
+                  sx={{
+                    borderRadius: 2,
+                    bgcolor: "rgba(0,0,0,0.08)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+              </Box>
+            </Box>
+
+            {/* Badges Section Skeleton */}
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 1,
+                mb: 2,
+                justifyContent: "flex-start",
+              }}
+            >
+              <Skeleton
+                variant="rectangular"
+                width={60}
+                height={24}
+                sx={{
+                  borderRadius: 1,
+                  bgcolor: "rgba(0,0,0,0.06)",
+                  animation: "pulse 2s ease-in-out infinite",
+                  "@keyframes pulse": {
+                    "0%": { opacity: 1 },
+                    "50%": { opacity: 0.4 },
+                    "100%": { opacity: 1 },
+                  },
+                }}
+              />
+              <Skeleton
+                variant="rectangular"
+                width={80}
+                height={24}
+                sx={{
+                  borderRadius: 1,
+                  bgcolor: "rgba(0,0,0,0.06)",
+                  animation: "pulse 2s ease-in-out infinite",
+                  "@keyframes pulse": {
+                    "0%": { opacity: 1 },
+                    "50%": { opacity: 0.4 },
+                    "100%": { opacity: 1 },
+                  },
+                }}
+              />
+            </Box>
+
+            {/* Date Section Skeleton */}
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
+              }}
+            >
+              <Box sx={{ flex: 1 }}>
+                <Skeleton
+                  variant="text"
+                  width="60px"
+                  height={12}
+                  sx={{
+                    mb: 0.5,
+                    bgcolor: "rgba(0,0,0,0.06)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+                <Skeleton
+                  variant="text"
+                  width="100px"
+                  height={16}
+                  sx={{
+                    bgcolor: "rgba(0,0,0,0.08)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Skeleton
+                  variant="text"
+                  width="60px"
+                  height={12}
+                  sx={{
+                    mb: 0.5,
+                    bgcolor: "rgba(0,0,0,0.06)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+                <Skeleton
+                  variant="text"
+                  width="100px"
+                  height={16}
+                  sx={{
+                    bgcolor: "rgba(0,0,0,0.08)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+              </Box>
+            </Box>
+          </Box>
+        </Fade>
+      )),
+    []
+  );
+
+  const UserTableRowSkeleton = useMemo(
+    () =>
+      React.memo(() => (
+        <Fade in={true} timeout={300}>
+          <TableRow
+            sx={{
+              bgcolor: "background.paper",
+              transition: "all 0.2s ease-in-out",
+            }}
+          >
+            <TableCell sx={{ textAlign: "right" }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Skeleton
+                  variant="circular"
+                  width={40}
+                  height={40}
+                  sx={{ bgcolor: "rgba(0,0,0,0.08)" }}
+                />
+                <Box>
+                  <Skeleton
+                    variant="text"
+                    width="120px"
+                    height={24}
+                    sx={{ mb: 0.5, bgcolor: "rgba(0,0,0,0.08)" }}
+                  />
+                  <Skeleton
+                    variant="text"
+                    width="160px"
+                    height={16}
+                    sx={{ bgcolor: "rgba(0,0,0,0.06)" }}
+                  />
+                </Box>
+              </Box>
+            </TableCell>
+            <TableCell sx={{ textAlign: "right" }}>
+              <Skeleton
+                variant="rectangular"
+                width={60}
+                height={24}
+                sx={{ borderRadius: 1, bgcolor: "rgba(0,0,0,0.06)" }}
+              />
+            </TableCell>
+            <TableCell sx={{ textAlign: "right" }}>
+              <Skeleton
+                variant="rectangular"
+                width={80}
+                height={24}
+                sx={{ borderRadius: 1, bgcolor: "rgba(0,0,0,0.06)" }}
+              />
+            </TableCell>
+            <TableCell sx={{ textAlign: "right" }}>
+              <Skeleton
+                variant="text"
+                width="100px"
+                height={20}
+                sx={{ bgcolor: "rgba(0,0,0,0.08)" }}
+              />
+            </TableCell>
+            <TableCell sx={{ textAlign: "right" }}>
+              <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+                <Skeleton
+                  variant="rectangular"
+                  width={60}
+                  height={32}
+                  sx={{ borderRadius: 2, bgcolor: "rgba(0,0,0,0.08)" }}
+                />
+                <Skeleton
+                  variant="rectangular"
+                  width={60}
+                  height={32}
+                  sx={{ borderRadius: 2, bgcolor: "rgba(0,0,0,0.08)" }}
+                />
+              </Box>
+            </TableCell>
+          </TableRow>
+        </Fade>
+      )),
+    []
+  );
+
   if (loading && users.length === 0) {
     return (
       <AdminSettingsLayout
         title="ניהול משתמשים"
         subtitle="טוען רשימת משתמשים..."
       >
-        <Card>
-          <Box sx={{ p: 3, textAlign: "center" }}>
-            <CircularProgress sx={{ color: "primary.main", mb: 2 }} />
-            <Typography>טוען...</Typography>
+        <Card
+          sx={{
+            height: { xs: "100%", sm: "auto" },
+            display: { xs: "flex", sm: "block" },
+            flexDirection: { xs: "column", sm: "row" },
+            minHeight: 0,
+            borderRadius: 1,
+            boxShadow: "none",
+            border: "none",
+            backgroundColor: THEME_COLORS.BACKGROUND,
+          }}
+        >
+          <Box
+            sx={{
+              padding: 0,
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              minHeight: 0,
+              overflow: "hidden",
+              bgcolor: THEME_COLORS.BACKGROUND,
+              borderRadius: 0,
+              margin: 0,
+              border: "none",
+            }}
+          >
+            {/* Mobile: Skeleton Card Layout */}
+            <Box
+              sx={{
+                display: { xs: "block", md: "none" },
+                flex: 1,
+                overflowY: "auto",
+                overflowX: "hidden",
+                margin: 0,
+                padding: 0,
+                minHeight: 0,
+                borderRadius: 0,
+                width: "100%",
+                maxWidth: "100%",
+              }}
+            >
+              {Array.from({ length: 6 }).map((_, index) => (
+                <UserCardSkeleton key={index} />
+              ))}
+            </Box>
+
+            {/* Desktop: Skeleton Table Layout */}
+            <Box sx={{ display: { xs: "none", md: "block" } }}>
+              <TableContainer
+                component={Paper}
+                elevation={0}
+                sx={{
+                  border: "none",
+                  borderRadius: 0,
+                  boxShadow: "none",
+                  margin: 0,
+                  padding: 0,
+                }}
+              >
+                <Table>
+                  <TableHead>
+                    <TableRow
+                      sx={{
+                        bgcolor: "background.paper",
+                        borderBottom: "1px solid",
+                        borderColor: "divider",
+                      }}
+                    >
+                      <TableCell
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "1rem",
+                          textAlign: "right",
+                        }}
+                      >
+                        משתמש
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "1rem",
+                          textAlign: "right",
+                        }}
+                      >
+                        תפקיד
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "1rem",
+                          textAlign: "right",
+                        }}
+                      >
+                        קבוצה
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "1rem",
+                          textAlign: "right",
+                        }}
+                      >
+                        נייד
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "1rem",
+                          textAlign: "right",
+                        }}
+                      >
+                        פעולות
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <UserTableRowSkeleton key={index} />
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
           </Box>
         </Card>
       </AdminSettingsLayout>
@@ -772,8 +1223,8 @@ const UsersSettings: React.FC = () => {
                   },
                 }}
               >
-                {users.map((user) => (
-                  <UserCard key={user.id} user={user} />
+                {users.map((user, index) => (
+                  <UserCard key={user.id} user={user} index={index} />
                 ))}
               </Box>
 
@@ -869,8 +1320,8 @@ const UsersSettings: React.FC = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {users.map((user) => (
-                        <UserTableRow key={user.id} user={user} />
+                      {users.map((user, index) => (
+                        <UserTableRow key={user.id} user={user} index={index} />
                       ))}
                     </TableBody>
                   </Table>
