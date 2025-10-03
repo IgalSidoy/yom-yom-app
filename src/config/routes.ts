@@ -27,6 +27,8 @@ export const ROUTES = {
   ADMIN_USER_CREATE: "/admin/settings/users/new",
   ADMIN_USER_EDIT: "/admin/settings/users/:id/edit",
   ADMIN_CHILDREN: "/admin/settings/children",
+  ADMIN_CHILD_CREATE: "/admin/settings/children/new",
+  ADMIN_CHILD_EDIT: "/admin/settings/children/:id/edit",
 
   FEED: "/feed",
   ATTENDANCE: "/attendance",
