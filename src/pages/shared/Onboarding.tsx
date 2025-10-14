@@ -10,12 +10,12 @@ import {
   Fade,
   CircularProgress,
   Paper,
+  Container,
 } from "@mui/material";
 import { useNavigate, Link } from "react-router-dom";
 import CheckIcon from "@mui/icons-material/Check";
 import { useAuth } from "../../contexts/AuthContext";
 import { useApp } from "../../contexts/AppContext";
-import MobileLayout from "../../shared/components/layout/MobileLayout";
 
 const steps = [1, 2, 3];
 
@@ -350,7 +350,7 @@ const Onboarding: React.FC = () => {
   };
 
   return (
-    <MobileLayout showBottomNav={false}>
+    <Container maxWidth="sm">
       <Box
         sx={{
           minHeight: "100vh",
@@ -528,7 +528,7 @@ const Onboarding: React.FC = () => {
           </Box>
         </Paper>
       </Box>
-    </MobileLayout>
+    </Container>
   );
 };
 
