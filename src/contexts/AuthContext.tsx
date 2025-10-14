@@ -8,7 +8,13 @@ import React, {
   useCallback,
 } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import api, { getNewAccessToken, updateAccessToken } from "../services/api";
+import api, {
+  getNewAccessToken,
+  updateAccessToken,
+  setIsLoggingOut,
+  getIsLoggingOut,
+  logoutApi,
+} from "../services/api";
 import { AxiosError } from "axios";
 import {
   getRefreshToken,
@@ -59,6 +65,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const checkAuth = useCallback(async () => {
     // Prevent multiple simultaneous auth checks
     if (isCheckingAuth.current) {
+      return;
+    }
+
+    // Skip auth check if we're currently logging out
+    if (getIsLoggingOut()) {
+      console.log("Skipping auth check - currently logging out");
+      setIsLoading(false);
       return;
     }
 
@@ -191,10 +204,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Don't navigate here - let AppContext handle role-based redirect after user data is loaded
   }, []);
 
-  const logout = useCallback(() => {
-    deleteRefreshToken(); // Clear refresh cookie
-    setAccessToken(null); // Clear access token from context
-    navigate("/login");
+  const logout = useCallback(async () => {
+    try {
+      console.log("Starting logout process");
+
+      // Set logout flag to prevent refresh token calls
+      setIsLoggingOut(true);
+
+      // Clear loading state immediately to prevent showing loading screen
+      setIsLoading(false);
+
+      // Call logout endpoint to invalidate server-side refresh token
+      await logoutApi();
+
+      // Clear refresh cookie
+      deleteRefreshToken();
+
+      // Clear access token from context
+      setAccessToken(null);
+
+      // Dispatch event to clear AppContext user state
+      const clearUserEvent = new CustomEvent("clearUserState");
+      window.dispatchEvent(clearUserEvent);
+
+      console.log("Logout process completed, navigating to login");
+      navigate("/login");
+    } catch (error) {
+      console.error("Error during logout:", error);
+      // Even if logout fails, we should still clear local state and navigate
+      deleteRefreshToken();
+      setAccessToken(null);
+      setIsLoading(false); // Ensure loading is cleared even on error
+      const clearUserEvent = new CustomEvent("clearUserState");
+      window.dispatchEvent(clearUserEvent);
+      navigate("/login");
+    } finally {
+      // Reset logout flag
+      setIsLoggingOut(false);
+    }
   }, [navigate]);
 
   const value = {

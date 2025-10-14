@@ -139,6 +139,11 @@ const Login: React.FC = () => {
 
   const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("OTP submit started", {
+      mobile: mobile.replace(/\D/g, ""),
+      otp: otp.join(""),
+    });
+
     try {
       setIsLoading(true);
       const baseUrl = process.env.REACT_APP_API_BASE_URL;
@@ -155,11 +160,27 @@ const Login: React.FC = () => {
         }),
       });
 
+      console.log("Login response status:", response.status);
+
       if (!response.ok) {
-        throw new Error("Invalid OTP");
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Login failed:", {
+          status: response.status,
+          error: errorData,
+        });
+        throw new Error(`Login failed with status ${response.status}`);
       }
 
       const data = await response.json();
+      console.log("Login successful, received data:", {
+        hasToken: !!data.token,
+        userId: data.userId,
+        accountId: data.accountId,
+        organizationId: data.organizationId,
+      });
+
+      // Show success notification
+      // showNotification("התחברות הצליחה! מעביר לדף הבית...", "success");
 
       // Call login to update auth context
       await login({
@@ -169,10 +190,20 @@ const Login: React.FC = () => {
         organizationId: data.organizationId,
       });
 
+      console.log("AuthContext login called, triggering initial login");
+
       // Trigger role-based redirect after user data is loaded
       triggerInitialLogin();
+
+      // Clear OTP fields after successful login
+      setOtp(["", "", "", "", "", ""]);
     } catch (err) {
-      showNotification("קוד לא תקין. אנא נסה שוב.", "error");
+      console.error("OTP submit error:", err);
+      const errorMessage =
+        err instanceof Error && err.message.includes("status 401")
+          ? "קוד לא תקין או פג תוקף. אנא נסה שוב."
+          : "שגיאה בהתחברות. אנא נסה שוב.";
+      showNotification(errorMessage, "error");
     } finally {
       setIsLoading(false);
     }

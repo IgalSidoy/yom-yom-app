@@ -13,6 +13,7 @@ import { LanguageProvider } from "../../contexts/LanguageContext";
 import { AttendanceProvider } from "../../contexts/AttendanceContext";
 import { DailyReportProvider } from "../../contexts/DailyReportContext";
 import { FeedProvider } from "../../contexts/FeedContext";
+import { NotificationProvider } from "../../contexts/NotificationContext";
 
 interface AppProvidersProps {
   children: React.ReactNode;
@@ -38,11 +39,13 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
           >
             <LanguageProvider>
               <AuthProvider>
-                <AttendanceProvider>
-                  <DailyReportProvider>
-                    <FeedProvider>{children}</FeedProvider>
-                  </DailyReportProvider>
-                </AttendanceProvider>
+                <NotificationProvider>
+                  <AttendanceProvider>
+                    <DailyReportProvider>
+                      <FeedProvider>{children}</FeedProvider>
+                    </DailyReportProvider>
+                  </AttendanceProvider>
+                </NotificationProvider>
               </AuthProvider>
             </LanguageProvider>
           </LocalizationProvider>

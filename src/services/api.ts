@@ -59,6 +59,8 @@ const refreshApi = axios.create({
 let isRefreshing = false;
 // Store pending requests
 let failedQueue: any[] = [];
+// Flag to prevent refresh during logout
+let isLoggingOut = false;
 
 // Store the current access token in memory
 let currentAccessToken: string | null = null;
@@ -109,6 +111,42 @@ export const updateAccessToken = (token: string | null) => {
     hasToken: !!token,
     tokenLength: token?.length || 0,
   });
+};
+
+// Function to set logout flag
+export const setIsLoggingOut = (value: boolean) => {
+  isLoggingOut = value;
+  logger.info("Logout flag set", { isLoggingOut: value });
+};
+
+// Function to get logout flag
+export const getIsLoggingOut = () => {
+  return isLoggingOut;
+};
+
+// Function to call logout endpoint
+export const logoutApi = async () => {
+  try {
+    logger.info("Calling logout endpoint");
+    await api.post(
+      "/api/v1/auth/logout",
+      {},
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
+    logger.info("Logout endpoint called successfully");
+  } catch (error) {
+    // Don't throw error - logout should proceed even if endpoint fails
+    logger.warn(
+      "Logout endpoint failed, proceeding with client-side logout",
+      error
+    );
+  }
 };
 
 // Function to process the queue of failed requests
@@ -207,11 +245,12 @@ api.interceptors.response.use(
       url?: string;
     };
 
-    // Skip if not a 401 error or if it's a refresh token request
+    // Skip if not a 401 error or if it's a refresh token request or if logging out
     if (
       error.response?.status !== 401 ||
       originalRequest._retry ||
-      originalRequest.url?.includes("/auth/refresh")
+      originalRequest.url?.includes("/auth/refresh") ||
+      isLoggingOut
     ) {
       return Promise.reject(error);
     }
