@@ -4,6 +4,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useRef,
   ReactNode,
 } from "react";
 import { feedApi, userApi } from "../services/api";
@@ -49,10 +50,14 @@ export const FeedProvider: React.FC<FeedProviderProps> = ({ children }) => {
   const [isFeedLoading, setIsFeedLoading] = useState(false);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
 
+  // Use ref to store userChildren for stable access in callbacks
+  const userChildrenRef = useRef<UserChild[]>([]);
+
   // Fetch parent's children (only for parent users)
   const fetchChildren = useCallback(async () => {
     if (user?.role !== "Parent") {
       setUserChildren([]);
+      userChildrenRef.current = [];
       return;
     }
 
@@ -61,10 +66,12 @@ export const FeedProvider: React.FC<FeedProviderProps> = ({ children }) => {
       const response = await userApi.getUserChildren();
       if (response.data.children) {
         setUserChildren(response.data.children);
+        userChildrenRef.current = response.data.children;
       }
     } catch (error) {
       console.error("Failed to fetch children:", error);
       setUserChildren([]);
+      userChildrenRef.current = [];
     } finally {
       setIsLoadingChildren(false);
     }
@@ -84,7 +91,8 @@ export const FeedProvider: React.FC<FeedProviderProps> = ({ children }) => {
 
         if (user.role === "Parent") {
           // For parents, fetch feed data for all children's groups
-          if (userChildren.length === 0) {
+          const currentChildren = userChildrenRef.current;
+          if (currentChildren.length === 0) {
             console.warn("No children available for parent");
             setFeedPosts([]);
             return;
@@ -92,7 +100,7 @@ export const FeedProvider: React.FC<FeedProviderProps> = ({ children }) => {
 
           // Get unique group IDs from all children
           const groupIds = new Set<string>();
-          userChildren.forEach((child: UserChild) => {
+          currentChildren.forEach((child: UserChild) => {
             if (child.groupId) {
               groupIds.add(child.groupId);
             }
@@ -125,7 +133,7 @@ export const FeedProvider: React.FC<FeedProviderProps> = ({ children }) => {
         } else {
           // For staff, admin, and other roles
           const targetGroupId = groupId || user.groupId;
-          
+
           if (!targetGroupId) {
             console.warn("No group ID available for user");
             setFeedPosts([]);
@@ -145,7 +153,7 @@ export const FeedProvider: React.FC<FeedProviderProps> = ({ children }) => {
         setIsFeedLoading(false);
       }
     },
-    [user, userChildren]
+    [user]
   );
 
   // Handle date change
@@ -175,22 +183,7 @@ export const FeedProvider: React.FC<FeedProviderProps> = ({ children }) => {
     fetchChildren();
   }, [user, fetchChildren]);
 
-  // Set up focus listener for refresh when returning from sleep post creation
-  useEffect(() => {
-    if (!user) return;
-
-    // Set up focus listener for refresh when returning from sleep post creation
-    const handleFocus = () => {
-      console.log("FeedContext: Refreshing feed data on focus");
-      fetchFeedData(selectedDate);
-    };
-
-    window.addEventListener("focus", handleFocus);
-
-    return () => {
-      window.removeEventListener("focus", handleFocus);
-    };
-  }, [user, selectedDate, fetchFeedData]);
+  // Remove aggressive window focus listener - daily feed doesn't need constant refreshing
 
   const value: FeedContextType = {
     feedPosts,

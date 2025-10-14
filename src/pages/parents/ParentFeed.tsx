@@ -24,12 +24,13 @@ const ParentFeed: React.FC = () => {
     isLoadingChildren,
     handleDateChange,
     fetchFeedData,
+    refreshFeed,
     userChildren,
   } = useFeed();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Load feed data when component mounts and children are loaded (for parents)
+  // Load feed data when component mounts - stable dependencies
   useEffect(() => {
     if (user?.role === "Parent") {
       // For parents, wait for children to be loaded
@@ -40,13 +41,15 @@ const ParentFeed: React.FC = () => {
       // For other roles, fetch immediately
       fetchFeedData(selectedDate);
     }
-  }, [user?.role, userChildren.length, selectedDate, fetchFeedData]);
+  }, []); // Empty dependency array - only run on mount
 
   // Header content with date selector
   const headerContent = (
     <FeedDateSelector
       selectedDate={selectedDate}
       onDateChange={handleDateChange}
+      onRefresh={refreshFeed}
+      isRefreshing={isFeedLoading || isLoadingChildren}
       label="בחר תאריך לצפייה בפיד"
     />
   );

@@ -49,7 +49,14 @@ const AdminFeedFilters: React.FC<AdminFeedFiltersProps> = ({
 
       // Auto-select first account if none selected
       if (!selectedAccount && response.data.accounts.length > 0) {
-        onAccountChange(response.data.accounts[0]);
+        const savedAccountId = localStorage.getItem(
+          "admin-selected-account-id"
+        );
+        const accountToSelect = savedAccountId
+          ? response.data.accounts.find((acc) => acc.id === savedAccountId) ||
+            response.data.accounts[0]
+          : response.data.accounts[0];
+        onAccountChange(accountToSelect);
       }
     } catch (err) {
       console.error("Failed to fetch accounts:", err);
@@ -70,7 +77,12 @@ const AdminFeedFilters: React.FC<AdminFeedFiltersProps> = ({
 
         // Auto-select first group if none selected
         if (!selectedGroup && response.data.groups.length > 0) {
-          onGroupChange(response.data.groups[0]);
+          const savedGroupId = localStorage.getItem("admin-selected-group-id");
+          const groupToSelect = savedGroupId
+            ? response.data.groups.find((grp) => grp.id === savedGroupId) ||
+              response.data.groups[0]
+            : response.data.groups[0];
+          onGroupChange(groupToSelect);
         }
       } catch (err) {
         console.error("Failed to fetch groups:", err);
@@ -102,12 +114,24 @@ const AdminFeedFilters: React.FC<AdminFeedFiltersProps> = ({
   const handleAccountChange = (accountId: string) => {
     const account = accounts.find((acc) => acc.id === accountId) || null;
     onAccountChange(account);
+    // Save to localStorage
+    if (account) {
+      localStorage.setItem("admin-selected-account-id", account.id);
+    } else {
+      localStorage.removeItem("admin-selected-account-id");
+    }
   };
 
   // Handle group change
   const handleGroupChange = (groupId: string) => {
     const group = groups.find((grp) => grp.id === groupId) || null;
     onGroupChange(group);
+    // Save to localStorage
+    if (group) {
+      localStorage.setItem("admin-selected-group-id", group.id);
+    } else {
+      localStorage.removeItem("admin-selected-group-id");
+    }
   };
 
   // Mobile layout - stacked vertically

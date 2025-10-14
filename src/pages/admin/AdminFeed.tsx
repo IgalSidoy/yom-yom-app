@@ -25,6 +25,7 @@ const AdminFeed: React.FC = () => {
     isFeedLoading,
     handleDateChange,
     fetchFeedData,
+    refreshFeed,
   } = useFeed();
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,12 +34,26 @@ const AdminFeed: React.FC = () => {
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
 
-  // Load feed data when component mounts and when selections change
+  // Load feed data when component mounts and when selections change - stable dependencies
   useEffect(() => {
     if (selectedGroup) {
       fetchFeedData(selectedDate, selectedGroup.id);
     }
-  }, [selectedGroup, selectedDate, fetchFeedData]);
+  }, []); // Empty dependency array - only run on mount
+
+  // Fetch data when group selection changes
+  useEffect(() => {
+    if (selectedGroup) {
+      fetchFeedData(selectedDate, selectedGroup.id);
+    }
+  }, [selectedGroup?.id]); // Only depend on group ID, not the whole object
+
+  // Fetch data when date changes
+  useEffect(() => {
+    if (selectedGroup) {
+      fetchFeedData(selectedDate, selectedGroup.id);
+    }
+  }, [selectedDate]); // Only depend on date
 
   // Handle account change
   const handleAccountChange = (account: Account | null) => {
@@ -68,6 +83,8 @@ const AdminFeed: React.FC = () => {
       <FeedDateSelector
         selectedDate={selectedDate}
         onDateChange={handleDateChange}
+        onRefresh={refreshFeed}
+        isRefreshing={isFeedLoading}
         label="בחר תאריך לצפייה בפיד"
       />
     </Box>

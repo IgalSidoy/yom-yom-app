@@ -23,22 +23,25 @@ const StaffFeed: React.FC = () => {
     isFeedLoading,
     handleDateChange,
     fetchFeedData,
+    refreshFeed,
   } = useFeed();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Load feed data when component mounts
+  // Load feed data when component mounts - stable dependencies
   useEffect(() => {
     if (user?.groupId) {
       fetchFeedData(selectedDate);
     }
-  }, [user?.groupId, selectedDate, fetchFeedData]);
+  }, []); // Empty dependency array - only run on mount
 
   // Header content with date selector
   const headerContent = (
     <FeedDateSelector
       selectedDate={selectedDate}
       onDateChange={handleDateChange}
+      onRefresh={refreshFeed}
+      isRefreshing={isFeedLoading}
       label="בחר תאריך לצפייה בפיד"
     />
   );
