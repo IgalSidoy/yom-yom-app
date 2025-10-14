@@ -14,6 +14,8 @@ import {
 import { useNavigate, Link } from "react-router-dom";
 import CheckIcon from "@mui/icons-material/Check";
 import { useAuth } from "../../contexts/AuthContext";
+import { useApp } from "../../contexts/AppContext";
+import MobileLayout from "../../shared/components/layout/MobileLayout";
 
 const steps = [1, 2, 3];
 
@@ -48,6 +50,7 @@ const Onboarding: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
+  const { triggerInitialLogin } = useApp();
   const [form, setForm] = useState({
     email: "",
     businessId: "",
@@ -164,7 +167,8 @@ const Onboarding: React.FC = () => {
         accountId: data.accountId,
         organizationId: data.organizationId,
       });
-      navigate("/dashboard");
+      // Trigger role-based redirect after user data is loaded
+      triggerInitialLogin();
     } catch (error) {
       setErrors({
         email: "שגיאה בשליחת הטופס. אנא נסה שוב.",
@@ -346,183 +350,185 @@ const Onboarding: React.FC = () => {
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        bgcolor: "#FFF6EB",
-        p: 2,
-      }}
-    >
-      <Paper
-        elevation={3}
+    <MobileLayout showBottomNav={false}>
+      <Box
         sx={{
-          width: "100%",
-          maxWidth: "500px",
-          p: 4,
-          borderRadius: 3,
-          bgcolor: "#FFF9F0",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: "#FFF6EB",
+          p: 2,
         }}
       >
-        <Box
-          component="form"
-          onSubmit={handleSubmit}
+        <Paper
+          elevation={3}
           sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 3,
+            width: "100%",
+            maxWidth: "500px",
+            p: 4,
+            borderRadius: 3,
+            bgcolor: "#FFF9F0",
           }}
         >
-          {isSubmitting ? (
-            <CircularProgress
-              size={60}
-              sx={{
-                color: "#FF9F43",
-              }}
-            />
-          ) : (
-            <>
-              <Typography
-                variant="h4"
-                align="center"
-                sx={{ fontWeight: 700, color: "#6B3F1D", mb: 2 }}
-              >
-                הגדרת חשבון
-              </Typography>
-
-              <Stepper
-                activeStep={activeStep}
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 3,
+            }}
+          >
+            {isSubmitting ? (
+              <CircularProgress
+                size={60}
                 sx={{
-                  paddingLeft: "50px",
-                  width: "80%",
-                  margin: "auto",
-                  marginLeft: "auto",
-                  marginRight: "auto",
-                  mb: 2,
-                  marginBottom: "10px",
-                  "& .MuiStepLabel-label": {
-                    display: "none",
-                  },
-                  "& .MuiStepIcon-root": {
-                    display: "none",
-                  },
-                  "& .MuiStepConnector-line": {
-                    display: "none",
-                  },
-                  "& .MuiStepConnector-root": {
-                    display: "none",
-                  },
-                  "& .MuiStep-root": {
-                    padding: 1,
-                    flex: 1,
-                    "&:first-of-type": {
-                      paddingLeft: 0,
-                    },
-                    "&:last-child": {
-                      paddingRight: 0,
-                    },
-                  },
+                  color: "#FF9F43",
                 }}
-              >
-                {steps.map((step) => (
-                  <Step key={step}>
-                    <StepLabel StepIconComponent={CustomStepIcon} />
-                  </Step>
-                ))}
-              </Stepper>
+              />
+            ) : (
+              <>
+                <Typography
+                  variant="h4"
+                  align="center"
+                  sx={{ fontWeight: 700, color: "#6B3F1D", mb: 2 }}
+                >
+                  הגדרת חשבון
+                </Typography>
 
-              {getStepContent(activeStep)}
-
-              <Box sx={{ display: "flex", gap: 2, mt: 2, width: "100%" }}>
-                {activeStep < steps.length - 1 ? (
-                  <Button
-                    onClick={handleNext}
-                    type="button"
-                    variant="contained"
-                    sx={{
-                      bgcolor: "#FF9F43",
-                      color: "white",
-                      fontWeight: 700,
-                      fontSize: 20,
-                      borderRadius: 3,
+                <Stepper
+                  activeStep={activeStep}
+                  sx={{
+                    paddingLeft: "50px",
+                    width: "80%",
+                    margin: "auto",
+                    marginLeft: "auto",
+                    marginRight: "auto",
+                    mb: 2,
+                    marginBottom: "10px",
+                    "& .MuiStepLabel-label": {
+                      display: "none",
+                    },
+                    "& .MuiStepIcon-root": {
+                      display: "none",
+                    },
+                    "& .MuiStepConnector-line": {
+                      display: "none",
+                    },
+                    "& .MuiStepConnector-root": {
+                      display: "none",
+                    },
+                    "& .MuiStep-root": {
+                      padding: 1,
                       flex: 1,
-                      py: 1.5,
-                      boxShadow: "none",
-                      "&:hover": { bgcolor: "#FF8C1A" },
-                    }}
-                  >
-                    המשך
-                  </Button>
-                ) : (
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    sx={{
-                      bgcolor: "#FF9F43",
-                      color: "white",
-                      fontWeight: 700,
-                      fontSize: 20,
-                      borderRadius: 3,
-                      flex: 1,
-                      py: 1.5,
-                      boxShadow: "none",
-                      "&:hover": { bgcolor: "#FF8C1A" },
-                    }}
-                  >
-                    סיום
-                  </Button>
-                )}
-                {activeStep > 0 && (
-                  <Button
-                    onClick={handleBack}
-                    type="button"
-                    variant="outlined"
-                    sx={{
-                      color: "#FF9F43",
-                      borderColor: "#FF9F43",
-                      fontWeight: 700,
-                      borderRadius: 3,
-                      flex: 1,
-                      py: 1.5,
-                      "&:hover": {
-                        borderColor: "#FF8C1A",
-                        bgcolor: "rgba(255, 159, 67, 0.04)",
+                      "&:first-of-type": {
+                        paddingLeft: 0,
                       },
-                    }}
-                  >
-                    חזור
-                  </Button>
-                )}
-              </Box>
-              <Typography
-                variant="body2"
-                sx={{
-                  mt: 2,
-                  color: "#666",
-                  textAlign: "center",
-                  "& a": {
-                    color: "#FF9F43",
-                    textDecoration: "none",
-                    fontWeight: 500,
-                    "&:hover": {
-                      textDecoration: "underline",
+                      "&:last-child": {
+                        paddingRight: 0,
+                      },
                     },
-                  },
-                }}
-              >
-                כבר יש לך חשבון?{" "}
-                <Link to="/login" style={{ color: "#FF9F43" }}>
-                  התחבר כאן
-                </Link>
-              </Typography>
-            </>
-          )}
-        </Box>
-      </Paper>
-    </Box>
+                  }}
+                >
+                  {steps.map((step) => (
+                    <Step key={step}>
+                      <StepLabel StepIconComponent={CustomStepIcon} />
+                    </Step>
+                  ))}
+                </Stepper>
+
+                {getStepContent(activeStep)}
+
+                <Box sx={{ display: "flex", gap: 2, mt: 2, width: "100%" }}>
+                  {activeStep < steps.length - 1 ? (
+                    <Button
+                      onClick={handleNext}
+                      type="button"
+                      variant="contained"
+                      sx={{
+                        bgcolor: "#FF9F43",
+                        color: "white",
+                        fontWeight: 700,
+                        fontSize: 20,
+                        borderRadius: 3,
+                        flex: 1,
+                        py: 1.5,
+                        boxShadow: "none",
+                        "&:hover": { bgcolor: "#FF8C1A" },
+                      }}
+                    >
+                      המשך
+                    </Button>
+                  ) : (
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      sx={{
+                        bgcolor: "#FF9F43",
+                        color: "white",
+                        fontWeight: 700,
+                        fontSize: 20,
+                        borderRadius: 3,
+                        flex: 1,
+                        py: 1.5,
+                        boxShadow: "none",
+                        "&:hover": { bgcolor: "#FF8C1A" },
+                      }}
+                    >
+                      סיום
+                    </Button>
+                  )}
+                  {activeStep > 0 && (
+                    <Button
+                      onClick={handleBack}
+                      type="button"
+                      variant="outlined"
+                      sx={{
+                        color: "#FF9F43",
+                        borderColor: "#FF9F43",
+                        fontWeight: 700,
+                        borderRadius: 3,
+                        flex: 1,
+                        py: 1.5,
+                        "&:hover": {
+                          borderColor: "#FF8C1A",
+                          bgcolor: "rgba(255, 159, 67, 0.04)",
+                        },
+                      }}
+                    >
+                      חזור
+                    </Button>
+                  )}
+                </Box>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    mt: 2,
+                    color: "#666",
+                    textAlign: "center",
+                    "& a": {
+                      color: "#FF9F43",
+                      textDecoration: "none",
+                      fontWeight: 500,
+                      "&:hover": {
+                        textDecoration: "underline",
+                      },
+                    },
+                  }}
+                >
+                  כבר יש לך חשבון?{" "}
+                  <Link to="/login" style={{ color: "#FF9F43" }}>
+                    התחבר כאן
+                  </Link>
+                </Typography>
+              </>
+            )}
+          </Box>
+        </Paper>
+      </Box>
+    </MobileLayout>
   );
 };
 

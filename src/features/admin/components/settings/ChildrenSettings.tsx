@@ -1,0 +1,1496 @@
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
+import {
+  Box,
+  Typography,
+  Paper,
+  Chip,
+  Avatar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Fab,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
+  InputAdornment,
+  Skeleton,
+  Fade,
+} from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import SearchIcon from "@mui/icons-material/Search";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Button, Card } from "../../../../shared/components";
+import { AdminSettingsLayout } from "../../../../shared/components/layout";
+import { useApp } from "../../../../contexts/AppContext";
+import {
+  childApi,
+  ChildWithParents,
+  accountApi,
+  Account,
+} from "../../../../services/api";
+import Notification from "../../../../shared/components/ui/Notification";
+import { THEME_COLORS, UI_COLORS } from "../../../../config/colors";
+import { ROUTES } from "../../../../config/routes";
+
+const ChildrenSettings: React.FC = () => {
+  const { user } = useApp();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // SessionStorage key for persistence
+  const SESSION_KEY = "childrenSettings_selectedAccountId";
+
+  const [children, setChildren] = useState<ChildWithParents[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+
+  // Save selected account ID to sessionStorage whenever it changes
+  useEffect(() => {
+    if (selectedAccountId) {
+      sessionStorage.setItem(SESSION_KEY, selectedAccountId);
+    }
+  }, [selectedAccountId, SESSION_KEY]);
+
+  const [error, setError] = useState<string | null>(null);
+  const [notification, setNotification] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "info" | "warning",
+  });
+  const [deleteDialog, setDeleteDialog] = useState({
+    open: false,
+    childId: "",
+    childName: "",
+  });
+
+  // Memoized date formatter to prevent unnecessary re-renders
+  const formatDate = useCallback((dateString: string) => {
+    if (!dateString || dateString === "0001-01-01T00:00:00") {
+      return "לא זמין";
+    }
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat("he-IL", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+      .format(date)
+      .replace(",", ":");
+  }, []);
+
+  const calculateAge = useCallback((birthDate: string) => {
+    if (!birthDate || birthDate === "0001-01-01T00:00:00") {
+      return "לא זמין";
+    }
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birth.getDate())
+    ) {
+      age--;
+    }
+
+    return `${age} שנים`;
+  }, []);
+
+  const getParentName = useCallback((child: ChildWithParents) => {
+    if (child.parents && child.parents.length > 0) {
+      const parent = child.parents[0];
+      return `${parent.firstName} ${parent.lastName}`;
+    }
+    return "לא זמין";
+  }, []);
+
+  const showNotification = useCallback(
+    (
+      message: string,
+      severity: "success" | "error" | "info" | "warning" = "success"
+    ) => {
+      setNotification({
+        open: true,
+        message,
+        severity,
+      });
+    },
+    []
+  );
+
+  const handleCloseNotification = useCallback(() => {
+    setNotification((prev) => ({ ...prev, open: false }));
+  }, []);
+
+  const fetchAccounts = useCallback(async () => {
+    try {
+      const response = await accountApi.getAccounts();
+      setAccounts(response.data.accounts);
+
+      // Check for accountId from URL or restore from sessionStorage
+      const accountIdFromUrl = searchParams.get("accountId");
+      const savedAccountId = sessionStorage.getItem(SESSION_KEY);
+      const targetAccountId = accountIdFromUrl || savedAccountId;
+
+      if (response.data.accounts.length > 0) {
+        if (targetAccountId) {
+          // Restore the saved account ID
+          setSelectedAccountId(targetAccountId);
+        } else {
+          // No saved account, use first account as fallback
+          const firstAccountId = response.data.accounts[0].id;
+          setSelectedAccountId((prev) => prev || firstAccountId);
+        }
+      }
+    } catch (err) {
+      setError("שגיאה בטעינת רשימת הסניפים");
+      setNotification({
+        open: true,
+        message: "שגיאה בטעינת רשימת הסניפים",
+        severity: "error",
+      });
+    }
+  }, [searchParams, SESSION_KEY]);
+
+  const fetchChildren = useCallback(async () => {
+    if (!selectedAccountId) return;
+
+    try {
+      setError(null);
+      setLoading(true); // Set loading to true when starting fetch
+      const response = await childApi.getChildrenByAccount(selectedAccountId);
+      setChildren(response.children);
+    } catch (err) {
+      setError("שגיאה בטעינת רשימת הילדים");
+      setNotification({
+        open: true,
+        message: "שגיאה בטעינת רשימת הילדים",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedAccountId]);
+
+  useEffect(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
+
+  useEffect(() => {
+    if (selectedAccountId) {
+      fetchChildren();
+    }
+  }, [selectedAccountId, fetchChildren]);
+
+  const handleCreateChild = useCallback(() => {
+    const url = selectedAccountId
+      ? `${ROUTES.ADMIN_CHILD_CREATE}?accountId=${selectedAccountId}`
+      : ROUTES.ADMIN_CHILD_CREATE;
+    navigate(url);
+  }, [navigate, selectedAccountId]);
+
+  const handleAccountChange = useCallback(
+    (accountId: string) => {
+      // Clear children immediately to prevent showing old data
+      setChildren([]);
+      // Show loading state immediately
+      setLoading(true);
+      // Update selected account
+      setSelectedAccountId(accountId);
+      // Update URL to reflect the selected account
+      const newUrl = accountId
+        ? `/admin/settings/children?accountId=${accountId}`
+        : "/admin/settings/children";
+      navigate(newUrl, { replace: true });
+    },
+    [navigate]
+  );
+
+  const handleEditChild = useCallback(
+    (child: ChildWithParents) => {
+      navigate(ROUTES.ADMIN_CHILD_EDIT.replace(":id", child.id || ""), {
+        state: { child },
+      });
+    },
+    [navigate]
+  );
+
+  const handleDeleteClick = useCallback((child: ChildWithParents) => {
+    setDeleteDialog({
+      open: true,
+      childId: child.id || "",
+      childName: `${child.firstName} ${child.lastName}`,
+    });
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    try {
+      setLoading(true);
+      await childApi.deleteChild(deleteDialog.childId);
+      await fetchChildren(); // Refresh the list
+      showNotification("הילד נמחק בהצלחה", "success");
+      setDeleteDialog({ open: false, childId: "", childName: "" });
+    } catch (err) {
+      setError("שגיאה במחיקת הילד");
+      showNotification("שגיאה במחיקת הילד", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [deleteDialog.childId, fetchChildren, showNotification]);
+
+  const handleDeleteCancel = useCallback(() => {
+    setDeleteDialog({ open: false, childId: "", childName: "" });
+  }, []);
+
+  // Memoized components for performance
+  const ChildCard = useMemo(
+    () =>
+      React.memo(
+        ({ child, index = 0 }: { child: ChildWithParents; index?: number }) => (
+          <Fade
+            in={true}
+            timeout={500}
+            style={{
+              transitionDelay: `${index * 100}ms`, // Staggered animation
+            }}
+          >
+            <Box
+              sx={{
+                width: "100%",
+                bgcolor: THEME_COLORS.BACKGROUND,
+                backgroundColor: THEME_COLORS.BACKGROUND,
+                borderRadius: 0, // Override theme border radius
+                margin: 0, // Remove any margins
+                paddingTop: 2, // Remove top padding to eliminate gaps
+                paddingBottom: 1, // Remove bottom padding to eliminate gaps
+                paddingLeft: { xs: 2, sm: 3 }, // Responsive left padding
+                paddingRight: { xs: 2, sm: 3 }, // Responsive right padding
+                borderBottom: "1px solid",
+                borderColor: UI_COLORS.BORDER_LIGHT,
+                transition: "all 0.2s ease-in-out",
+                "&:hover": {
+                  bgcolor: "action.hover",
+                },
+                "&:first-of-type": {
+                  paddingTop: { xs: 2, sm: 3 }, // Responsive top padding
+                },
+                "&:last-child": {
+                  paddingBottom: { xs: 2, sm: 3 }, // Responsive bottom padding
+                },
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  mb: 2,
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Avatar
+                    sx={{
+                      bgcolor: THEME_COLORS.PRIMARY,
+                      width: 40,
+                      height: 40,
+                      fontSize: "1rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {child.firstName.charAt(0).toUpperCase()}
+                  </Avatar>
+                  <Box>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 600,
+                        mb: 0.5,
+                        color: THEME_COLORS.TEXT_PRIMARY,
+                      }}
+                    >
+                      {child.firstName} {child.lastName}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: THEME_COLORS.TEXT_SECONDARY,
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      {getParentName(child)}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                  <Button
+                    variant="outline"
+                    size="small"
+                    onClick={() => handleEditChild(child)}
+                    sx={{ borderRadius: 2, textTransform: "none" }}
+                  >
+                    עריכה
+                  </Button>
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={() => handleDeleteClick(child)}
+                    sx={{
+                      color: "error.main",
+                      borderRadius: 2,
+                      textTransform: "none",
+                      border: "1px solid",
+                      borderColor: "error.main",
+                      opacity: 0.7,
+                      "&:hover": {
+                        backgroundColor: "error.main",
+                        color: "white",
+                        opacity: 1,
+                      },
+                    }}
+                  >
+                    מחיקה
+                  </Button>
+                </Box>
+              </Box>
+
+              {/* Badges Section */}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 1,
+                  mb: 2,
+                  justifyContent: "flex-start",
+                }}
+              >
+                <Chip
+                  label={`גיל: ${calculateAge(child.dateOfBirth)}`}
+                  size="small"
+                  variant="filled"
+                  sx={{
+                    borderRadius: 1,
+                    opacity: 1,
+                    fontWeight: 600,
+                    fontSize: "0.75rem",
+                    backgroundColor: THEME_COLORS.SECONDARY,
+                    color: THEME_COLORS.TEXT_PRIMARY,
+                    "&:hover": {
+                      backgroundColor: THEME_COLORS.SECONDARY,
+                      opacity: 0.9,
+                    },
+                  }}
+                />
+                {child.groupName && (
+                  <Chip
+                    label={child.groupName}
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                      borderRadius: 1,
+                      fontWeight: 500,
+                      fontSize: "0.7rem",
+                      borderColor: THEME_COLORS.PRIMARY,
+                      color: THEME_COLORS.TEXT_PRIMARY,
+                      backgroundColor: THEME_COLORS.PRIMARY,
+                      "&:hover": {
+                        backgroundColor: THEME_COLORS.PRIMARY,
+                        opacity: 0.8,
+                      },
+                    }}
+                  />
+                )}
+              </Box>
+
+              {/* Date Section */}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
+                  gap: { xs: 1.5, sm: 2 },
+                  mt: { xs: 1, sm: 0 },
+                }}
+              >
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: "block",
+                      mb: 0.5,
+                      color: THEME_COLORS.TEXT_PRIMARY,
+                      fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                    }}
+                  >
+                    נוצר בתאריך
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 500,
+                      color: THEME_COLORS.TEXT_PRIMARY,
+                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {formatDate(child.created || "")}
+                  </Typography>
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: "block",
+                      mb: 0.5,
+                      color: THEME_COLORS.TEXT_PRIMARY,
+                      fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                    }}
+                  >
+                    עודכן בתאריך
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 500,
+                      color: THEME_COLORS.TEXT_PRIMARY,
+                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {formatDate(child.updated || "")}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          </Fade>
+        )
+      ),
+    [
+      formatDate,
+      calculateAge,
+      getParentName,
+      handleEditChild,
+      handleDeleteClick,
+    ]
+  );
+
+  const ChildTableRow = useMemo(
+    () =>
+      React.memo(
+        ({ child, index = 0 }: { child: ChildWithParents; index?: number }) => (
+          <Fade
+            in={true}
+            timeout={500}
+            style={{
+              transitionDelay: `${index * 100}ms`, // Staggered animation
+            }}
+          >
+            <TableRow
+              hover
+              sx={{
+                bgcolor: "background.paper",
+                "&:hover": {
+                  boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
+                  transform: "translateY(-2px)",
+                },
+                transition: "all 0.2s ease-in-out",
+              }}
+            >
+              <TableCell
+                sx={{
+                  textAlign: "right",
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Avatar
+                    sx={{
+                      bgcolor: THEME_COLORS.PRIMARY,
+                      width: 40,
+                      height: 40,
+                      fontSize: "1rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {child.firstName.charAt(0).toUpperCase()}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      {child.firstName} {child.lastName}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {getParentName(child)}
+                    </Typography>
+                  </Box>
+                </Box>
+              </TableCell>
+              <TableCell
+                sx={{
+                  textAlign: "right",
+                }}
+              >
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  {calculateAge(child.dateOfBirth)}
+                </Typography>
+              </TableCell>
+              <TableCell
+                sx={{
+                  textAlign: "right",
+                }}
+              >
+                {child.groupName ? (
+                  <Chip
+                    label={child.groupName}
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                      borderRadius: 1,
+                      fontWeight: 500,
+                      fontSize: "0.75rem",
+                      borderColor: THEME_COLORS.PRIMARY,
+                      color: THEME_COLORS.TEXT_PRIMARY,
+                      backgroundColor: THEME_COLORS.PRIMARY,
+                      "&:hover": {
+                        backgroundColor: THEME_COLORS.PRIMARY,
+                        opacity: 0.8,
+                      },
+                    }}
+                  />
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    ללא קבוצה
+                  </Typography>
+                )}
+              </TableCell>
+              <TableCell
+                sx={{
+                  textAlign: "right",
+                }}
+              >
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  {formatDate(child.created || "")}
+                </Typography>
+              </TableCell>
+              <TableCell
+                sx={{
+                  textAlign: "right",
+                }}
+              >
+                <Box
+                  sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}
+                >
+                  <Button
+                    variant="outline"
+                    size="small"
+                    onClick={() => handleEditChild(child)}
+                    sx={{ borderRadius: 2, textTransform: "none" }}
+                  >
+                    עריכה
+                  </Button>
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={() => handleDeleteClick(child)}
+                    sx={{
+                      color: "error.main",
+                      borderRadius: 2,
+                      textTransform: "none",
+                      border: "1px solid",
+                      borderColor: "error.main",
+                      opacity: 0.7,
+                      "&:hover": {
+                        backgroundColor: "error.main",
+                        color: "white",
+                        opacity: 1,
+                      },
+                    }}
+                  >
+                    מחיקה
+                  </Button>
+                </Box>
+              </TableCell>
+            </TableRow>
+          </Fade>
+        )
+      ),
+    [
+      formatDate,
+      calculateAge,
+      getParentName,
+      handleEditChild,
+      handleDeleteClick,
+    ]
+  );
+
+  // Skeleton components for loading states
+  const ChildCardSkeleton = useMemo(
+    () =>
+      React.memo(() => (
+        <Fade in={true} timeout={300}>
+          <Box
+            sx={{
+              width: "100%",
+              bgcolor: THEME_COLORS.BACKGROUND,
+              borderRadius: 0,
+              margin: 0,
+              paddingTop: 2,
+              paddingBottom: 1,
+              paddingLeft: { xs: 2, sm: 3 },
+              paddingRight: { xs: 2, sm: 3 },
+              borderBottom: "1px solid",
+              borderColor: UI_COLORS.BORDER_LIGHT,
+              transition: "all 0.2s ease-in-out",
+              "&:first-of-type": {
+                paddingTop: { xs: 2, sm: 3 },
+              },
+              "&:last-child": {
+                paddingBottom: { xs: 2, sm: 3 },
+              },
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                mb: 2,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Skeleton
+                  variant="circular"
+                  width={40}
+                  height={40}
+                  sx={{
+                    bgcolor: "rgba(0,0,0,0.08)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+                <Box>
+                  <Skeleton
+                    variant="text"
+                    width="120px"
+                    height={24}
+                    sx={{
+                      mb: 0.5,
+                      bgcolor: "rgba(0,0,0,0.08)",
+                      animation: "pulse 2s ease-in-out infinite",
+                      "@keyframes pulse": {
+                        "0%": { opacity: 1 },
+                        "50%": { opacity: 0.4 },
+                        "100%": { opacity: 1 },
+                      },
+                    }}
+                  />
+                  <Skeleton
+                    variant="text"
+                    width="80px"
+                    height={16}
+                    sx={{
+                      bgcolor: "rgba(0,0,0,0.06)",
+                      animation: "pulse 2s ease-in-out infinite",
+                      "@keyframes pulse": {
+                        "0%": { opacity: 1 },
+                        "50%": { opacity: 0.4 },
+                        "100%": { opacity: 1 },
+                      },
+                    }}
+                  />
+                </Box>
+              </Box>
+              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                <Skeleton
+                  variant="rectangular"
+                  width={60}
+                  height={32}
+                  sx={{
+                    borderRadius: 2,
+                    bgcolor: "rgba(0,0,0,0.08)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+                <Skeleton
+                  variant="rectangular"
+                  width={60}
+                  height={32}
+                  sx={{
+                    borderRadius: 2,
+                    bgcolor: "rgba(0,0,0,0.08)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+              </Box>
+            </Box>
+
+            {/* Badges Section Skeleton */}
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 1,
+                mb: 2,
+                justifyContent: "flex-start",
+              }}
+            >
+              <Skeleton
+                variant="rectangular"
+                width={80}
+                height={24}
+                sx={{
+                  borderRadius: 1,
+                  bgcolor: "rgba(0,0,0,0.06)",
+                  animation: "pulse 2s ease-in-out infinite",
+                  "@keyframes pulse": {
+                    "0%": { opacity: 1 },
+                    "50%": { opacity: 0.4 },
+                    "100%": { opacity: 1 },
+                  },
+                }}
+              />
+              <Skeleton
+                variant="rectangular"
+                width={60}
+                height={24}
+                sx={{
+                  borderRadius: 1,
+                  bgcolor: "rgba(0,0,0,0.06)",
+                  animation: "pulse 2s ease-in-out infinite",
+                  "@keyframes pulse": {
+                    "0%": { opacity: 1 },
+                    "50%": { opacity: 0.4 },
+                    "100%": { opacity: 1 },
+                  },
+                }}
+              />
+            </Box>
+
+            {/* Date Section Skeleton */}
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: { xs: 1.5, sm: 2 },
+                mt: { xs: 1, sm: 0 },
+              }}
+            >
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Skeleton
+                  variant="text"
+                  width="60px"
+                  height={12}
+                  sx={{
+                    mb: 0.5,
+                    bgcolor: "rgba(0,0,0,0.06)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+                <Skeleton
+                  variant="text"
+                  width="100px"
+                  height={16}
+                  sx={{
+                    bgcolor: "rgba(0,0,0,0.08)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Skeleton
+                  variant="text"
+                  width="60px"
+                  height={12}
+                  sx={{
+                    mb: 0.5,
+                    bgcolor: "rgba(0,0,0,0.06)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+                <Skeleton
+                  variant="text"
+                  width="100px"
+                  height={16}
+                  sx={{
+                    bgcolor: "rgba(0,0,0,0.08)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+              </Box>
+            </Box>
+          </Box>
+        </Fade>
+      )),
+    []
+  );
+
+  const ChildTableRowSkeleton = useMemo(
+    () =>
+      React.memo(() => (
+        <Fade in={true} timeout={300}>
+          <TableRow
+            sx={{
+              bgcolor: "background.paper",
+              transition: "all 0.2s ease-in-out",
+            }}
+          >
+            <TableCell sx={{ textAlign: "right" }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Skeleton
+                  variant="circular"
+                  width={40}
+                  height={40}
+                  sx={{
+                    bgcolor: "rgba(0,0,0,0.08)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+                <Box>
+                  <Skeleton
+                    variant="text"
+                    width="120px"
+                    height={24}
+                    sx={{
+                      mb: 0.5,
+                      bgcolor: "rgba(0,0,0,0.08)",
+                      animation: "pulse 2s ease-in-out infinite",
+                      "@keyframes pulse": {
+                        "0%": { opacity: 1 },
+                        "50%": { opacity: 0.4 },
+                        "100%": { opacity: 1 },
+                      },
+                    }}
+                  />
+                  <Skeleton
+                    variant="text"
+                    width="80px"
+                    height={16}
+                    sx={{
+                      bgcolor: "rgba(0,0,0,0.06)",
+                      animation: "pulse 2s ease-in-out infinite",
+                      "@keyframes pulse": {
+                        "0%": { opacity: 1 },
+                        "50%": { opacity: 0.4 },
+                        "100%": { opacity: 1 },
+                      },
+                    }}
+                  />
+                </Box>
+              </Box>
+            </TableCell>
+            <TableCell sx={{ textAlign: "right" }}>
+              <Skeleton
+                variant="text"
+                width="60px"
+                height={20}
+                sx={{
+                  bgcolor: "rgba(0,0,0,0.08)",
+                  animation: "pulse 2s ease-in-out infinite",
+                  "@keyframes pulse": {
+                    "0%": { opacity: 1 },
+                    "50%": { opacity: 0.4 },
+                    "100%": { opacity: 1 },
+                  },
+                }}
+              />
+            </TableCell>
+            <TableCell sx={{ textAlign: "right" }}>
+              <Skeleton
+                variant="rectangular"
+                width={80}
+                height={24}
+                sx={{
+                  borderRadius: 1,
+                  bgcolor: "rgba(0,0,0,0.06)",
+                  animation: "pulse 2s ease-in-out infinite",
+                  "@keyframes pulse": {
+                    "0%": { opacity: 1 },
+                    "50%": { opacity: 0.4 },
+                    "100%": { opacity: 1 },
+                  },
+                }}
+              />
+            </TableCell>
+            <TableCell sx={{ textAlign: "right" }}>
+              <Skeleton
+                variant="text"
+                width="100px"
+                height={20}
+                sx={{
+                  bgcolor: "rgba(0,0,0,0.08)",
+                  animation: "pulse 2s ease-in-out infinite",
+                  "@keyframes pulse": {
+                    "0%": { opacity: 1 },
+                    "50%": { opacity: 0.4 },
+                    "100%": { opacity: 1 },
+                  },
+                }}
+              />
+            </TableCell>
+            <TableCell sx={{ textAlign: "right" }}>
+              <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+                <Skeleton
+                  variant="rectangular"
+                  width={60}
+                  height={32}
+                  sx={{
+                    borderRadius: 2,
+                    bgcolor: "rgba(0,0,0,0.08)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+                <Skeleton
+                  variant="rectangular"
+                  width={60}
+                  height={32}
+                  sx={{
+                    borderRadius: 2,
+                    bgcolor: "rgba(0,0,0,0.08)",
+                    animation: "pulse 2s ease-in-out infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+              </Box>
+            </TableCell>
+          </TableRow>
+        </Fade>
+      )),
+    []
+  );
+
+  if (loading && children.length === 0) {
+    return (
+      <AdminSettingsLayout title="ניהול ילדים" subtitle="טוען רשימת ילדים...">
+        <Card
+          sx={{
+            height: { xs: "100%", sm: "auto" },
+            display: { xs: "flex", sm: "block" },
+            flexDirection: { xs: "column", sm: "row" },
+            minHeight: 0,
+            borderRadius: 1,
+            boxShadow: "none",
+            border: "none",
+            backgroundColor: THEME_COLORS.BACKGROUND,
+          }}
+        >
+          <Box
+            sx={{
+              padding: 0,
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              minHeight: 0,
+              overflow: "hidden",
+              bgcolor: THEME_COLORS.BACKGROUND,
+              borderRadius: 0,
+              margin: 0,
+              border: "none",
+            }}
+          >
+            {/* Mobile: Skeleton Card Layout */}
+            <Box
+              sx={{
+                display: { xs: "block", md: "none" },
+                flex: 1,
+                overflowY: "auto",
+                overflowX: "hidden",
+                margin: 0,
+                padding: 0,
+                minHeight: 0,
+                borderRadius: 0,
+                width: "100%",
+                maxWidth: "100%",
+              }}
+            >
+              {Array.from({ length: 6 }).map((_, index) => (
+                <ChildCardSkeleton key={index} />
+              ))}
+            </Box>
+
+            {/* Desktop: Skeleton Table Layout */}
+            <Box sx={{ display: { xs: "none", md: "block" } }}>
+              <TableContainer
+                component={Paper}
+                elevation={0}
+                sx={{
+                  border: "none",
+                  borderRadius: 0,
+                  boxShadow: "none",
+                  margin: 0,
+                  padding: 0,
+                }}
+              >
+                <Table>
+                  <TableHead>
+                    <TableRow
+                      sx={{
+                        bgcolor: "background.paper",
+                        borderBottom: "1px solid",
+                        borderColor: "divider",
+                      }}
+                    >
+                      <TableCell
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "1rem",
+                          textAlign: "right",
+                        }}
+                      >
+                        ילד
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "1rem",
+                          textAlign: "right",
+                        }}
+                      >
+                        גיל
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "1rem",
+                          textAlign: "right",
+                        }}
+                      >
+                        קבוצה
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "1rem",
+                          textAlign: "right",
+                        }}
+                      >
+                        נוצר בתאריך
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "1rem",
+                          textAlign: "right",
+                        }}
+                      >
+                        פעולות
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <ChildTableRowSkeleton key={index} />
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          </Box>
+        </Card>
+      </AdminSettingsLayout>
+    );
+  }
+
+  const selectedAccount = accounts.find((acc) => acc.id === selectedAccountId);
+  const subtitle = selectedAccount
+    ? `${children.length} ילדים זמינים עבור ${selectedAccount.branchName}`
+    : `${children.length} ילדים זמינים`;
+
+  return (
+    <AdminSettingsLayout title="ניהול ילדים" subtitle={subtitle}>
+      <Notification
+        open={notification.open}
+        message={notification.message}
+        severity={notification.severity}
+        onClose={handleCloseNotification}
+      />
+
+      {/* Account Selector */}
+      <Box sx={{ mb: 3 }}>
+        <FormControl fullWidth sx={{ maxWidth: { xs: "100%", sm: "400px" } }}>
+          <InputLabel sx={{ fontSize: "0.95rem" }}>בחר סניף</InputLabel>
+          <Select
+            value={selectedAccountId}
+            onChange={(e) => handleAccountChange(e.target.value)}
+            label="בחר סניף"
+            sx={{
+              borderRadius: 2,
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: "primary.main",
+              },
+            }}
+          >
+            {accounts.map((account) => (
+              <MenuItem key={account.id} value={account.id}>
+                {account.branchName}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
+      <Card
+        sx={{
+          height: { xs: "100%", sm: "auto" },
+          display: { xs: "flex", sm: "block" },
+          flexDirection: { xs: "column", sm: "row" },
+          minHeight: 0, // Allow flex child to shrink
+          borderRadius: 1, // Override Card component border radius
+          boxShadow: "none", // Remove any shadows
+          border: "none", // Remove any borders
+          backgroundColor: THEME_COLORS.BACKGROUND,
+        }}
+      >
+        <Box
+          sx={{
+            padding: 0, // Remove all padding
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0, // Allow flex child to shrink
+            overflow: "hidden",
+            bgcolor: THEME_COLORS.BACKGROUND, // Use theme background color
+            borderRadius: 0, // Override theme border radius
+            margin: 0, // Remove margins
+            border: "none", // Remove borders
+          }}
+        >
+          {error && (
+            <Typography color="error" sx={{ mb: 2 }}>
+              {error}
+            </Typography>
+          )}
+
+          {children.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 4 }}>
+              <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+                {selectedAccount
+                  ? `אין ילדים עבור ${selectedAccount.branchName}`
+                  : "אין ילדים זמינים"}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                {selectedAccount
+                  ? `התחל על ידי הוספת ילד ראשון עבור ${selectedAccount.branchName}`
+                  : "התחל על ידי הוספת ילד ראשון"}
+              </Typography>
+              <Button
+                variant="primary"
+                onClick={handleCreateChild}
+                sx={{
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  px: 3,
+                  py: 1.5,
+                }}
+              >
+                הוספת ילד ראשון
+              </Button>
+            </Box>
+          ) : (
+            <>
+              {/* Mobile: Scrollable Card Layout */}
+              <Box
+                sx={{
+                  display: { xs: "block", md: "none" },
+                  flex: 1,
+                  overflowY: "auto",
+                  overflowX: "hidden", // Prevent horizontal scrolling
+                  margin: 0, // Remove negative margins
+                  padding: 0, // Remove padding
+                  minHeight: 0, // Allow flex child to shrink
+                  borderRadius: 0, // Override theme border radius
+                  width: "100%", // Ensure full width
+                  maxWidth: "100%", // Prevent overflow
+                  "&::-webkit-scrollbar": {
+                    width: "4px",
+                  },
+                  "&::-webkit-scrollbar-track": {
+                    background: "transparent",
+                  },
+                  "&::-webkit-scrollbar-thumb": {
+                    background: "rgba(0, 0, 0, 0.2)",
+                    borderRadius: "2px",
+                  },
+                  "&::-webkit-scrollbar-thumb:hover": {
+                    background: "rgba(0, 0, 0, 0.3)",
+                  },
+                }}
+              >
+                {children.map((child, index) => (
+                  <ChildCard key={child.id} child={child} index={index} />
+                ))}
+              </Box>
+
+              {/* Desktop: Table Layout */}
+              <Box sx={{ display: { xs: "none", md: "block" } }}>
+                <Box
+                  sx={{ mb: 3, display: "flex", justifyContent: "flex-end" }}
+                >
+                  <Button
+                    variant="primary"
+                    onClick={handleCreateChild}
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: "none",
+                      fontWeight: 600,
+                      px: 3,
+                      py: 1.5,
+                      boxShadow: "0 2px 8px rgba(255, 145, 77, 0.3)",
+                      "&:hover": {
+                        boxShadow: "0 4px 12px rgba(255, 145, 77, 0.4)",
+                        transform: "translateY(-1px)",
+                      },
+                    }}
+                  >
+                    הוספת ילד חדש
+                  </Button>
+                </Box>
+                <TableContainer
+                  component={Paper}
+                  elevation={0}
+                  sx={{
+                    border: "none",
+                    borderRadius: 0,
+                    boxShadow: "none",
+                    margin: 0,
+                    padding: 0,
+                  }}
+                >
+                  <Table>
+                    <TableHead>
+                      <TableRow
+                        sx={{
+                          bgcolor: "background.paper",
+                          borderBottom: "1px solid",
+                          borderColor: "divider",
+                        }}
+                      >
+                        <TableCell
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: "1rem",
+                            textAlign: "right",
+                          }}
+                        >
+                          ילד
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: "1rem",
+                            textAlign: "right",
+                          }}
+                        >
+                          גיל
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: "1rem",
+                            textAlign: "right",
+                          }}
+                        >
+                          קבוצה
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: "1rem",
+                            textAlign: "right",
+                          }}
+                        >
+                          נוצר בתאריך
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: "1rem",
+                            textAlign: "right",
+                          }}
+                        >
+                          פעולות
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {children.map((child, index) => (
+                        <ChildTableRow
+                          key={child.id}
+                          child={child}
+                          index={index}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            </>
+          )}
+        </Box>
+
+        {/* Floating Add Button - Mobile only */}
+        <Fab
+          color="primary"
+          aria-label="add child"
+          onClick={handleCreateChild}
+          sx={{
+            position: "fixed",
+            bottom: {
+              xs: "calc(72px + env(safe-area-inset-bottom) + 24px)",
+              sm: "96px",
+            },
+            right: 24,
+            display: { xs: "flex", sm: "none" }, // Only show on mobile
+            boxShadow: "0 4px 16px rgba(255, 145, 77, 0.4)",
+            "&:hover": {
+              boxShadow: "0 6px 20px rgba(255, 145, 77, 0.5)",
+              transform: "scale(1.05)",
+            },
+            transition: "all 0.2s ease-in-out",
+            zIndex: 1000,
+          }}
+        >
+          <AddIcon />
+        </Fab>
+      </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialog.open}
+        onClose={handleDeleteCancel}
+        maxWidth="sm"
+        fullWidth
+        sx={{
+          "& .MuiDialog-paper": {
+            borderRadius: 3,
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.15)",
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 600, fontSize: "1.25rem" }}>
+          מחיקת ילד
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            האם אתה בטוח שברצונך למחוק את הילד "{deleteDialog.childName}"?
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            פעולה זו לא ניתנת לביטול ותמחק את כל הנתונים הקשורים לילד זה.
+          </Typography>
+        </DialogContent>
+        <DialogActions
+          sx={{
+            p: 3,
+            gap: 2,
+            display: "flex",
+            justifyContent: "center", // Center buttons
+            flexDirection: { xs: "column", sm: "row" }, // Stack on mobile, row on desktop
+            alignItems: "center",
+            "& .MuiButton-root": {
+              minWidth: { xs: "120px", sm: "auto" }, // Ensure consistent button width on mobile
+              flex: { xs: "none", sm: "none" },
+            },
+          }}
+        >
+          <Button
+            onClick={handleDeleteCancel}
+            variant="outline"
+            disabled={loading}
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              py: 1.2,
+            }}
+          >
+            ביטול
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="primary"
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} /> : null}
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              py: 1.2,
+            }}
+          >
+            {loading ? "מוחק..." : "מחיקה"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </AdminSettingsLayout>
+  );
+};
+
+export default ChildrenSettings;

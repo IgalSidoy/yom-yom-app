@@ -12,12 +12,13 @@ import { ROUTES } from "../../config/routes";
 import { useApp } from "../../contexts/AppContext";
 import { useAttendance } from "../../contexts/AttendanceContext";
 import { ApiAttendanceStatus } from "../../types/attendance";
-import SwipeableCards from "../../components/SwipeableCards";
-import QuickActionsSlide from "../../components/dashboard/QuickActionsSlide";
-import StatisticsSlide from "../../components/dashboard/StatisticsSlide";
-import AdditionalInfoSlide from "../../components/dashboard/AdditionalInfoSlide";
-import DateTimeWidget from "../../components/DateTimeWidget";
-import DashboardContainer from "../../components/dashboard/DashboardContainer";
+import SwipeableCards from "../../shared/components/ui/SwipeableCards";
+import QuickActionsSlide from "../../features/dashboard/components/QuickActionsSlide";
+import StatisticsSlide from "../../features/dashboard/components/StatisticsSlide";
+import AdditionalInfoSlide from "../../features/dashboard/components/AdditionalInfoSlide";
+import DateTimeWidget from "../../shared/components/ui/DateTimeWidget";
+import DashboardContainer from "../../features/dashboard/components/DashboardContainer";
+import MobileLayout from "../../shared/components/layout/MobileLayout";
 
 const StaffDashboard: React.FC = () => {
   const { user, isLoadingUser } = useApp();
@@ -176,38 +177,40 @@ const StaffDashboard: React.FC = () => {
   );
 
   return (
-    <DashboardContainer>
-      {/* Skeleton Loading State */}
-      <Fade in={!isDataReady} timeout={300}>
-        <Box sx={{ display: isDataReady ? "none" : "block" }}>
-          <HeaderSkeleton />
-          <SwipeableCardsSkeleton />
-        </Box>
-      </Fade>
+    <MobileLayout showBottomNav={true}>
+      <DashboardContainer>
+        {/* Skeleton Loading State */}
+        <Fade in={!isDataReady} timeout={300}>
+          <Box sx={{ display: isDataReady ? "none" : "block" }}>
+            <HeaderSkeleton />
+            <SwipeableCardsSkeleton />
+          </Box>
+        </Fade>
 
-      {/* Actual Dashboard Content */}
-      <Fade in={isDataReady} timeout={800}>
-        <Box sx={{ display: isDataReady ? "block" : "none" }}>
-          {/* Header */}
-          <Box sx={{ mb: 3 }}>
-            <DateTimeWidget
-              showGreeting={true}
-              userName={user?.firstName}
-              variant="full"
-              size="large"
+        {/* Actual Dashboard Content */}
+        <Fade in={isDataReady} timeout={800}>
+          <Box sx={{ display: isDataReady ? "block" : "none" }}>
+            {/* Header */}
+            <Box sx={{ mb: 3 }}>
+              <DateTimeWidget
+                showGreeting={true}
+                userName={user?.firstName}
+                variant="full"
+                size="large"
+              />
+            </Box>
+
+            {/* Swipeable Content */}
+            <SwipeableCards
+              slides={slides}
+              autoplayDelay={8000}
+              spaceBetween={30}
+              className="dashboard-swiper"
             />
           </Box>
-
-          {/* Swipeable Content */}
-          <SwipeableCards
-            slides={slides}
-            autoplayDelay={8000}
-            spaceBetween={30}
-            className="dashboard-swiper"
-          />
-        </Box>
-      </Fade>
-    </DashboardContainer>
+        </Fade>
+      </DashboardContainer>
+    </MobileLayout>
   );
 };
 

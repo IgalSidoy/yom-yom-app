@@ -8,7 +8,28 @@ export const ROUTES = {
 
   // Protected routes
   DASHBOARD: "/dashboard",
+  ADMIN_DASHBOARD: "/admin/dashboard",
+  STAFF_DASHBOARD: "/staff/dashboard",
+  PARENT_DASHBOARD: "/parent/dashboard",
   SETTINGS: "/settings",
+  ADMIN_SETTINGS: "/admin/settings",
+
+  // Admin settings sub-routes
+  ADMIN_PROFILE: "/admin/settings/profile",
+  ADMIN_ORGANIZATION: "/admin/settings/organization",
+  ADMIN_ACCOUNTS: "/admin/settings/accounts",
+  ADMIN_ACCOUNT_EDIT: "/admin/settings/accounts/:id/edit",
+  ADMIN_ACCOUNT_CREATE: "/admin/settings/accounts/new",
+  ADMIN_GROUPS: "/admin/settings/groups",
+  ADMIN_GROUP_CREATE: "/admin/settings/groups/new",
+  ADMIN_GROUP_EDIT: "/admin/settings/groups/:id/edit",
+  ADMIN_USERS: "/admin/settings/users",
+  ADMIN_USER_CREATE: "/admin/settings/users/new",
+  ADMIN_USER_EDIT: "/admin/settings/users/:id/edit",
+  ADMIN_CHILDREN: "/admin/settings/children",
+  ADMIN_CHILD_CREATE: "/admin/settings/children/new",
+  ADMIN_CHILD_EDIT: "/admin/settings/children/:id/edit",
+
   FEED: "/feed",
   ATTENDANCE: "/attendance",
 
@@ -45,6 +66,20 @@ export const buildRoute = (
   });
 
   return route;
+};
+
+// Helper function to get role-based dashboard route
+export const getRoleBasedDashboardRoute = (userRole?: string): string => {
+  switch (userRole) {
+    case "Admin":
+      return ROUTES.ADMIN_DASHBOARD;
+    case "Staff":
+      return ROUTES.STAFF_DASHBOARD;
+    case "Parent":
+      return ROUTES.PARENT_DASHBOARD;
+    default:
+      return ROUTES.DASHBOARD;
+  }
 };
 
 // Type for route keys

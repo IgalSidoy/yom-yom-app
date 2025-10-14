@@ -21,7 +21,8 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useApp } from "../../contexts/AppContext";
 import { useDailyReport } from "../../contexts/DailyReportContext";
 import { childApi, DailyReport, Child } from "../../services/api";
-import CreateSleepPostModal from "../../components/feed/CreateSleepPostModal";
+import CreateSleepPostModal from "../../features/feed/components/CreateSleepPostModal";
+import MobileLayout from "../../shared/components/layout/MobileLayout";
 
 interface LocationState {
   groupId?: string;
@@ -733,37 +734,39 @@ const CreateSleepPostPage: React.FC = () => {
 
   // Show the modal as a full-screen page (only when not closed)
   return (
-    <Box
-      sx={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        bgcolor: "background.default",
-        zIndex: 1,
-        display: "flex",
-        flexDirection: "column",
-        height: { xs: "100dvh", sm: "100vh" }, // Use dynamic viewport height on mobile
-        overflow: "hidden",
-        // Add safe area insets for mobile
-        paddingTop: { xs: "env(safe-area-inset-top)", sm: 0 },
-        paddingBottom: { xs: "env(safe-area-inset-bottom)", sm: 0 },
-        paddingLeft: { xs: "env(safe-area-inset-left)", sm: 0 },
-        paddingRight: { xs: "env(safe-area-inset-right)", sm: 0 },
-      }}
-    >
-      <CreateSleepPostModal
-        isOpen={true}
-        onClose={handleClose}
-        onSubmit={handleSubmit}
-        children={children}
-        groupName={groupName}
-        groupId={groupId}
-        isLoadingDailyReport={isDailyReportLoading}
-        dailyReport={dailyReport}
-      />
-    </Box>
+    <MobileLayout showBottomNav={false}>
+      <Box
+        sx={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          bgcolor: "background.default",
+          zIndex: 1,
+          display: "flex",
+          flexDirection: "column",
+          height: { xs: "100dvh", sm: "100vh" }, // Use dynamic viewport height on mobile
+          overflow: "hidden",
+          // Add safe area insets for mobile
+          paddingTop: { xs: "env(safe-area-inset-top)", sm: 0 },
+          paddingBottom: { xs: "env(safe-area-inset-bottom)", sm: 0 },
+          paddingLeft: { xs: "env(safe-area-inset-left)", sm: 0 },
+          paddingRight: { xs: "env(safe-area-inset-right)", sm: 0 },
+        }}
+      >
+        <CreateSleepPostModal
+          isOpen={true}
+          onClose={handleClose}
+          onSubmit={handleSubmit}
+          children={children}
+          groupName={groupName}
+          groupId={groupId}
+          isLoadingDailyReport={isDailyReportLoading}
+          dailyReport={dailyReport}
+        />
+      </Box>
+    </MobileLayout>
   );
 };
 

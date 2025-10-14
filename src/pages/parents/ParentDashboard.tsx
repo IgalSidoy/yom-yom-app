@@ -7,11 +7,12 @@ import { ApiAttendanceStatus } from "../../types/attendance";
 import { attendanceApi, GroupAttendance } from "../../services/api";
 import SwipeableCards, {
   SwipeableCardsRef,
-} from "../../components/SwipeableCards";
-import ParentQuickActionsSlide from "../../components/dashboard/ParentQuickActionsSlide";
-import ParentChildrenInfoSlide from "../../components/dashboard/ParentChildrenInfoSlide";
-import DateTimeWidget from "../../components/DateTimeWidget";
-import DashboardContainer from "../../components/dashboard/DashboardContainer";
+} from "../../shared/components/ui/SwipeableCards";
+import ParentQuickActionsSlide from "../../features/dashboard/components/ParentQuickActionsSlide";
+import ParentChildrenInfoSlide from "../../features/dashboard/components/ParentChildrenInfoSlide";
+import DateTimeWidget from "../../shared/components/ui/DateTimeWidget";
+import DashboardContainer from "../../features/dashboard/components/DashboardContainer";
+import MobileLayout from "../../shared/components/layout/MobileLayout";
 
 const ParentDashboard: React.FC = () => {
   const { user } = useApp();
@@ -133,26 +134,28 @@ const ParentDashboard: React.FC = () => {
   ];
 
   return (
-    <DashboardContainer>
-      {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <DateTimeWidget
-          showGreeting={true}
-          userName={user?.firstName}
-          variant="full"
-          size="large"
-        />
-      </Box>
+    <MobileLayout showBottomNav={true}>
+      <DashboardContainer>
+        {/* Header */}
+        <Box sx={{ mb: 3 }}>
+          <DateTimeWidget
+            showGreeting={true}
+            userName={user?.firstName}
+            variant="full"
+            size="large"
+          />
+        </Box>
 
-      {/* Swipeable Content */}
-      <SwipeableCards
-        ref={swiperRef}
-        slides={slides}
-        autoplayDelay={10000}
-        spaceBetween={30}
-        className="parent-dashboard-swiper"
-      />
-    </DashboardContainer>
+        {/* Swipeable Content */}
+        <SwipeableCards
+          ref={swiperRef}
+          slides={slides}
+          autoplayDelay={10000}
+          spaceBetween={30}
+          className="parent-dashboard-swiper"
+        />
+      </DashboardContainer>
+    </MobileLayout>
   );
 };
 

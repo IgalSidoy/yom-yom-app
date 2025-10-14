@@ -6,12 +6,13 @@ import {
   FetchDailyReportButton,
   FeedDateSelector,
   FeedPost,
-} from "../../components/feed";
+} from "../../features/feed/components";
 import { useApp } from "../../contexts/AppContext";
 import { useDailyReport } from "../../contexts/DailyReportContext";
 import { useFeed } from "../../contexts/FeedContext";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../config/routes";
+import MobileLayout from "../../shared/components/layout/MobileLayout";
 
 const ParentFeed: React.FC = () => {
   const { user } = useApp();
@@ -51,28 +52,30 @@ const ParentFeed: React.FC = () => {
   );
 
   return (
-    <FeedContainer
-      title="חדשות הילדים - הורה"
-      subtitle="צפה בחדשות ועדכונים מהילדים"
-      isLoading={isFeedLoading || isLoadingChildren}
-      showFloatingButton={false}
-      headerContent={headerContent}
-    >
-      <Alert severity="info" sx={{ mb: 2 }}>
-        צפה בחדשות ועדכונים מהילדים שלך
-      </Alert>
-
-      {/* Render feed posts from context */}
-      {feedPosts.length > 0 ? (
-        feedPosts.map((post) => (
-          <FeedPost key={post.id} post={post} isClosed={post.isClosed} />
-        ))
-      ) : (
-        <Alert severity="info" sx={{ mt: 2 }}>
-          אין עדיין חדשות להצגה לתאריך זה
+    <MobileLayout showBottomNav={true}>
+      <FeedContainer
+        title="חדשות הילדים - הורה"
+        subtitle="צפה בחדשות ועדכונים מהילדים"
+        isLoading={isFeedLoading || isLoadingChildren}
+        showFloatingButton={false}
+        headerContent={headerContent}
+      >
+        <Alert severity="info" sx={{ mb: 2 }}>
+          צפה בחדשות ועדכונים מהילדים שלך
         </Alert>
-      )}
-    </FeedContainer>
+
+        {/* Render feed posts from context */}
+        {feedPosts.length > 0 ? (
+          feedPosts.map((post) => (
+            <FeedPost key={post.id} post={post} isClosed={post.isClosed} />
+          ))
+        ) : (
+          <Alert severity="info" sx={{ mt: 2 }}>
+            אין עדיין חדשות להצגה לתאריך זה
+          </Alert>
+        )}
+      </FeedContainer>
+    </MobileLayout>
   );
 };
 

@@ -26,7 +26,7 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { useApp } from "../../contexts/AppContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { userApi, User } from "../../services/api";
-import Notification from "../../components/Notification";
+import Notification from "../../shared/components/ui/Notification";
 
 const StaffSettings = () => {
   const { language, setLanguage } = useLanguage();
@@ -128,12 +128,13 @@ const StaffSettings = () => {
           pt: 2,
           pb: 2,
           mb: 3,
+          px: 2,
         }}
       >
         <Typography variant="h5">הגדרות צוות</Typography>
       </Box>
 
-      <Box sx={{ maxWidth: 600, mx: "auto" }}>
+      <Box sx={{ width: "100%", px: 2 }}>
         <Accordion
           expanded={expandedAccordion === "profile"}
           onChange={handleAccordionChange("profile")}
