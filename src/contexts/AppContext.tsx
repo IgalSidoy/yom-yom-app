@@ -50,11 +50,34 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   // Fetch user data when access token is available
   useEffect(() => {
     const fetchUserData = async () => {
-      if (accessToken && !user) {
+      console.log("AppContext fetchUserData effect triggered", {
+        hasAccessToken: !!accessToken,
+        hasUser: !!user,
+        isInitialLogin,
+        currentPath: window.location.pathname,
+      });
+
+      // Clear user state when access token is null (logout scenario)
+      if (!accessToken) {
+        console.log("Access token is null, clearing user state");
+        setUser(null);
+        setAccountId(null);
+        setOrganizationId(null);
+        setIsInitialLogin(false);
+        return;
+      }
+
+      // Fetch user data if we have access token and either no user OR this is initial login
+      if (accessToken && (!user || isInitialLogin)) {
         try {
+          console.log("Fetching user data...");
           setIsLoadingUser(true);
           const response = await userApi.getUser();
           const userData = response.data;
+          console.log("User data fetched successfully", {
+            role: userData.role,
+            userId: userData.id,
+          });
           setUser(userData);
 
           // Sync accountId and organizationId from user data
@@ -67,6 +90,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
           // Handle role-based redirect after initial login
           if (isInitialLogin) {
+            console.log("Initial login detected, redirecting to dashboard");
             const dashboardRoute = getRoleBasedDashboardRoute(userData.role);
             navigate(dashboardRoute, { replace: true });
             setIsInitialLogin(false);
@@ -74,11 +98,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
             // Handle redirect for existing authenticated users on login or root pages
             const currentPath = window.location.pathname;
             if (currentPath === "/login" || currentPath === "/") {
+              console.log(
+                "Redirecting authenticated user from login/root page"
+              );
               const dashboardRoute = getRoleBasedDashboardRoute(userData.role);
               navigate(dashboardRoute, { replace: true });
             }
           }
         } catch (error) {
+          console.error("Error fetching user data:", error);
           // Don't clear the token here, let the auth context handle auth errors
         } finally {
           setIsLoadingUser(false);
@@ -124,6 +152,23 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       );
     };
   }, [accessToken]);
+
+  // Listen for logout events to clear user state
+  useEffect(() => {
+    const handleClearUserState = () => {
+      console.log("Logout event received, clearing user state");
+      setUser(null);
+      setAccountId(null);
+      setOrganizationId(null);
+      setIsInitialLogin(false);
+    };
+
+    window.addEventListener("clearUserState", handleClearUserState);
+
+    return () => {
+      window.removeEventListener("clearUserState", handleClearUserState);
+    };
+  }, []);
 
   const clearIds = () => {
     setUserId(null);

@@ -736,7 +736,7 @@ const DailyAttendance: React.FC = () => {
 
   return (
     <Container
-      maxWidth="sm"
+      maxWidth={false}
       sx={{
         mt: 0,
         mb: 0,
@@ -750,6 +750,14 @@ const DailyAttendance: React.FC = () => {
         overflow: "hidden",
         px: { xs: 0, sm: 2 },
         direction: "rtl",
+        width: "100%",
+        maxWidth: {
+          sm: "600px",
+          md: "700px",
+          lg: "800px",
+          xl: "900px",
+        },
+        mx: "auto",
       }}
       ref={containerRef}
     >

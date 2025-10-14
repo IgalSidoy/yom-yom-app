@@ -24,6 +24,7 @@ import {
   Drawer,
   Divider,
   Avatar,
+  Container,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import EditIcon from "@mui/icons-material/Edit";
@@ -224,7 +225,25 @@ const ParentSettings = () => {
 
   return (
     <MobileLayout showBottomNav={true}>
-      <Box sx={{ mt: 4, textAlign: "center", px: 2 }}>
+      <Container
+        maxWidth={false}
+        sx={{
+          py: { xs: 2, sm: 4 },
+          px: { xs: 1, sm: 2 },
+          width: "100%",
+          maxWidth: {
+            sm: "600px",
+            md: "700px",
+            lg: "800px",
+            xl: "900px",
+          },
+          mx: "auto",
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
+        }}
+      >
         <Notification
           open={notification.open}
           message={notification.message}
@@ -242,13 +261,13 @@ const ParentSettings = () => {
             pt: 2,
             pb: 2,
             mb: 3,
-            px: 2,
+            textAlign: "center",
           }}
         >
           <Typography variant="h5">הגדרות הורה</Typography>
         </Box>
 
-        <Box sx={{ width: "100%", px: 2 }}>
+        <Box sx={{ width: "100%" }}>
           <Accordion
             expanded={expandedAccordion === "profile"}
             onChange={handleAccordionChange("profile")}
@@ -730,7 +749,7 @@ const ParentSettings = () => {
             </Box>
           </Box>
         </Drawer>
-      </Box>
+      </Container>
     </MobileLayout>
   );
 };

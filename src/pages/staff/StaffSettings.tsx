@@ -22,6 +22,7 @@ import {
   InputAdornment,
   Avatar,
   Chip,
+  Container,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -30,6 +31,7 @@ import { useApp } from "../../contexts/AppContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { userApi, User } from "../../services/api";
 import Notification from "../../shared/components/ui/Notification";
+import MobileLayout from "../../shared/components/layout/MobileLayout";
 
 const StaffSettings = () => {
   const { language, setLanguage } = useLanguage();
@@ -113,267 +115,295 @@ const StaffSettings = () => {
   }, [user]);
 
   return (
-    <Box sx={{ mt: 4, textAlign: "center", px: 2 }}>
-      <Notification
-        open={notification.open}
-        message={notification.message}
-        severity={notification.severity}
-        onClose={handleCloseNotification}
-      />
-
-      {/* Sticky Title */}
-      <Box
+    <MobileLayout showBottomNav={true}>
+      <Container
+        maxWidth={false}
         sx={{
-          position: "sticky",
-          top: 0,
-          zIndex: 5,
-          bgcolor: "background.default",
-          pt: 2,
-          pb: 2,
-          mb: 3,
-          px: 2,
+          py: { xs: 2, sm: 4 },
+          px: { xs: 1, sm: 2 },
+          width: "100%",
+          maxWidth: {
+            sm: "600px",
+            md: "700px",
+            lg: "800px",
+            xl: "900px",
+          },
+          mx: "auto",
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
         }}
       >
-        <Typography variant="h5">הגדרות צוות</Typography>
-      </Box>
+        <Notification
+          open={notification.open}
+          message={notification.message}
+          severity={notification.severity}
+          onClose={handleCloseNotification}
+        />
 
-      <Box sx={{ width: "100%", px: 2 }}>
-        <Accordion
-          expanded={expandedAccordion === "profile"}
-          onChange={handleAccordionChange("profile")}
+        {/* Sticky Title */}
+        <Box
+          sx={{
+            position: "sticky",
+            top: 0,
+            zIndex: 5,
+            bgcolor: "background.default",
+            pt: 2,
+            pb: 2,
+            mb: 3,
+            textAlign: "center",
+          }}
         >
-          <AccordionSummary
-            expandIcon={<ExpandMoreIcon />}
-            aria-controls="profile-content"
-            id="profile-header"
+          <Typography variant="h5">הגדרות צוות</Typography>
+        </Box>
+
+        <Box sx={{ width: "100%" }}>
+          <Accordion
+            expanded={expandedAccordion === "profile"}
+            onChange={handleAccordionChange("profile")}
           >
-            <Typography variant="h6">פרופיל אישי</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Box sx={{ textAlign: "right" }}>
-              <Box sx={{ mb: 4 }}>
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: {
-                      xs: "1fr",
-                      sm: "repeat(2, 1fr)",
-                    },
-                    gap: 2,
-                  }}
-                >
-                  <TextField
-                    fullWidth
-                    label="שם פרטי"
-                    value={userProfile.firstName}
-                    onChange={(e) =>
-                      handleProfileChange("firstName", e.target.value)
-                    }
-                    disabled={isLoading}
-                    sx={{ direction: "rtl" }}
-                  />
-                  <TextField
-                    fullWidth
-                    label="שם משפחה"
-                    value={userProfile.lastName}
-                    onChange={(e) =>
-                      handleProfileChange("lastName", e.target.value)
-                    }
-                    disabled={isLoading}
-                    sx={{ direction: "rtl" }}
-                  />
-                  <TextField
-                    name="email"
-                    label="אימייל"
-                    value={userProfile.email}
-                    onChange={(e) =>
-                      handleProfileChange("email", e.target.value)
-                    }
-                    disabled={isLoading}
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              aria-controls="profile-content"
+              id="profile-header"
+            >
+              <Typography variant="h6">פרופיל אישי</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Box sx={{ textAlign: "right" }}>
+                <Box sx={{ mb: 4 }}>
+                  <Box
                     sx={{
-                      borderRadius: 2,
-                      "& .MuiInputBase-input": {
-                        direction: "ltr",
-                        textAlign: "left",
+                      display: "grid",
+                      gridTemplateColumns: {
+                        xs: "1fr",
+                        sm: "repeat(2, 1fr)",
                       },
+                      gap: 2,
                     }}
-                  />
-                  <TextField
-                    fullWidth
-                    label="נייד"
-                    value={userProfile.mobile}
-                    onChange={(e) =>
-                      handleProfileChange("mobile", e.target.value)
-                    }
-                    disabled={isLoading}
-                    sx={{ direction: "rtl" }}
-                  />
-                </Box>
-                <Box
-                  sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}
-                >
-                  <Button
-                    variant="contained"
-                    onClick={handleSaveProfile}
-                    disabled={isLoading || !isProfileModified}
-                    startIcon={
-                      isLoading ? <CircularProgress size={20} /> : null
-                    }
                   >
-                    שמירת שינויים
-                  </Button>
-                </Box>
-              </Box>
-            </Box>
-          </AccordionDetails>
-        </Accordion>
-
-        <Accordion
-          expanded={expandedAccordion === "preferences"}
-          onChange={handleAccordionChange("preferences")}
-        >
-          <AccordionSummary
-            expandIcon={<ExpandMoreIcon />}
-            aria-controls="preferences-content"
-            id="preferences-header"
-          >
-            <Typography variant="h6">העדפות</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Box sx={{ textAlign: "right" }}>
-              <Box sx={{ mb: 3 }}>
-                <FormControl fullWidth sx={{ mb: 2 }}>
-                  <InputLabel>שפה</InputLabel>
-                  <Select
-                    value={languagePreference}
-                    label="שפה"
-                    onChange={(e) => setLanguagePreference(e.target.value)}
-                  >
-                    <MenuItem value="he">עברית</MenuItem>
-                    <MenuItem value="en">English</MenuItem>
-                    <MenuItem value="ar">العربية</MenuItem>
-                  </Select>
-                </FormControl>
-
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={notificationsEnabled}
+                    <TextField
+                      fullWidth
+                      label="שם פרטי"
+                      value={userProfile.firstName}
                       onChange={(e) =>
-                        setNotificationsEnabled(e.target.checked)
+                        handleProfileChange("firstName", e.target.value)
                       }
+                      disabled={isLoading}
+                      sx={{ direction: "rtl" }}
                     />
-                  }
-                  label="התראות"
-                  sx={{ textAlign: "right" }}
-                />
-              </Box>
-            </Box>
-          </AccordionDetails>
-        </Accordion>
-
-        <Accordion
-          expanded={expandedAccordion === "account"}
-          onChange={handleAccordionChange("account")}
-        >
-          <AccordionSummary
-            expandIcon={<ExpandMoreIcon />}
-            aria-controls="account-content"
-            id="account-header"
-          >
-            <Typography variant="h6">חשבון</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Box sx={{ textAlign: "right" }}>
-              {/* User Info Display */}
-              <Box sx={{ mb: 3 }}>
-                <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
-                >
-                  <Avatar
-                    sx={{
-                      width: 60,
-                      height: 60,
-                      bgcolor: "primary.main",
-                      fontSize: "1.5rem",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {user?.firstName?.charAt(0) || "U"}
-                  </Avatar>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                      {user?.firstName} {user?.lastName}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 1 }}
-                    >
-                      {user?.email}
-                    </Typography>
-                    <Chip
-                      label="צוות"
-                      size="small"
-                      color="primary"
+                    <TextField
+                      fullWidth
+                      label="שם משפחה"
+                      value={userProfile.lastName}
+                      onChange={(e) =>
+                        handleProfileChange("lastName", e.target.value)
+                      }
+                      disabled={isLoading}
+                      sx={{ direction: "rtl" }}
+                    />
+                    <TextField
+                      name="email"
+                      label="אימייל"
+                      value={userProfile.email}
+                      onChange={(e) =>
+                        handleProfileChange("email", e.target.value)
+                      }
+                      disabled={isLoading}
                       sx={{
-                        fontSize: "0.7rem",
-                        height: 24,
-                        fontWeight: 500,
+                        borderRadius: 2,
+                        "& .MuiInputBase-input": {
+                          direction: "ltr",
+                          textAlign: "left",
+                        },
                       }}
                     />
+                    <TextField
+                      fullWidth
+                      label="נייד"
+                      value={userProfile.mobile}
+                      onChange={(e) =>
+                        handleProfileChange("mobile", e.target.value)
+                      }
+                      disabled={isLoading}
+                      sx={{ direction: "rtl" }}
+                    />
+                  </Box>
+                  <Box
+                    sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}
+                  >
+                    <Button
+                      variant="contained"
+                      onClick={handleSaveProfile}
+                      disabled={isLoading || !isProfileModified}
+                      startIcon={
+                        isLoading ? <CircularProgress size={20} /> : null
+                      }
+                    >
+                      שמירת שינויים
+                    </Button>
                   </Box>
                 </Box>
               </Box>
+            </AccordionDetails>
+          </Accordion>
 
-              <Divider sx={{ mb: 3 }} />
+          <Accordion
+            expanded={expandedAccordion === "preferences"}
+            onChange={handleAccordionChange("preferences")}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              aria-controls="preferences-content"
+              id="preferences-header"
+            >
+              <Typography variant="h6">העדפות</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Box sx={{ textAlign: "right" }}>
+                <Box sx={{ mb: 3 }}>
+                  <FormControl fullWidth sx={{ mb: 2 }}>
+                    <InputLabel>שפה</InputLabel>
+                    <Select
+                      value={languagePreference}
+                      label="שפה"
+                      onChange={(e) => setLanguagePreference(e.target.value)}
+                    >
+                      <MenuItem value="he">עברית</MenuItem>
+                      <MenuItem value="en">English</MenuItem>
+                      <MenuItem value="ar">العربية</MenuItem>
+                    </Select>
+                  </FormControl>
 
-              {/* Language Selector */}
-              <Box sx={{ mb: 3 }}>
-                <FormControl fullWidth sx={{ mb: 2 }}>
-                  <InputLabel>שפה</InputLabel>
-                  <Select
-                    value={language}
-                    label="שפה"
-                    onChange={(e) => setLanguage(e.target.value as any)}
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={notificationsEnabled}
+                        onChange={(e) =>
+                          setNotificationsEnabled(e.target.checked)
+                        }
+                      />
+                    }
+                    label="התראות"
+                    sx={{ textAlign: "right" }}
+                  />
+                </Box>
+              </Box>
+            </AccordionDetails>
+          </Accordion>
+
+          <Accordion
+            expanded={expandedAccordion === "account"}
+            onChange={handleAccordionChange("account")}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              aria-controls="account-content"
+              id="account-header"
+            >
+              <Typography variant="h6">חשבון</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Box sx={{ textAlign: "right" }}>
+                {/* User Info Display */}
+                <Box sx={{ mb: 3 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 2,
+                    }}
                   >
-                    <MenuItem value="heb">עברית</MenuItem>
-                    <MenuItem value="rus">Русский</MenuItem>
-                    <MenuItem value="eng">English</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
+                    <Avatar
+                      sx={{
+                        width: 60,
+                        height: 60,
+                        bgcolor: "primary.main",
+                        fontSize: "1.5rem",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {user?.firstName?.charAt(0) || "U"}
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography
+                        variant="h6"
+                        sx={{ fontWeight: 600, mb: 0.5 }}
+                      >
+                        {user?.firstName} {user?.lastName}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 1 }}
+                      >
+                        {user?.email}
+                      </Typography>
+                      <Chip
+                        label="צוות"
+                        size="small"
+                        color="primary"
+                        sx={{
+                          fontSize: "0.7rem",
+                          height: 24,
+                          fontWeight: 500,
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                </Box>
 
-              <Divider sx={{ mb: 3 }} />
+                <Divider sx={{ mb: 3 }} />
 
-              {/* Logout Button */}
-              <Box sx={{ display: "flex", justifyContent: "center" }}>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  startIcon={<LogoutIcon />}
-                  onClick={logout}
-                  sx={{
-                    borderRadius: 2,
-                    textTransform: "none",
-                    py: 1.2,
-                    px: 3,
-                    fontWeight: 500,
-                    borderWidth: 2,
-                    "&:hover": {
+                {/* Language Selector */}
+                <Box sx={{ mb: 3 }}>
+                  <FormControl fullWidth sx={{ mb: 2 }}>
+                    <InputLabel>שפה</InputLabel>
+                    <Select
+                      value={language}
+                      label="שפה"
+                      onChange={(e) => setLanguage(e.target.value as any)}
+                    >
+                      <MenuItem value="heb">עברית</MenuItem>
+                      <MenuItem value="rus">Русский</MenuItem>
+                      <MenuItem value="eng">English</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+
+                <Divider sx={{ mb: 3 }} />
+
+                {/* Logout Button */}
+                <Box sx={{ display: "flex", justifyContent: "center" }}>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<LogoutIcon />}
+                    onClick={logout}
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: "none",
+                      py: 1.2,
+                      px: 3,
+                      fontWeight: 500,
                       borderWidth: 2,
-                      backgroundColor: "error.lighter",
-                    },
-                  }}
-                >
-                  התנתק
-                </Button>
+                      "&:hover": {
+                        borderWidth: 2,
+                        backgroundColor: "error.lighter",
+                      },
+                    }}
+                  >
+                    התנתק
+                  </Button>
+                </Box>
               </Box>
-            </Box>
-          </AccordionDetails>
-        </Accordion>
-      </Box>
-    </Box>
+            </AccordionDetails>
+          </Accordion>
+        </Box>
+      </Container>
+    </MobileLayout>
   );
 };
 

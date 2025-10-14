@@ -27,7 +27,7 @@ const AdminSettingsLayout: React.FC<AdminSettingsLayoutProps> = ({
   children,
   showBackButton = true,
   backPath = "/admin/settings",
-  maxWidth = "md",
+  maxWidth = "lg",
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
