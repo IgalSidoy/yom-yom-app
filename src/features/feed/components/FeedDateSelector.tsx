@@ -62,13 +62,18 @@ const FeedDateSelector: React.FC<FeedDateSelectorProps> = ({
   return (
     <Box sx={{ mb: 1 }}>
       <Paper
-        elevation={1}
+        elevation={2}
         sx={{
-          p: 1.5,
-          borderRadius: 2,
+          p: { xs: 2, sm: 2.5 },
+          borderRadius: 3,
           bgcolor: "background.paper",
           border: "1px solid",
           borderColor: "divider",
+          transition: "all 0.2s ease-in-out",
+          "&:hover": {
+            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
+            borderColor: "primary.light",
+          },
         }}
       >
         {/* Compact date selector */}
@@ -93,14 +98,18 @@ const FeedDateSelector: React.FC<FeedDateSelectorProps> = ({
                 : "primary.main",
               border: "1px solid",
               borderColor: "primary.main",
+              borderRadius: 2,
+              transition: "all 0.2s ease-in-out",
               "&:hover": {
                 bgcolor: selectedDate.isSame(dayjs(), "day")
                   ? "primary.dark"
                   : "primary.light",
+                transform: "scale(1.05)",
               },
               "&:disabled": {
                 bgcolor: "primary.main",
                 color: "primary.contrastText",
+                transform: "none",
               },
             }}
           >
@@ -113,8 +122,15 @@ const FeedDateSelector: React.FC<FeedDateSelectorProps> = ({
             size="small"
             sx={{
               color: "primary.main",
+              borderRadius: 2,
+              transition: "all 0.2s ease-in-out",
+              "&:hover": {
+                bgcolor: "primary.light",
+                transform: "scale(1.1)",
+              },
               "&:disabled": {
                 color: "text.disabled",
+                transform: "none",
               },
             }}
           >
@@ -139,8 +155,15 @@ const FeedDateSelector: React.FC<FeedDateSelectorProps> = ({
             size="small"
             sx={{
               color: "primary.main",
+              borderRadius: 2,
+              transition: "all 0.2s ease-in-out",
+              "&:hover": {
+                bgcolor: "primary.light",
+                transform: "scale(1.1)",
+              },
               "&:disabled": {
                 color: "text.disabled",
+                transform: "none",
               },
             }}
           >

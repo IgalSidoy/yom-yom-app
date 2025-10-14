@@ -25,7 +25,7 @@ interface FeedContextType {
   userChildren: UserChild[];
 
   // Actions
-  fetchFeedData: (date: Dayjs) => Promise<void>;
+  fetchFeedData: (date: Dayjs, groupId?: string) => Promise<void>;
   handleDateChange: (date: Dayjs) => void;
   refreshFeed: () => Promise<void>;
   clearFeed: () => void;
@@ -72,7 +72,7 @@ export const FeedProvider: React.FC<FeedProviderProps> = ({ children }) => {
 
   // Fetch feed data based on user role
   const fetchFeedData = useCallback(
-    async (date: Dayjs) => {
+    async (date: Dayjs, groupId?: string) => {
       if (!user) {
         console.warn("No user available for feed");
         return;
@@ -123,15 +123,17 @@ export const FeedProvider: React.FC<FeedProviderProps> = ({ children }) => {
 
           setFeedPosts(allPosts);
         } else {
-          // For staff and admin, fetch feed data for their group
-          if (!user.groupId) {
+          // For staff, admin, and other roles
+          const targetGroupId = groupId || user.groupId;
+          
+          if (!targetGroupId) {
             console.warn("No group ID available for user");
             setFeedPosts([]);
             return;
           }
 
           const posts = await feedApi.getFeedByGroup(
-            user.groupId,
+            targetGroupId,
             formattedDate
           );
           setFeedPosts(posts);

@@ -1,10 +1,12 @@
 export { default as FeedContainer } from "./FeedContainer";
-export { default as AttendancePost } from "./AttendancePost";
-export { default as PostContainer } from "./PostContainer";
+export { default as FeedPost } from "./FeedPost";
+export { default as PostFactory } from "./posts/PostFactory";
+export { default as SleepPost } from "./posts/SleepPost";
+export { default as AttendancePost } from "./posts/AttendancePost";
+export { default as FoodPost } from "./posts/FoodPost";
 export { default as FeedFloatingButton } from "./FeedFloatingButton";
-export { default as SleepPost } from "./SleepPost";
 export { default as CreateSleepPostModal } from "./CreateSleepPostModal";
 export { default as SleepPostErrorBoundary } from "./SleepPostErrorBoundary";
 export { default as FeedDateSelector } from "./FeedDateSelector";
-export { default as FeedPost } from "./FeedPost";
 export { default as FetchDailyReportButton } from "./FetchDailyReportButton";
+export { default as AdminFeedFilters } from "./AdminFeedFilters";

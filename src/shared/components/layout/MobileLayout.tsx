@@ -23,12 +23,14 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({
     <div
       style={{
         height: "100vh",
-        width: "100vw",
+        width: "100%", // Use 100% instead of 100vw to avoid horizontal scrollbar
         display: "flex",
         flexDirection: "column",
         backgroundColor: "#fff",
         paddingTop: "env(safe-area-inset-top)",
-        paddingBottom: showBottomNav ? "80px" : "env(safe-area-inset-bottom)",
+        paddingBottom: showBottomNav
+          ? "calc(72px + env(safe-area-inset-bottom) + 32px)"
+          : "env(safe-area-inset-bottom)",
         overflow: "hidden",
       }}
     >

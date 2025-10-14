@@ -19,29 +19,34 @@ import {
   RemoveCircle,
   Warning,
 } from "@mui/icons-material";
-import { FeedChildFoodData, FoodEvent } from "../../../types/posts";
-import { useLanguage } from "../../../contexts/LanguageContext";
+import {
+  FeedChildFoodData,
+  FoodEvent,
+  FeedPost as FeedPostType,
+} from "../../../../types/posts";
+import { useLanguage } from "../../../../contexts/LanguageContext";
 import {
   getChildColor,
   getContrastTextColor,
   getMealTypeColors,
   POST_TYPE_COLORS,
   UI_COLORS,
-} from "../../../config/colors";
+} from "../../../../config/colors";
 import dayjs from "dayjs";
 
 interface FoodPostProps {
-  foodEvents: FoodEvent[];
-  groupName: string;
-  activityDate: string;
+  post: FeedPostType;
 }
 
-const FoodPost: React.FC<FoodPostProps> = ({
-  foodEvents,
-  groupName,
-  activityDate,
-}) => {
+const FoodPost: React.FC<FoodPostProps> = ({ post }) => {
   const { language } = useLanguage();
+
+  const foodData = post.metadata.foodMetadata;
+  if (!foodData) return null;
+
+  const foodEvents = foodData.foodEvents;
+  const groupName = post.groupName;
+  const activityDate = post.activityDate;
 
   const getMealTypeIcon = (type: string) => {
     switch (type) {
@@ -84,7 +89,7 @@ const FoodPost: React.FC<FoodPostProps> = ({
         Dinner: "Dinner",
       },
     };
-    return (labels[language] as any)[type] || type;
+    return (labels[language as keyof typeof labels] as any)[type] || type;
   };
 
   const getFoodStatusIcon = (status: string) => {
@@ -123,7 +128,7 @@ const FoodPost: React.FC<FoodPostProps> = ({
         Refused: "Refused",
       },
     };
-    return (labels[language] as any)[status] || status;
+    return (labels[language as keyof typeof labels] as any)[status] || status;
   };
 
   const getFoodStatusColor = (status: string) => {
@@ -155,9 +160,15 @@ const FoodPost: React.FC<FoodPostProps> = ({
         sx={{
           mb: 1,
           border: `1px solid ${childColor}`,
-          borderRadius: 1,
+          borderRadius: 2,
           backgroundColor: `${childColor}10`,
-          p: { xs: 1, sm: 1.5 },
+          p: { xs: 1.5, sm: 2 },
+          transition: "all 0.2s ease-in-out",
+          "&:hover": {
+            transform: "translateY(-1px)",
+            boxShadow: `0 2px 8px ${childColor}30`,
+            backgroundColor: `${childColor}15`,
+          },
         }}
       >
         <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -233,8 +244,13 @@ const FoodPost: React.FC<FoodPostProps> = ({
           mb: 2,
           border: "1px solid",
           borderColor: mealColors.primary,
-          borderRadius: 1,
+          borderRadius: 3,
           overflow: "hidden",
+          transition: "all 0.2s ease-in-out",
+          "&:hover": {
+            transform: "translateY(-2px)",
+            boxShadow: `0 4px 16px ${mealColors.primary}30`,
+          },
         }}
       >
         <Box
@@ -291,11 +307,12 @@ const FoodPost: React.FC<FoodPostProps> = ({
               gridTemplateColumns: {
                 xs: "1fr", // Full width on mobile
                 sm: "repeat(auto-fit, minmax(280px, 1fr))", // Responsive grid on larger screens
+                md: "repeat(auto-fit, minmax(300px, 1fr))", // Better desktop spacing
               },
-              gap: { xs: 0.5, sm: 1 },
+              gap: { xs: 1, sm: 1.5, md: 2 },
             }}
           >
-            {event.children.map((child) => (
+            {event.children.map((child: FeedChildFoodData) => (
               <Box key={child.childId}>{renderChildFoodCard(child)}</Box>
             ))}
           </Box>

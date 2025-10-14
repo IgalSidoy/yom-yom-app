@@ -52,7 +52,19 @@ const StaffFeed: React.FC = () => {
         showFloatingButton={true}
         headerContent={headerContent}
       >
-        <Alert severity="info" sx={{ mb: 2 }}>
+        <Alert
+          severity="info"
+          sx={{
+            mb: 2,
+            borderRadius: 3,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+            border: "1px solid",
+            borderColor: "info.light",
+            "& .MuiAlert-icon": {
+              fontSize: "1.5rem",
+            },
+          }}
+        >
           צפה בחדשות ועדכונים מהקבוצה שלך
         </Alert>
 
@@ -62,7 +74,19 @@ const StaffFeed: React.FC = () => {
             <FeedPost key={post.id} post={post} isClosed={post.isClosed} />
           ))
         ) : (
-          <Alert severity="info" sx={{ mt: 2 }}>
+          <Alert
+            severity="info"
+            sx={{
+              mt: 2,
+              borderRadius: 3,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+              border: "1px solid",
+              borderColor: "info.light",
+              "& .MuiAlert-icon": {
+                fontSize: "1.5rem",
+              },
+            }}
+          >
             אין עדיין חדשות להצגה לתאריך זה
           </Alert>
         )}

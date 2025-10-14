@@ -411,9 +411,9 @@ const AccountsSettings: React.FC = () => {
       />
       <Card
         sx={{
-          height: { xs: "100%", sm: "auto" },
-          display: { xs: "flex", sm: "block" },
-          flexDirection: { xs: "column", sm: "row" },
+          height: "100%", // Always use full height for proper scrolling
+          display: "flex",
+          flexDirection: "column",
           minHeight: 0, // Allow flex child to shrink
           borderRadius: 1, // Override Card component border radius
           boxShadow: "none", // Remove any shadows

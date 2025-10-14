@@ -45,10 +45,10 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({
             sx={{
               width: "100%",
               maxWidth: {
-                sm: "100vw",
-                md: "100vw",
-                lg: "100vw",
-                xl: "100vw",
+                sm: "100%", // Use 100% instead of 100vw to avoid horizontal scrollbar
+                md: "100%", // Use 100% instead of 100vw to avoid horizontal scrollbar
+                lg: "100%", // Use 100% instead of 100vw to avoid horizontal scrollbar
+                xl: "100%", // Use 100% instead of 100vw to avoid horizontal scrollbar
               },
               mx: "auto",
               display: "flex",
