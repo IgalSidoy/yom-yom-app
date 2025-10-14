@@ -226,11 +226,18 @@ const ParentSettings = () => {
   return (
     <MobileLayout showBottomNav={true}>
       <Container
-        maxWidth="lg"
+        maxWidth={false}
         sx={{
           py: { xs: 2, sm: 4 },
           px: { xs: 1, sm: 2 },
           width: "100%",
+          maxWidth: {
+            sm: "600px",
+            md: "700px",
+            lg: "800px",
+            xl: "900px",
+          },
+          mx: "auto",
           flex: 1,
           display: "flex",
           flexDirection: "column",

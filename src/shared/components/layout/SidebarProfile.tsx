@@ -114,6 +114,7 @@ const SidebarProfile: React.FC<SidebarProfileProps> = ({ isExpanded }) => {
         sx={{
           display: "flex",
           alignItems: "center",
+          justifyContent: isExpanded ? "flex-start" : "center",
           gap: isExpanded ? 2 : 0,
           mb: 2,
         }}
