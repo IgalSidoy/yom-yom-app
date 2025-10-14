@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, useTheme, useMediaQuery } from "@mui/material";
 import BottomNav from "./BottomNav";
+import DesktopLayout from "./DesktopLayout";
 
 export interface MobileLayoutProps {
   children: React.ReactNode;
@@ -14,21 +15,24 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  // On desktop, just render children without any mobile-specific layout
+  // On desktop, use DesktopLayout with sidebar
   if (!isMobile) {
-    return <>{children}</>;
+    return <DesktopLayout>{children}</DesktopLayout>;
   }
 
+  // On mobile, use the existing mobile layout with bottom navigation
   return (
     <div
       style={{
         height: "100vh",
-        width: "100vw",
+        width: "100%", // Use 100% instead of 100vw to avoid horizontal scrollbar
         display: "flex",
         flexDirection: "column",
         backgroundColor: "#fff",
         paddingTop: "env(safe-area-inset-top)",
-        paddingBottom: showBottomNav ? "80px" : "env(safe-area-inset-bottom)",
+        paddingBottom: showBottomNav
+          ? "calc(72px + env(safe-area-inset-bottom) + 32px)"
+          : "env(safe-area-inset-bottom)",
         overflow: "hidden",
       }}
     >

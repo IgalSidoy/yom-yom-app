@@ -6,19 +6,24 @@ import {
   Paper,
   useTheme,
   useMediaQuery,
+  Tooltip,
 } from "@mui/material";
-import { ChevronLeft, ChevronRight, Today } from "@mui/icons-material";
+import { ChevronLeft, ChevronRight, Today, Refresh } from "@mui/icons-material";
 import dayjs, { Dayjs } from "dayjs";
 
 interface FeedDateSelectorProps {
   selectedDate: Dayjs;
   onDateChange: (date: Dayjs) => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
   label?: string;
 }
 
 const FeedDateSelector: React.FC<FeedDateSelectorProps> = ({
   selectedDate,
   onDateChange,
+  onRefresh,
+  isRefreshing = false,
   label = "בחר תאריך",
 }) => {
   const theme = useTheme();
@@ -62,13 +67,18 @@ const FeedDateSelector: React.FC<FeedDateSelectorProps> = ({
   return (
     <Box sx={{ mb: 1 }}>
       <Paper
-        elevation={1}
+        elevation={2}
         sx={{
-          p: 1.5,
-          borderRadius: 2,
+          p: { xs: 2, sm: 2.5 },
+          borderRadius: 3,
           bgcolor: "background.paper",
           border: "1px solid",
           borderColor: "divider",
+          transition: "all 0.2s ease-in-out",
+          "&:hover": {
+            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
+            borderColor: "primary.light",
+          },
         }}
       >
         {/* Compact date selector */}
@@ -93,19 +103,65 @@ const FeedDateSelector: React.FC<FeedDateSelectorProps> = ({
                 : "primary.main",
               border: "1px solid",
               borderColor: "primary.main",
+              borderRadius: 2,
+              transition: "all 0.2s ease-in-out",
               "&:hover": {
                 bgcolor: selectedDate.isSame(dayjs(), "day")
                   ? "primary.dark"
                   : "primary.light",
+                transform: "scale(1.05)",
               },
               "&:disabled": {
                 bgcolor: "primary.main",
                 color: "primary.contrastText",
+                transform: "none",
               },
             }}
           >
             <Today sx={{ fontSize: 16 }} />
           </IconButton>
+
+          {/* Refresh Button */}
+          {onRefresh && (
+            <Tooltip title="רענן פיד">
+              <IconButton
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                size="small"
+                sx={{
+                  mr: 1,
+                  bgcolor: isRefreshing ? "primary.main" : "transparent",
+                  color: isRefreshing ? "primary.contrastText" : "primary.main",
+                  border: "1px solid",
+                  borderColor: "primary.main",
+                  borderRadius: 2,
+                  transition: "all 0.2s ease-in-out",
+                  "&:hover": {
+                    bgcolor: isRefreshing ? "primary.dark" : "primary.light",
+                    transform: "scale(1.05)",
+                  },
+                  "&:disabled": {
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                    transform: "none",
+                  },
+                }}
+              >
+                <Refresh
+                  sx={{
+                    fontSize: 16,
+                    animation: isRefreshing
+                      ? "spin 1s linear infinite"
+                      : "none",
+                    "@keyframes spin": {
+                      "0%": { transform: "rotate(0deg)" },
+                      "100%": { transform: "rotate(360deg)" },
+                    },
+                  }}
+                />
+              </IconButton>
+            </Tooltip>
+          )}
 
           <IconButton
             onClick={handleNextDay}
@@ -113,8 +169,15 @@ const FeedDateSelector: React.FC<FeedDateSelectorProps> = ({
             size="small"
             sx={{
               color: "primary.main",
+              borderRadius: 2,
+              transition: "all 0.2s ease-in-out",
+              "&:hover": {
+                bgcolor: "primary.light",
+                transform: "scale(1.1)",
+              },
               "&:disabled": {
                 color: "text.disabled",
+                transform: "none",
               },
             }}
           >
@@ -139,8 +202,15 @@ const FeedDateSelector: React.FC<FeedDateSelectorProps> = ({
             size="small"
             sx={{
               color: "primary.main",
+              borderRadius: 2,
+              transition: "all 0.2s ease-in-out",
+              "&:hover": {
+                bgcolor: "primary.light",
+                transform: "scale(1.1)",
+              },
               "&:disabled": {
                 color: "text.disabled",
+                transform: "none",
               },
             }}
           >

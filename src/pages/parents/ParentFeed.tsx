@@ -24,12 +24,13 @@ const ParentFeed: React.FC = () => {
     isLoadingChildren,
     handleDateChange,
     fetchFeedData,
+    refreshFeed,
     userChildren,
   } = useFeed();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Load feed data when component mounts and children are loaded (for parents)
+  // Load feed data when component mounts - stable dependencies
   useEffect(() => {
     if (user?.role === "Parent") {
       // For parents, wait for children to be loaded
@@ -40,13 +41,15 @@ const ParentFeed: React.FC = () => {
       // For other roles, fetch immediately
       fetchFeedData(selectedDate);
     }
-  }, [user?.role, userChildren.length, selectedDate, fetchFeedData]);
+  }, []); // Empty dependency array - only run on mount
 
   // Header content with date selector
   const headerContent = (
     <FeedDateSelector
       selectedDate={selectedDate}
       onDateChange={handleDateChange}
+      onRefresh={refreshFeed}
+      isRefreshing={isFeedLoading || isLoadingChildren}
       label="בחר תאריך לצפייה בפיד"
     />
   );
@@ -60,7 +63,19 @@ const ParentFeed: React.FC = () => {
         showFloatingButton={false}
         headerContent={headerContent}
       >
-        <Alert severity="info" sx={{ mb: 2 }}>
+        <Alert
+          severity="info"
+          sx={{
+            mb: 2,
+            borderRadius: 3,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+            border: "1px solid",
+            borderColor: "info.light",
+            "& .MuiAlert-icon": {
+              fontSize: "1.5rem",
+            },
+          }}
+        >
           צפה בחדשות ועדכונים מהילדים שלך
         </Alert>
 
@@ -70,7 +85,19 @@ const ParentFeed: React.FC = () => {
             <FeedPost key={post.id} post={post} isClosed={post.isClosed} />
           ))
         ) : (
-          <Alert severity="info" sx={{ mt: 2 }}>
+          <Alert
+            severity="info"
+            sx={{
+              mt: 2,
+              borderRadius: 3,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+              border: "1px solid",
+              borderColor: "info.light",
+              "& .MuiAlert-icon": {
+                fontSize: "1.5rem",
+              },
+            }}
+          >
             אין עדיין חדשות להצגה לתאריך זה
           </Alert>
         )}

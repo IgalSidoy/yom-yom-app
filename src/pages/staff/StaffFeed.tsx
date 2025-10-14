@@ -23,22 +23,25 @@ const StaffFeed: React.FC = () => {
     isFeedLoading,
     handleDateChange,
     fetchFeedData,
+    refreshFeed,
   } = useFeed();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Load feed data when component mounts
+  // Load feed data when component mounts - stable dependencies
   useEffect(() => {
     if (user?.groupId) {
       fetchFeedData(selectedDate);
     }
-  }, [user?.groupId, selectedDate, fetchFeedData]);
+  }, []); // Empty dependency array - only run on mount
 
   // Header content with date selector
   const headerContent = (
     <FeedDateSelector
       selectedDate={selectedDate}
       onDateChange={handleDateChange}
+      onRefresh={refreshFeed}
+      isRefreshing={isFeedLoading}
       label="בחר תאריך לצפייה בפיד"
     />
   );
@@ -52,7 +55,19 @@ const StaffFeed: React.FC = () => {
         showFloatingButton={true}
         headerContent={headerContent}
       >
-        <Alert severity="info" sx={{ mb: 2 }}>
+        <Alert
+          severity="info"
+          sx={{
+            mb: 2,
+            borderRadius: 3,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+            border: "1px solid",
+            borderColor: "info.light",
+            "& .MuiAlert-icon": {
+              fontSize: "1.5rem",
+            },
+          }}
+        >
           צפה בחדשות ועדכונים מהקבוצה שלך
         </Alert>
 
@@ -62,7 +77,19 @@ const StaffFeed: React.FC = () => {
             <FeedPost key={post.id} post={post} isClosed={post.isClosed} />
           ))
         ) : (
-          <Alert severity="info" sx={{ mt: 2 }}>
+          <Alert
+            severity="info"
+            sx={{
+              mt: 2,
+              borderRadius: 3,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+              border: "1px solid",
+              borderColor: "info.light",
+              "& .MuiAlert-icon": {
+                fontSize: "1.5rem",
+              },
+            }}
+          >
             אין עדיין חדשות להצגה לתאריך זה
           </Alert>
         )}

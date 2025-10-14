@@ -165,7 +165,10 @@ const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              background:
+                "linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.6) 100%)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
               zIndex: 99999,
               display: "flex",
               justifyContent: "center",
@@ -195,10 +198,13 @@ const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
             {/* Popup Content */}
             <Box
               sx={{
-                backgroundColor: "white",
+                background: "rgba(255, 255, 255, 0.95)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
                 borderRadius: 4,
                 padding: 4,
-                boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+                boxShadow:
+                  "0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)",
                 display: "flex",
                 flexDirection: "column",
                 gap: 3,
@@ -296,16 +302,19 @@ const FeedFloatingButton: React.FC<FeedFloatingButtonProps> = ({
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
-                      p: 3,
+                      p: { xs: 2.5, sm: 3 },
                       borderRadius: 3,
                       border: "2px solid",
                       borderColor: "divider",
                       cursor: "pointer",
                       transition: "all 0.3s ease",
+                      background: "rgba(255, 255, 255, 0.7)",
+                      backdropFilter: "blur(10px)",
                       "&:hover": {
-                        transform: "translateY(-4px)",
-                        boxShadow: "0 8px 25px rgba(0, 0, 0, 0.15)",
+                        transform: "translateY(-6px)",
+                        boxShadow: `0 12px 30px ${option.color}30`,
                         borderColor: option.color,
+                        background: "rgba(255, 255, 255, 0.9)",
                       },
                     }}
                   >

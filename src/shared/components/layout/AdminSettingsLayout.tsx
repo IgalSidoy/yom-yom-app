@@ -114,9 +114,14 @@ const AdminSettingsLayout: React.FC<AdminSettingsLayoutProps> = ({
         maxWidth={maxWidth}
         sx={{
           py: { xs: 2, sm: 4 },
-          pb: { xs: 2, sm: 4, md: 6 }, // Extra bottom padding on desktop
+          pb: {
+            xs: "calc(72px + env(safe-area-inset-bottom) + 24px)",
+            sm: 4,
+            md: 6,
+          }, // Adequate space for bottom nav + safe area + breathing room
           px: { xs: 1, sm: 2 },
           width: "100%",
+          height: "100%", // Ensure full height for proper scrolling
           flex: 1, // Take remaining space
           display: "flex",
           flexDirection: "column",

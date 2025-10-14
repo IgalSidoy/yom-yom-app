@@ -10,7 +10,11 @@ import React, {
 import { useNavigate, useLocation } from "react-router-dom";
 import api, { getNewAccessToken, updateAccessToken } from "../services/api";
 import { AxiosError } from "axios";
-import { getRefreshToken, hasRefreshToken } from "../utils/cookieUtils";
+import {
+  getRefreshToken,
+  hasRefreshToken,
+  deleteRefreshToken,
+} from "../utils/cookieUtils";
 
 interface User {
   id: string;
@@ -188,7 +192,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const logout = useCallback(() => {
-    setAccessToken(null);
+    deleteRefreshToken(); // Clear refresh cookie
+    setAccessToken(null); // Clear access token from context
     navigate("/login");
   }, [navigate]);
 

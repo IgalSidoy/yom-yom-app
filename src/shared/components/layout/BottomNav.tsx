@@ -5,51 +5,10 @@ import {
   Paper,
   InputLabel,
 } from "@mui/material";
-import HomeIcon from "@mui/icons-material/Home";
-import DynamicFeedIcon from "@mui/icons-material/DynamicFeed";
-import SettingsIcon from "@mui/icons-material/Settings";
-import PeopleIcon from "@mui/icons-material/People";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useLanguage } from "../../../contexts/LanguageContext";
 import { useApp } from "../../../contexts/AppContext";
-import { ROUTES } from "../../../config/routes";
-
-type NavLabel =
-  | "Home"
-  | "Feed"
-  | "Settings"
-  | "AdminSettings"
-  | "StaffDashboard";
-
-type NavLabelsMap = {
-  heb: Record<NavLabel, string>;
-  rus: Record<NavLabel, string>;
-  eng: Record<NavLabel, string>;
-};
-
-const navLabels: NavLabelsMap = {
-  heb: {
-    Home: "בית",
-    Feed: "פיד",
-    Settings: "הגדרות",
-    AdminSettings: "הגדרות",
-    StaffDashboard: "נוכחות",
-  },
-  rus: {
-    Home: "Главная",
-    Feed: "Лента",
-    Settings: "Настройки",
-    AdminSettings: "Настройки администратора",
-    StaffDashboard: "Посещаемость",
-  },
-  eng: {
-    Home: "Home",
-    Feed: "Feed",
-    Settings: "Settings",
-    AdminSettings: "Admin Settings",
-    StaffDashboard: "Attendance",
-  },
-};
+import { getNavItemsForRole, navLabels } from "./navigationConfig";
 
 const BottomNav: React.FC = () => {
   const location = useLocation();
@@ -57,55 +16,9 @@ const BottomNav: React.FC = () => {
   const { language } = useLanguage();
   const { user } = useApp();
 
-  // Define navigation items based on user role
-  const getNavItems = () => {
-    // Get role-based home route
-    const getHomeRoute = () => {
-      switch (user?.role) {
-        case "Admin":
-          return ROUTES.ADMIN_DASHBOARD;
-        case "Staff":
-          return ROUTES.STAFF_DASHBOARD;
-        case "Parent":
-          return ROUTES.PARENT_DASHBOARD;
-        default:
-          return ROUTES.DASHBOARD;
-      }
-    };
+  // Get navigation items for current user role
+  const navItems = getNavItemsForRole(user?.role as any);
 
-    const baseItems = [
-      { label: "Home" as NavLabel, icon: <HomeIcon />, path: getHomeRoute() },
-      { label: "Feed" as NavLabel, icon: <DynamicFeedIcon />, path: "/feed" },
-    ];
-
-    // Add attendance for staff users
-    if (user?.role === "Staff") {
-      baseItems.push({
-        label: "StaffDashboard" as NavLabel,
-        icon: <PeopleIcon />,
-        path: "/attendance",
-      });
-    }
-
-    // Add appropriate settings based on user role
-    if (user?.role === "Admin") {
-      baseItems.push({
-        label: "AdminSettings" as NavLabel,
-        icon: <SettingsIcon />,
-        path: "/admin/settings",
-      });
-    } else {
-      baseItems.push({
-        label: "Settings" as NavLabel,
-        icon: <SettingsIcon />,
-        path: "/settings",
-      });
-    }
-
-    return baseItems;
-  };
-
-  const navItems = getNavItems();
   const currentIndex = navItems.findIndex((item) =>
     location.pathname.startsWith(item.path)
   );
@@ -165,7 +78,7 @@ const BottomNav: React.FC = () => {
       >
         {navItems.map((item) => (
           <BottomNavigationAction
-            key={item.label}
+            key={item.id}
             label={navLabels[language][item.label]}
             icon={item.icon}
             sx={{

@@ -1,5 +1,6 @@
 import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useTheme, useMediaQuery } from "@mui/material";
 import { ROUTES } from "./config/routes";
 import ProtectedRoute from "./shared/components/ui/ProtectedRoute";
 import Login from "./pages/shared/Login";
@@ -100,9 +101,12 @@ const StaffAndAdminOnly: React.FC<{ children: React.ReactNode }> = ({
 
 const AppRoutes: React.FC = () => {
   const location = useLocation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  // Hide bottom navigation for create post pages, login page, and onboarding page
+  // Hide bottom navigation for create post pages, login page, onboarding page, and on desktop
   const shouldShowBottomNav =
+    isMobile &&
     !location.pathname.includes(ROUTES.SLEEP_POST) &&
     !location.pathname.includes(ROUTES.FOOD_POST) &&
     !location.pathname.includes(ROUTES.LOGIN) &&

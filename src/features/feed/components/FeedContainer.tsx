@@ -94,17 +94,17 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
     <Fade in={true} timeout={300}>
       <MuiBox
         sx={{
-          p: 2,
+          p: { xs: 2, sm: 3 },
           mb: 2,
           bgcolor: "background.paper",
-          borderRadius: 2,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          borderRadius: 3,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
           border: "1px solid",
           borderColor: "divider",
           transition: "all 0.2s ease-in-out",
           "&:hover": {
             transform: "translateY(-1px)",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
           },
         }}
       >
@@ -296,17 +296,13 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
   return (
     <Box
       sx={{
-        height: "100vh",
+        minHeight: "100vh",
         bgcolor: "background.default",
         p: { xs: 0, sm: 2, md: 3 },
         dir: "rtl",
-        overflow: "hidden",
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 1,
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       {/* Mobile Container */}
@@ -314,11 +310,11 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
         <Box
           sx={{
             width: "100%",
-            height: "calc(100dvh - 72px - env(safe-area-inset-bottom))",
+            minHeight: "calc(100vh - 72px - env(safe-area-inset-bottom))",
             bgcolor: "background.paper",
             borderRadius: 0,
             boxShadow: "none",
-            overflow: "hidden",
+            overflow: "visible",
             border: "none",
             display: "flex",
             flexDirection: "column",
@@ -369,7 +365,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
               pb: "calc(72px + env(safe-area-inset-bottom) + 20px)",
               flex: 1,
               bgcolor: UI_COLORS.BACKGROUND_LIGHT,
-              overflow: "auto",
+              overflow: "visible",
               position: "relative",
             }}
           >
@@ -428,17 +424,21 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
               lg: "800px",
               xl: "900px",
             },
-            height: "calc(100vh - 150px)",
+            minHeight: "calc(100vh - 150px)",
             mx: "auto",
             bgcolor: "background.paper",
             borderRadius: 3,
             boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
-            overflow: "hidden",
+            overflow: "visible",
             border: "1px solid",
             borderColor: "divider",
             display: "flex",
             flexDirection: "column",
             position: "relative",
+            transition: "all 0.2s ease-in-out",
+            "&:hover": {
+              boxShadow: "0 6px 24px rgba(0, 0, 0, 0.12)",
+            },
           }}
         >
           {/* Desktop Header */}
@@ -495,7 +495,7 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
               p: { sm: 3, md: 4 },
               flex: 1,
               bgcolor: UI_COLORS.BACKGROUND_LIGHT,
-              overflow: "auto",
+              overflow: "visible",
               position: "relative",
             }}
           >

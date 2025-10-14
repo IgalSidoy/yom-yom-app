@@ -23,10 +23,12 @@ import {
   Chip,
   Drawer,
   Divider,
+  Avatar,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import EditIcon from "@mui/icons-material/Edit";
 import CloseIcon from "@mui/icons-material/Close";
+import LogoutIcon from "@mui/icons-material/Logout";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useApp } from "../../contexts/AppContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -37,7 +39,7 @@ import MobileLayout from "../../shared/components/layout/MobileLayout";
 const ParentSettings = () => {
   const { language, setLanguage } = useLanguage();
   const { user, setUser } = useApp();
-  const { accessToken } = useAuth();
+  const { accessToken, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [expandedAccordion, setExpandedAccordion] = useState<string | false>(
     false
@@ -510,6 +512,115 @@ const ParentSettings = () => {
                     label="התראות על פעילות הילדים"
                     sx={{ textAlign: "right" }}
                   />
+                </Box>
+              </Box>
+            </AccordionDetails>
+          </Accordion>
+
+          <Accordion
+            expanded={expandedAccordion === "account"}
+            onChange={handleAccordionChange("account")}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              aria-controls="account-content"
+              id="account-header"
+            >
+              <Typography variant="h6">חשבון</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Box sx={{ textAlign: "right" }}>
+                {/* User Info Display */}
+                <Box sx={{ mb: 3 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 2,
+                    }}
+                  >
+                    <Avatar
+                      sx={{
+                        width: 60,
+                        height: 60,
+                        bgcolor: "primary.main",
+                        fontSize: "1.5rem",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {user?.firstName?.charAt(0) || "U"}
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography
+                        variant="h6"
+                        sx={{ fontWeight: 600, mb: 0.5 }}
+                      >
+                        {user?.firstName} {user?.lastName}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 1 }}
+                      >
+                        {user?.email}
+                      </Typography>
+                      <Chip
+                        label="הורה"
+                        size="small"
+                        color="success"
+                        sx={{
+                          fontSize: "0.7rem",
+                          height: 24,
+                          fontWeight: 500,
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                </Box>
+
+                <Divider sx={{ mb: 3 }} />
+
+                {/* Language Selector */}
+                <Box sx={{ mb: 3 }}>
+                  <FormControl fullWidth sx={{ mb: 2 }}>
+                    <InputLabel>שפה</InputLabel>
+                    <Select
+                      value={language}
+                      label="שפה"
+                      onChange={(e) => setLanguage(e.target.value as any)}
+                    >
+                      <MenuItem value="heb">עברית</MenuItem>
+                      <MenuItem value="rus">Русский</MenuItem>
+                      <MenuItem value="eng">English</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+
+                <Divider sx={{ mb: 3 }} />
+
+                {/* Logout Button */}
+                <Box sx={{ display: "flex", justifyContent: "center" }}>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<LogoutIcon />}
+                    onClick={logout}
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: "none",
+                      py: 1.2,
+                      px: 3,
+                      fontWeight: 500,
+                      borderWidth: 2,
+                      "&:hover": {
+                        borderWidth: 2,
+                        backgroundColor: "error.lighter",
+                      },
+                    }}
+                  >
+                    התנתק
+                  </Button>
                 </Box>
               </Box>
             </AccordionDetails>

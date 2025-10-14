@@ -179,6 +179,7 @@ const AccountEditPage: React.FC = () => {
       <Paper
         sx={{
           p: 3,
+          mb: { xs: 3, sm: 0 }, // Add bottom margin on mobile for better form visibility
           borderRadius: 3,
           border: "1px solid",
           borderColor: "divider",
