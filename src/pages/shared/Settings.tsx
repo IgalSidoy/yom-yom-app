@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import { useApp } from "../../contexts/AppContext";
-import AdminSettings from "../admin/AdminSettings";
+import AdminSettingsPageNew from "../../features/admin/pages/AdminSettingsPageNew";
 import StaffSettings from "../staff/StaffSettings";
 import ParentSettings from "../parents/ParentSettings";
 
@@ -24,7 +24,7 @@ const Settings = () => {
 
   switch (user.role) {
     case "Admin":
-      return <AdminSettings />;
+      return <AdminSettingsPageNew />;
     case "Staff":
       return <StaffSettings />;
     case "Parent":

@@ -18,6 +18,7 @@ import {
 } from "@mui/icons-material";
 import { useLanguage } from "../../../contexts/LanguageContext";
 import { useApp } from "../../../contexts/AppContext";
+import { useAuth } from "../../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 interface SidebarProfileProps {
@@ -27,6 +28,7 @@ interface SidebarProfileProps {
 const SidebarProfile: React.FC<SidebarProfileProps> = ({ isExpanded }) => {
   const theme = useTheme();
   const { user } = useApp();
+  const { logout } = useAuth();
   const { language, setLanguage } = useLanguage();
   const navigate = useNavigate();
   const [languageAnchorEl, setLanguageAnchorEl] = useState<null | HTMLElement>(
@@ -47,8 +49,7 @@ const SidebarProfile: React.FC<SidebarProfileProps> = ({ isExpanded }) => {
   };
 
   const handleLogout = () => {
-    // TODO: Implement logout logic
-    navigate("/login");
+    logout();
   };
 
   const getRoleLabel = (role?: string) => {
