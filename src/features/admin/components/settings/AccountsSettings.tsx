@@ -428,7 +428,6 @@ const AccountsSettings: React.FC = () => {
             display: "flex",
             flexDirection: "column",
             minHeight: 0, // Allow flex child to shrink
-            overflow: "hidden",
             bgcolor: THEME_COLORS.BACKGROUND, // Use theme background color
             borderRadius: 0, // Override theme border radius
             margin: 0, // Remove margins
