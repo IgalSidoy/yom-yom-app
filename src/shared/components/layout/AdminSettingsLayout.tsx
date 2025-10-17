@@ -121,7 +121,6 @@ const AdminSettingsLayout: React.FC<AdminSettingsLayoutProps> = ({
           }, // Adequate space for bottom nav + safe area + breathing room
           px: { xs: 1, sm: 2 },
           width: "100%",
-          height: "100%", // Ensure full height for proper scrolling
           flex: 1, // Take remaining space
           display: "flex",
           flexDirection: "column",
