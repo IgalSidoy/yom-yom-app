@@ -64,7 +64,8 @@ const AdminFeedFilters: React.FC<AdminFeedFiltersProps> = ({
     } finally {
       setIsLoadingAccounts(false);
     }
-  }, [selectedAccount, onAccountChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onAccountChange]);
 
   // Fetch groups for selected account
   const fetchGroups = useCallback(
@@ -92,13 +93,15 @@ const AdminFeedFilters: React.FC<AdminFeedFiltersProps> = ({
         setIsLoadingGroups(false);
       }
     },
-    [selectedGroup, onGroupChange]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [onGroupChange]
   );
 
   // Load accounts on mount
   useEffect(() => {
     fetchAccounts();
-  }, [fetchAccounts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - only run on mount
 
   // Load groups when account changes
   useEffect(() => {
