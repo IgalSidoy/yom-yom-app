@@ -34,8 +34,7 @@ export const ROUTES = {
   ATTENDANCE: "/attendance",
 
   // Post creation routes
-  SLEEP_POST: "/sleep-post",
-  FOOD_POST: "/food-post",
+  POST_CREATE: "/feed/post/:type",
 
   // Catch-all route
   NOT_FOUND: "*",
@@ -50,7 +49,7 @@ export const ROUTE_GROUPS = {
     ROUTES.FEED,
     ROUTES.ATTENDANCE,
   ],
-  POST_ROUTES: [ROUTES.SLEEP_POST, ROUTES.FOOD_POST],
+  POST_ROUTES: [ROUTES.POST_CREATE],
 } as const;
 
 // Helper function to build dynamic routes
@@ -66,6 +65,11 @@ export const buildRoute = (
   });
 
   return route;
+};
+
+// Helper function to build post creation route
+export const buildPostRoute = (type: "sleep" | "food"): string => {
+  return ROUTES.POST_CREATE.replace(":type", type);
 };
 
 // Helper function to get role-based dashboard route

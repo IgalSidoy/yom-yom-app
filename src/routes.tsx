@@ -6,8 +6,7 @@ import ProtectedRoute from "./shared/components/ui/ProtectedRoute";
 import Login from "./pages/shared/Login";
 import Onboarding from "./pages/shared/Onboarding";
 import Settings from "./pages/shared/Settings";
-import CreateSleepPostPage from "./pages/shared/CreateSleepPostPage";
-import CreateFoodPostPage from "./pages/shared/CreateFoodPostPage";
+import CreatePostPage from "./pages/shared/CreatePostPage";
 import NotFound from "./pages/shared/NotFound";
 import BottomNav from "./shared/components/layout/BottomNav";
 import StaffDashboard from "./pages/staff/StaffDashboard";
@@ -107,8 +106,7 @@ const AppRoutes: React.FC = () => {
   // Hide bottom navigation for create post pages, login page, onboarding page, and on desktop
   const shouldShowBottomNav =
     isMobile &&
-    !location.pathname.includes(ROUTES.SLEEP_POST) &&
-    !location.pathname.includes(ROUTES.FOOD_POST) &&
+    !location.pathname.includes("/feed/post/") &&
     !location.pathname.includes(ROUTES.LOGIN) &&
     !location.pathname.includes(ROUTES.ONBOARDING);
 
@@ -278,21 +276,11 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
-          path={ROUTES.SLEEP_POST}
-          element={
-            <ProtectedRoute>
-              <StaffOnly>
-                <CreateSleepPostPage />
-              </StaffOnly>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={ROUTES.FOOD_POST}
+          path={ROUTES.POST_CREATE}
           element={
             <ProtectedRoute>
               <StaffAndAdminOnly>
-                <CreateFoodPostPage />
+                <CreatePostPage />
               </StaffAndAdminOnly>
             </ProtectedRoute>
           }

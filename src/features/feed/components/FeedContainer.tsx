@@ -3,7 +3,7 @@ import { Typography, Box, useTheme, useMediaQuery } from "@mui/material";
 import { UI_COLORS } from "../../../config/colors";
 import { Skeleton, Fade, Slide, Box as MuiBox } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { ROUTES } from "../../../config/routes";
+import { buildPostRoute } from "../../../config/routes";
 import Container from "../../../shared/components/layout/Container";
 import FeedFloatingButton from "./FeedFloatingButton";
 import { useAttendance } from "../../../contexts/AttendanceContext";
@@ -62,13 +62,13 @@ const FeedContainer: React.FC<FeedContainerProps> = ({
       case "sleep":
         console.log("🛏️ [FeedContainer] Navigating to sleep post");
         // Navigate to the sleep post creation page
-        navigate(ROUTES.SLEEP_POST);
+        navigate(buildPostRoute("sleep"));
         break;
       case "food":
       case "snack":
         console.log("🍽️ [FeedContainer] Navigating to food post");
         // Navigate to the food post creation page (both "food" and "snack" go to food post)
-        navigate(ROUTES.FOOD_POST);
+        navigate(buildPostRoute("food"));
         break;
       case "activity":
         console.log("🎮 [FeedContainer] Activity post not implemented yet");

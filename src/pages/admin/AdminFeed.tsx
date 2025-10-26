@@ -12,7 +12,7 @@ import { useApp } from "../../contexts/AppContext";
 import { useDailyReport } from "../../contexts/DailyReportContext";
 import { useFeed } from "../../contexts/FeedContext";
 import { useNavigate } from "react-router-dom";
-import { ROUTES } from "../../config/routes";
+import { buildPostRoute } from "../../config/routes";
 import MobileLayout from "../../shared/components/layout/MobileLayout";
 import { Account, Group } from "../../services/api";
 
@@ -67,6 +67,28 @@ const AdminFeed: React.FC = () => {
     setSelectedGroup(group);
   };
 
+  // Handle post type selection for creating posts
+  const handlePostTypeSelect = async (postType: string) => {
+    if (!selectedGroup) return;
+
+    // Navigate to post creation page with selected group data
+    const navigationState = {
+      groupId: selectedGroup.id,
+      groupName: selectedGroup.name,
+      children: [], // Let the page fetch children
+    };
+
+    switch (postType) {
+      case "sleep":
+        navigate(buildPostRoute("sleep"), { state: navigationState });
+        break;
+      case "snack":
+      case "food":
+        navigate(buildPostRoute("food"), { state: navigationState });
+        break;
+    }
+  };
+
   // Header content with filters and date selector
   const headerContent = (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -118,6 +140,7 @@ const AdminFeed: React.FC = () => {
         subtitle={getSubtitle()}
         isLoading={isFeedLoading}
         showFloatingButton={!!selectedGroup} // Only show floating button when group is selected
+        onPostTypeSelect={handlePostTypeSelect}
         headerContent={headerContent}
       >
         {!selectedAccount ? (

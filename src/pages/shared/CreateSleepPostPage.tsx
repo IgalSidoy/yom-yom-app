@@ -7,22 +7,16 @@ import {
   Button,
   Alert,
   AlertTitle,
-  Card,
-  CardContent,
-  Chip,
-  Divider,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useMediaQuery } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import LockIcon from "@mui/icons-material/Lock";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useApp } from "../../contexts/AppContext";
 import { useDailyReport } from "../../contexts/DailyReportContext";
 import { childApi, DailyReport, Child } from "../../services/api";
 import CreateSleepPostModal from "../../features/feed/components/CreateSleepPostModal";
 import MobileLayout from "../../shared/components/layout/MobileLayout";
+import ClosedStatusPage from "../../shared/components/post/ClosedStatusPage";
 
 interface LocationState {
   groupId?: string;
@@ -194,7 +188,7 @@ const CreateSleepPostPage: React.FC = () => {
         "⚠️ [CreateSleepPostPage] No locationState.groupId or user.groupId available"
       );
     }
-  }, [locationState, fetchDailyReport, isLoadingUser, user?.groupId]);
+  }, [locationState, isLoadingUser, user?.groupId]);
 
   // Update group name when daily report is loaded
   useEffect(() => {
@@ -424,298 +418,14 @@ const CreateSleepPostPage: React.FC = () => {
   // Show closed status page
   if (isSleepReportingClosed) {
     return (
-      <Box
-        sx={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          bgcolor: "background.default",
-          zIndex: 1,
-          display: "flex",
-          flexDirection: "column",
-          height: { xs: "100dvh", sm: "100vh" }, // Use dynamic viewport height on mobile
-          overflow: "auto",
-          p: isMobile ? 2 : 4,
-          // Add safe area insets for mobile
-          paddingTop: {
-            xs: "calc(2rem + env(safe-area-inset-top))",
-            sm: "2rem",
-          },
-          paddingBottom: {
-            xs: "calc(2rem + env(safe-area-inset-bottom))",
-            sm: "2rem",
-          },
-          paddingLeft: {
-            xs: "calc(2rem + env(safe-area-inset-left))",
-            sm: "2rem",
-          },
-          paddingRight: {
-            xs: "calc(2rem + env(safe-area-inset-right))",
-            sm: "2rem",
-          },
-        }}
-      >
-        {/* Header */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            mb: 3,
-            pb: 2,
-            borderBottom: "1px solid",
-            borderColor: "divider",
-          }}
-        >
-          <Button
-            variant="outlined"
-            onClick={handleGoBack}
-            startIcon={<ArrowBackIcon />}
-            sx={{
-              borderColor: "primary.main",
-              color: "primary.main",
-              "&:hover": {
-                borderColor: "primary.dark",
-                bgcolor: "primary.main",
-                color: "white",
-              },
-            }}
-          >
-            חזור
-          </Button>
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 700,
-              color: "text.primary",
-              flex: 1,
-            }}
-          >
-            דיווח שינה - {groupName}
-          </Typography>
-        </Box>
-
-        {/* Main Content */}
-        <Box
-          sx={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            textAlign: "center",
-            maxWidth: 600,
-            mx: "auto",
-            width: "100%",
-          }}
-        >
-          {/* Status Icon */}
-          <Box
-            sx={{
-              width: 120,
-              height: 120,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, #FF9800 0%, #F57C00 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              mb: 3,
-              boxShadow: "0 8px 32px rgba(255, 152, 0, 0.3)",
-            }}
-          >
-            <LockIcon
-              sx={{
-                fontSize: 60,
-                color: "white",
-              }}
-            />
-          </Box>
-
-          {/* Status Badge */}
-          <Chip
-            label="דיווח שינה נסגר"
-            color="warning"
-            icon={<CheckCircleIcon />}
-            sx={{
-              mb: 3,
-              fontSize: "1rem",
-              fontWeight: 600,
-              py: 1,
-              px: 2,
-              "& .MuiChip-icon": {
-                fontSize: "1.2rem",
-              },
-            }}
-          />
-
-          {/* Title */}
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-              color: "text.primary",
-              mb: 2,
-              fontSize: { xs: "1.75rem", sm: "2.125rem" },
-            }}
-          >
-            דיווח השינה הושלם
-          </Typography>
-
-          {/* Description */}
-          <Typography
-            variant="body1"
-            sx={{
-              color: "text.secondary",
-              mb: 4,
-              fontSize: "1.1rem",
-              lineHeight: 1.6,
-              maxWidth: 500,
-            }}
-          >
-            דיווח השינה עבור {groupName} הושלם ואין אפשרות לערוך אותו. הנתונים
-            נשמרו וניתן לצפות בהם בפיד החדשות.
-          </Typography>
-
-          {/* Info Card */}
-          <Card
-            sx={{
-              width: "100%",
-              maxWidth: 500,
-              mb: 4,
-              bgcolor: "warning.light",
-              border: "1px solid",
-              borderColor: "warning.main",
-            }}
-          >
-            <CardContent sx={{ p: 3 }}>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  color: "warning.dark",
-                  mb: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                }}
-              >
-                <CheckCircleIcon sx={{ fontSize: "1.2rem" }} />
-                מה קורה עכשיו?
-              </Typography>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "warning.dark",
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 1,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      bgcolor: "warning.dark",
-                      mt: 0.7,
-                      flexShrink: 0,
-                    }}
-                  />
-                  דיווח השינה נשמר במערכת
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "warning.dark",
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 1,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      bgcolor: "warning.dark",
-                      mt: 0.7,
-                      flexShrink: 0,
-                    }}
-                  />
-                  הורים יכולים לצפות בדיווח בפיד החדשות
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "warning.dark",
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 1,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      bgcolor: "warning.dark",
-                      mt: 0.7,
-                      flexShrink: 0,
-                    }}
-                  />
-                  לא ניתן לערוך או להוסיף נתונים נוספים
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-
-          {/* Action Buttons */}
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
-              gap: 2,
-              width: "100%",
-              maxWidth: 400,
-            }}
-          >
-            <Button
-              variant="outlined"
-              onClick={handleGoBack}
-              sx={{
-                flex: 1,
-                borderColor: "primary.main",
-                color: "primary.main",
-                py: 1.5,
-                "&:hover": {
-                  borderColor: "primary.dark",
-                  bgcolor: "primary.main",
-                  color: "white",
-                },
-              }}
-            >
-              חזור לדשבורד
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleGoToFeed}
-              sx={{
-                flex: 1,
-                bgcolor: "primary.main",
-                py: 1.5,
-                "&:hover": {
-                  bgcolor: "primary.dark",
-                },
-              }}
-            >
-              צפה בפיד החדשות
-            </Button>
-          </Box>
-        </Box>
-      </Box>
+      <MobileLayout showBottomNav={false}>
+        <ClosedStatusPage
+          postType="sleep"
+          groupName={groupName}
+          onGoBack={handleGoBack}
+          onGoToFeed={handleGoToFeed}
+        />
+      </MobileLayout>
     );
   }
 
@@ -737,22 +447,46 @@ const CreateSleepPostPage: React.FC = () => {
     <MobileLayout showBottomNav={false}>
       <Box
         sx={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+          // Mobile: full screen
+          ...(isMobile && {
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: "100dvh",
+            overflow: "hidden",
+            // Add safe area insets for mobile
+            paddingTop: "env(safe-area-inset-top)",
+            paddingBottom: "env(safe-area-inset-bottom)",
+            paddingLeft: "env(safe-area-inset-left)",
+            paddingRight: "env(safe-area-inset-right)",
+          }),
+          // Desktop: apply width constraints like FeedContainer
+          ...(!isMobile && {
+            width: "100%",
+            maxWidth: {
+              sm: "600px",
+              md: "700px",
+              lg: "800px",
+              xl: "900px",
+            },
+            minHeight: "calc(100vh - 150px)",
+            mx: "auto",
+            borderRadius: 3,
+            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+            border: "1px solid",
+            borderColor: "divider",
+            overflow: "hidden",
+            transition: "all 0.2s ease-in-out",
+            "&:hover": {
+              boxShadow: "0 6px 24px rgba(0, 0, 0, 0.12)",
+            },
+          }),
           bgcolor: "background.default",
           zIndex: 1,
           display: "flex",
           flexDirection: "column",
-          height: { xs: "100dvh", sm: "100vh" }, // Use dynamic viewport height on mobile
-          overflow: "hidden",
-          // Add safe area insets for mobile
-          paddingTop: { xs: "env(safe-area-inset-top)", sm: 0 },
-          paddingBottom: { xs: "env(safe-area-inset-bottom)", sm: 0 },
-          paddingLeft: { xs: "env(safe-area-inset-left)", sm: 0 },
-          paddingRight: { xs: "env(safe-area-inset-right)", sm: 0 },
         }}
       >
         <CreateSleepPostModal

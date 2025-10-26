@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ROUTES } from "../../../config/routes";
+import { buildPostRoute } from "../../../config/routes";
 import {
   Typography,
   Card,
@@ -413,7 +413,7 @@ const QuickActionsSlide: React.FC<QuickActionsSlideProps> = ({
               boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
             },
           }}
-          onClick={() => navigate(ROUTES.SLEEP_POST)}
+          onClick={() => navigate(buildPostRoute("sleep"))}
         >
           <CardContent sx={{ p: 2.5 }}>
             <Box

@@ -16,10 +16,18 @@ import {
   Divider,
   Fade,
   Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Card,
+  CardContent,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useMediaQuery } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
 import { isChildSleeping } from "../../../utils/sleepUtils";
 import SleepTimer from "../../../shared/components/ui/SleepTimer";
 import {
@@ -36,6 +44,7 @@ const ChildItem = React.memo<{
   isCompleted: boolean;
   isCelebrating: boolean;
   isDisabled: boolean;
+  isMobile: boolean;
   onStartSleep: (childId: string) => void;
   onEndSleep: (childId: string, startTime: string) => void;
   onNotesChange: (childId: string, notes: string) => void;
@@ -45,6 +54,7 @@ const ChildItem = React.memo<{
     isCompleted,
     isCelebrating,
     isDisabled,
+    isMobile,
     onStartSleep,
     onEndSleep,
     onNotesChange,
@@ -78,43 +88,176 @@ const ChildItem = React.memo<{
       onNotesChange(child.childId, notes);
     };
 
-    return (
-      <Fade in={true} timeout={300}>
-        <ListItem
-          sx={{
-            border: "1px solid",
-            borderColor: isCompleted ? "#4CAF50" : "divider",
-            borderRadius: 1,
-            mb: 1,
-            bgcolor: isCompleted ? "#4CAF5010" : "background.paper",
-            transition: "all 0.3s ease",
-            position: "relative",
-            overflow: "hidden",
-            listStyle: "none",
-            "&::marker": {
-              display: "none",
-            },
-          }}
-        >
-          {/* Green swipe animation overlay */}
-          {showCelebration && (
-            <Box
-              sx={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                zIndex: 10,
-                pointerEvents: "none",
-                background:
-                  "linear-gradient(90deg, rgba(76,175,80,0.15) 0%, rgba(76,175,80,0.35) 40%, rgba(76,175,80,0.15) 100%)",
-                animation: "swipeGreen 0.7s cubic-bezier(0.4,0,0.2,1) forwards",
-              }}
-            />
-          )}
+    // Mobile Card Layout
+    if (isMobile) {
+      return (
+        <Fade in={true} timeout={300}>
+          <Card
+            sx={{
+              mb: 2,
+              border: "1px solid",
+              borderColor: isCompleted ? "#4CAF50" : "divider",
+              borderRadius: 2,
+              bgcolor: isCompleted ? "#4CAF5010" : "background.paper",
+              transition: "all 0.3s ease",
+              position: "relative",
+              overflow: "hidden",
+              "&:hover": {
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+              },
+            }}
+          >
+            {/* Green swipe animation overlay */}
+            {showCelebration && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  zIndex: 10,
+                  pointerEvents: "none",
+                  background:
+                    "linear-gradient(90deg, rgba(76,175,80,0.15) 0%, rgba(76,175,80,0.35) 40%, rgba(76,175,80,0.15) 100%)",
+                  animation:
+                    "swipeGreen 0.7s cubic-bezier(0.4,0,0.2,1) forwards",
+                }}
+              />
+            )}
 
-          <ListItemAvatar sx={{ position: "relative", zIndex: 2 }}>
+            <CardContent sx={{ p: 2, position: "relative", zIndex: 2 }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
+              >
+                <Avatar
+                  sx={{
+                    bgcolor: isSleeping ? "#9C27B0" : "#757575",
+                    width: 40,
+                    height: 40,
+                    transition: "all 0.3s ease",
+                    transform: showCelebration ? "scale(1.05)" : "scale(1)",
+                    boxShadow: showCelebration
+                      ? "0 0 10px rgba(76, 175, 80, 0.25)"
+                      : "none",
+                  }}
+                >
+                  {child.firstName.charAt(0)}
+                </Avatar>
+
+                <Box sx={{ flex: 1 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontWeight: 600,
+                      color: showCelebration ? "#388e3c" : "inherit",
+                      transition: "color 0.3s ease",
+                    }}
+                  >
+                    {child.firstName} {child.lastName}
+                  </Typography>
+                  <SleepTimer
+                    startTime={child.sleepStartTime}
+                    endTime={child.sleepEndTime}
+                    isSleeping={isSleeping}
+                  />
+                </Box>
+
+                <Switch
+                  checked={isSleeping}
+                  onChange={isSleeping ? handleEndSleep : handleStartSleep}
+                  disabled={isDisabled}
+                  color="primary"
+                  sx={{
+                    "& .MuiSwitch-switchBase.Mui-checked": {
+                      color: "#9C27B0",
+                    },
+                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                      backgroundColor: "#9C27B0",
+                    },
+                    "& .MuiSwitch-switchBase.Mui-disabled": {
+                      color: "#9C27B080",
+                    },
+                    "& .MuiSwitch-switchBase.Mui-disabled + .MuiSwitch-track": {
+                      backgroundColor: "#9C27B040",
+                    },
+                  }}
+                />
+              </Box>
+
+              <TextField
+                size="small"
+                label="הערות"
+                value={child.notes}
+                onChange={(e) => handleNotesChange(e.target.value)}
+                disabled={isDisabled}
+                sx={{ width: "100%" }}
+                placeholder="הערות נוספות..."
+              />
+            </CardContent>
+
+            {/* CSS Animation for swipe */}
+            <style>
+              {`
+                @keyframes swipeGreen {
+                  0% {
+                    transform: translateX(-100%);
+                    opacity: 0.7;
+                  }
+                  60% {
+                    opacity: 1;
+                  }
+                  80% {
+                    opacity: 0.7;
+                  }
+                  100% {
+                    transform: translateX(100%);
+                    opacity: 0;
+                  }
+                }
+              `}
+            </style>
+          </Card>
+        </Fade>
+      );
+    }
+
+    // Desktop Table Row Layout
+    return (
+      <TableRow
+        sx={{
+          border: "1px solid",
+          borderColor: isCompleted ? "#4CAF50" : "divider",
+          bgcolor: isCompleted ? "#4CAF5010" : "background.paper",
+          transition: "all 0.3s ease",
+          position: "relative",
+          overflow: "hidden",
+          "&:hover": {
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            transform: "translateY(-1px)",
+          },
+        }}
+      >
+        {/* Green swipe animation overlay */}
+        {showCelebration && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              zIndex: 10,
+              pointerEvents: "none",
+              background:
+                "linear-gradient(90deg, rgba(76,175,80,0.15) 0%, rgba(76,175,80,0.35) 40%, rgba(76,175,80,0.15) 100%)",
+              animation: "swipeGreen 0.7s cubic-bezier(0.4,0,0.2,1) forwards",
+            }}
+          />
+        )}
+
+        <TableCell sx={{ position: "relative", zIndex: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Avatar
               sx={{
                 bgcolor: isSleeping ? "#9C27B0" : "#757575",
@@ -129,88 +272,73 @@ const ChildItem = React.memo<{
             >
               {child.firstName.charAt(0)}
             </Avatar>
-          </ListItemAvatar>
-
-          <ListItemText
-            sx={{ position: "relative", zIndex: 2 }}
-            primary={
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  fontWeight: 600,
-                  color: showCelebration ? "#388e3c" : "inherit",
-                  transition: "color 0.3s ease",
-                }}
-              >
-                {child.firstName} {child.lastName}
-              </Typography>
-            }
-            secondary={
-              <Box sx={{ mt: 0.5 }}>
-                <SleepTimer
-                  startTime={child.sleepStartTime}
-                  endTime={child.sleepEndTime}
-                  isSleeping={isSleeping}
-                />
-                <TextField
-                  size="small"
-                  label="הערות"
-                  value={child.notes}
-                  onChange={(e) => handleNotesChange(e.target.value)}
-                  disabled={isDisabled}
-                  sx={{ width: "100%", mt: 1 }}
-                  placeholder="הערות נוספות..."
-                />
-              </Box>
-            }
-          />
-
-          <ListItemSecondaryAction sx={{ position: "relative", zIndex: 2 }}>
-            <Switch
-              checked={isSleeping}
-              onChange={isSleeping ? handleEndSleep : handleStartSleep}
-              disabled={isDisabled}
-              color="primary"
+            <Typography
+              variant="subtitle2"
               sx={{
-                "& .MuiSwitch-switchBase.Mui-checked": {
-                  color: "#9C27B0",
-                },
-                "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                  backgroundColor: "#9C27B0",
-                },
-                "& .MuiSwitch-switchBase.Mui-disabled": {
-                  color: "#9C27B080",
-                },
-                "& .MuiSwitch-switchBase.Mui-disabled + .MuiSwitch-track": {
-                  backgroundColor: "#9C27B040",
-                },
+                fontWeight: 600,
+                color: showCelebration ? "#388e3c" : "inherit",
+                transition: "color 0.3s ease",
               }}
-            />
-          </ListItemSecondaryAction>
+            >
+              {child.firstName} {child.lastName}
+            </Typography>
+          </Box>
+        </TableCell>
 
-          {/* CSS Animation for swipe */}
-          <style>
-            {`
-              @keyframes swipeGreen {
-                0% {
-                  transform: translateX(-100%);
-                  opacity: 0.7;
-                }
-                60% {
-                  opacity: 1;
-                }
-                80% {
-                  opacity: 0.7;
-                }
-                100% {
-                  transform: translateX(100%);
-                  opacity: 0;
-                }
-              }
-            `}
-          </style>
-        </ListItem>
-      </Fade>
+        <TableCell sx={{ position: "relative", zIndex: 2 }}>
+          <Chip
+            label={isSleeping ? "ישן" : "ער"}
+            color={isSleeping ? "primary" : "default"}
+            size="small"
+            sx={{
+              bgcolor: isSleeping ? "#9C27B0" : "grey.300",
+              color: isSleeping ? "white" : "grey.700",
+            }}
+          />
+        </TableCell>
+
+        <TableCell sx={{ position: "relative", zIndex: 2 }}>
+          <SleepTimer
+            startTime={child.sleepStartTime}
+            endTime={child.sleepEndTime}
+            isSleeping={isSleeping}
+          />
+        </TableCell>
+
+        <TableCell sx={{ position: "relative", zIndex: 2 }}>
+          <TextField
+            size="small"
+            value={child.notes}
+            onChange={(e) => handleNotesChange(e.target.value)}
+            disabled={isDisabled}
+            placeholder="הערות..."
+            sx={{ minWidth: 200 }}
+          />
+        </TableCell>
+
+        <TableCell sx={{ position: "relative", zIndex: 2 }}>
+          <Switch
+            checked={isSleeping}
+            onChange={isSleeping ? handleEndSleep : handleStartSleep}
+            disabled={isDisabled}
+            color="primary"
+            sx={{
+              "& .MuiSwitch-switchBase.Mui-checked": {
+                color: "#9C27B0",
+              },
+              "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                backgroundColor: "#9C27B0",
+              },
+              "& .MuiSwitch-switchBase.Mui-disabled": {
+                color: "#9C27B080",
+              },
+              "& .MuiSwitch-switchBase.Mui-disabled + .MuiSwitch-track": {
+                backgroundColor: "#9C27B040",
+              },
+            }}
+          />
+        </TableCell>
+      </TableRow>
     );
   }
 );
@@ -679,7 +807,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
     return (
       <Box
         sx={{
-          position: "fixed",
+          position: "absolute",
           top: 0,
           left: 0,
           right: 0,
@@ -688,7 +816,7 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
           zIndex: 1,
           display: "flex",
           flexDirection: "column",
-          height: "100vh",
+          height: "100%",
           overflow: "hidden",
         }}
       >
@@ -743,22 +871,11 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
   return (
     <Box
       sx={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
         bgcolor: "background.default",
-        zIndex: 1,
         display: "flex",
         flexDirection: "column",
-        height: { xs: "100dvh", sm: "100vh" }, // Use dynamic viewport height on mobile
+        height: "100%",
         overflow: "hidden",
-        // Add safe area insets for mobile
-        paddingTop: { xs: "env(safe-area-inset-top)", sm: 0 },
-        paddingBottom: { xs: "env(safe-area-inset-bottom)", sm: 0 },
-        paddingLeft: { xs: "env(safe-area-inset-left)", sm: 0 },
-        paddingRight: { xs: "env(safe-area-inset-right)", sm: 0 },
       }}
     >
       {/* Header */}
@@ -990,39 +1107,66 @@ const CreateSleepPostModal: React.FC<CreateSleepPostModalProps> = ({
           sx={{
             flex: 1,
             overflow: "hidden",
-            pr: isMobile ? 0.5 : 1,
-            pl: isMobile ? 0.5 : 0,
+            p: isMobile ? 2 : 3,
             minHeight: 0,
           }}
         >
-          <Box
-            sx={{
-              bgcolor: "background.default",
-              borderRadius: 2,
-              height: "100%",
-              p: isMobile ? 0.5 : 1,
-            }}
-          >
-            <Box
+          {/* Mobile: Card Layout */}
+          <Box sx={{ display: { xs: "block", md: "none" } }}>
+            {sleepChildren.map((child) => (
+              <ChildItem
+                key={child.childId}
+                child={child}
+                isCompleted={completedChildren.has(child.childId)}
+                isCelebrating={celebratingChildren.has(child.childId)}
+                isDisabled={dailyReport?.sleepData?.status === "Closed"}
+                isMobile={true}
+                onStartSleep={handleStartSleep}
+                onEndSleep={handleEndSleep}
+                onNotesChange={handleNotesChange}
+              />
+            ))}
+          </Box>
+
+          {/* Desktop: Table Layout */}
+          <Box sx={{ display: { xs: "none", md: "block" } }}>
+            <TableContainer
+              component={Paper}
+              elevation={0}
               sx={{
-                height: "100%",
-                overflow: "auto",
-                pr: 1,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: "divider",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
               }}
             >
-              {sleepChildren.map((child) => (
-                <ChildItem
-                  key={child.childId}
-                  child={child}
-                  isCompleted={completedChildren.has(child.childId)}
-                  isCelebrating={celebratingChildren.has(child.childId)}
-                  isDisabled={dailyReport?.sleepData?.status === "Closed"}
-                  onStartSleep={handleStartSleep}
-                  onEndSleep={handleEndSleep}
-                  onNotesChange={handleNotesChange}
-                />
-              ))}
-            </Box>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: "grey.50" }}>
+                    <TableCell sx={{ fontWeight: 600 }}>ילד</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>סטטוס</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>משך שינה</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>הערות</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>פעולות</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {sleepChildren.map((child) => (
+                    <ChildItem
+                      key={child.childId}
+                      child={child}
+                      isCompleted={completedChildren.has(child.childId)}
+                      isCelebrating={celebratingChildren.has(child.childId)}
+                      isDisabled={dailyReport?.sleepData?.status === "Closed"}
+                      isMobile={false}
+                      onStartSleep={handleStartSleep}
+                      onEndSleep={handleEndSleep}
+                      onNotesChange={handleNotesChange}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Box>
         </Box>
       </Box>

@@ -30,6 +30,13 @@ import {
   Drawer,
   List,
   ListItemButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useMediaQuery } from "@mui/material";
@@ -233,13 +240,14 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   );
 };
 
-// Simplified FoodChildItem component
+// Responsive FoodChildItem component
 const FoodChildItem = React.memo<{
   child: FoodChild;
   isDisabled: boolean;
+  isMobile: boolean;
   onStatusChange: (childId: string, status: FoodStatus) => void;
   onFoodDetailsChange: (childId: string, foodDetails: string) => void;
-}>(({ child, isDisabled, onStatusChange, onFoodDetailsChange }) => {
+}>(({ child, isDisabled, isMobile, onStatusChange, onFoodDetailsChange }) => {
   const handleStatusChange = (status: FoodStatus) => {
     onStatusChange(child.childId, status);
   };
@@ -248,34 +256,139 @@ const FoodChildItem = React.memo<{
     onFoodDetailsChange(child.childId, foodDetails);
   };
 
+  // Mobile Card Layout
+  if (isMobile) {
+    return (
+      <Card
+        sx={{
+          mb: 2,
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 2,
+          transition: "all 0.3s ease",
+          "&:hover": {
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+          },
+        }}
+      >
+        <CardContent sx={{ p: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+            <Avatar sx={{ bgcolor: "#FF914D", width: 40, height: 40 }}>
+              {child.firstName.charAt(0)}
+            </Avatar>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              {child.firstName} {child.lastName}
+            </Typography>
+          </Box>
+
+          <TextField
+            fullWidth
+            size="small"
+            label="פרטי מזון"
+            value={child.foodDetails}
+            onChange={(e) => handleFoodDetailsChange(e.target.value)}
+            disabled={isDisabled}
+            placeholder="הכנס פרטי מזון..."
+            sx={{ mb: 2 }}
+          />
+
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            <Chip
+              label="אכל הכל"
+              size="small"
+              color={
+                child.status === FoodStatus.FullyEaten ? "success" : "default"
+              }
+              variant={
+                child.status === FoodStatus.FullyEaten ? "filled" : "outlined"
+              }
+              onClick={() => handleStatusChange(FoodStatus.FullyEaten)}
+              disabled={isDisabled}
+              icon={
+                child.status === FoodStatus.FullyEaten ? (
+                  <CheckCircleIcon />
+                ) : undefined
+              }
+              sx={{ cursor: "pointer" }}
+            />
+            <Chip
+              label="אכל חלקית"
+              size="small"
+              color={
+                child.status === FoodStatus.PartiallyEaten
+                  ? "warning"
+                  : "default"
+              }
+              variant={
+                child.status === FoodStatus.PartiallyEaten
+                  ? "filled"
+                  : "outlined"
+              }
+              onClick={() => handleStatusChange(FoodStatus.PartiallyEaten)}
+              disabled={isDisabled}
+              icon={
+                child.status === FoodStatus.PartiallyEaten ? (
+                  <WarningIcon />
+                ) : undefined
+              }
+              sx={{ cursor: "pointer" }}
+            />
+            <Chip
+              label="סירב"
+              size="small"
+              color={child.status === FoodStatus.Refused ? "error" : "default"}
+              variant={
+                child.status === FoodStatus.Refused ? "filled" : "outlined"
+              }
+              onClick={() => handleStatusChange(FoodStatus.Refused)}
+              disabled={isDisabled}
+              icon={
+                child.status === FoodStatus.Refused ? <CancelIcon /> : undefined
+              }
+              sx={{ cursor: "pointer" }}
+            />
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Desktop Table Row Layout
   return (
-    <Card
+    <TableRow
       sx={{
-        mb: 2,
         border: "1px solid",
         borderColor: "divider",
         transition: "all 0.3s ease",
         "&:hover": {
           boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+          transform: "translateY(-1px)",
         },
       }}
     >
-      <CardContent sx={{ p: 2 }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-          {child.firstName} {child.lastName}
-        </Typography>
+      <TableCell>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Avatar sx={{ bgcolor: "#FF914D", width: 40, height: 40 }}>
+            {child.firstName.charAt(0)}
+          </Avatar>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+            {child.firstName} {child.lastName}
+          </Typography>
+        </Box>
+      </TableCell>
 
+      <TableCell>
         <TextField
-          fullWidth
           size="small"
-          label="פרטי מזון"
           value={child.foodDetails}
           onChange={(e) => handleFoodDetailsChange(e.target.value)}
           disabled={isDisabled}
-          placeholder="הכנס פרטי מזון..."
-          sx={{ mb: 2 }}
+          placeholder="פרטי מזון..."
+          sx={{ minWidth: 200 }}
         />
+      </TableCell>
 
+      <TableCell>
         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
           <Chip
             label="אכל הכל"
@@ -328,8 +441,8 @@ const FoodChildItem = React.memo<{
             sx={{ cursor: "pointer" }}
           />
         </Box>
-      </CardContent>
-    </Card>
+      </TableCell>
+    </TableRow>
   );
 });
 
@@ -643,7 +756,7 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
     return (
       <Box
         sx={{
-          position: "fixed",
+          position: "absolute",
           top: 0,
           left: 0,
           right: 0,
@@ -652,11 +765,8 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
           zIndex: 1,
           display: "flex",
           flexDirection: "column",
-          height: "100vh",
+          height: "100%",
           overflow: "hidden",
-          "@media (max-width: 600px)": {
-            height: "100dvh",
-          },
         }}
       >
         <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider" }}>
@@ -681,20 +791,11 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
   return (
     <Box
       sx={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
         bgcolor: "background.default",
-        zIndex: 1,
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
+        height: "100%",
         overflow: "hidden",
-        "@media (max-width: 600px)": {
-          height: "100dvh",
-        },
       }}
     >
       {/* Header */}
@@ -855,15 +956,55 @@ const CreateFoodPostModal: React.FC<CreateFoodPostModalProps> = ({
           },
         }}
       >
-        {foodChildren.map((child) => (
-          <FoodChildItem
-            key={child.childId}
-            child={child}
-            isDisabled={dailyReport?.foodData?.status === "Closed"}
-            onStatusChange={handleStatusChange}
-            onFoodDetailsChange={handleFoodDetailsChange}
-          />
-        ))}
+        {/* Mobile: Card Layout */}
+        <Box sx={{ display: { xs: "block", md: "none" } }}>
+          {foodChildren.map((child) => (
+            <FoodChildItem
+              key={child.childId}
+              child={child}
+              isDisabled={dailyReport?.foodData?.status === "Closed"}
+              isMobile={true}
+              onStatusChange={handleStatusChange}
+              onFoodDetailsChange={handleFoodDetailsChange}
+            />
+          ))}
+        </Box>
+
+        {/* Desktop: Table Layout */}
+        <Box sx={{ display: { xs: "none", md: "block" } }}>
+          <TableContainer
+            component={Paper}
+            elevation={0}
+            sx={{
+              borderRadius: 2,
+              border: "1px solid",
+              borderColor: "divider",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+            }}
+          >
+            <Table>
+              <TableHead>
+                <TableRow sx={{ bgcolor: "grey.50" }}>
+                  <TableCell sx={{ fontWeight: 600 }}>ילד</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>פרטי מזון</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>סטטוס</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {foodChildren.map((child) => (
+                  <FoodChildItem
+                    key={child.childId}
+                    child={child}
+                    isDisabled={dailyReport?.foodData?.status === "Closed"}
+                    isMobile={false}
+                    onStatusChange={handleStatusChange}
+                    onFoodDetailsChange={handleFoodDetailsChange}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
       </Box>
 
       {/* Footer */}
